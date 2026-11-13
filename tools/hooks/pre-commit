@@ -1,0 +1,15 @@
+#!/bin/sh
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 Eberon Limited (John Gorman)
+# Stallion's pre-commit checks, the same as CI's (.github/workflows/ci.yml):
+#   R12  no audio file, no recordings, reference material or note scores added (tools/private_check.py)
+#   R52, R55  every source file's SPDX header on the allowed list, every data file in assets/MANIFEST
+#        (tools/licence_check.py; it reads the working tree, so stage what you check)
+# Install once per clone (worktrees share it), from the repo root:
+#   git config core.hooksPath tools/hooks
+# Python 3 only, no packages. Skipping it (git commit --no-verify) does not skip CI.
+cd "$(git rev-parse --show-toplevel)" || exit 1
+PY=python3
+command -v "$PY" >/dev/null 2>&1 || PY=python
+"$PY" tools/private_check.py --staged || { echo "pre-commit: unstage the files above (git restore --staged <file>)"; exit 1; }
+"$PY" tools/licence_check.py >/dev/null || { "$PY" tools/licence_check.py | grep -v '^licence check:'; echo "pre-commit: fix the licence problems above (docs/RELEASING.md)"; exit 1; }

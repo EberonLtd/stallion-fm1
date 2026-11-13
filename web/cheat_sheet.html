@@ -1,0 +1,410 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Copyright (C) 2026 Eberon Limited (John Gorman)
+     Stallion's one-page cheat sheet (the site's cheat-sheet.html, web/make_site.py with --smk37): the panel of the FM-1
+     and the SMK-37 Pro side by side, the held layers, the sounds, playing, the arpeggiator, the sequencer, saving, MIDI,
+     updating and the settings worth knowing. Every line is taken from QUICKSTART.md, GUIDE.md, docs/midi.md,
+     docs/stallion-1.0.0.md and README.md and checked against the firmware (panel.c, params.c, ui_input.c, ui_layers.c,
+     seq.c, ui_menu.c). make_site.py fills the logo, web/site.css and the counts ({{ENGINES}} {{SOUNDS}}). English only.
+     Colour means one thing, never alone: oak (a boxed name) a button or knob to press or turn, sea (a labelled note)
+     information, rust (a labelled warning) a warning. System fonts only; no script. Prints landscape (A4 or Letter). -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Stallion Cheat Sheet: every button, knob, layer and page of Stallion on the M-VAVE FM-1 and SMK-37 Pro, on one printable page.">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="webapp/icon-192.png">
+<title>Stallion Cheat Sheet</title>
+<style>
+/*SITE_CSS*/
+  /* the cheat sheet's own: the site's colours (site.css) as tokens, redefined for a light screen and for paper */
+  :root { color-scheme: dark light; --ink: var(--sail); --bg: var(--navy); --card: var(--panel); --line: var(--edge);
+          --act: var(--oak); --act-ink: var(--deep); --info: var(--sea); --warn: var(--rust); --muted: var(--soft); }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) { --ink: #0b1e36; --bg: #f6f2e8; --card: #ffffff; --line: #51698f; --act: #9a5200;
+            --act-ink: #ffffff; --info: #0b5d77; --warn: #a3301a; --muted: #24344d; }
+  }
+  :root[data-theme="light"] { --ink: #0b1e36; --bg: #f6f2e8; --card: #ffffff; --line: #51698f; --act: #9a5200;
+            --act-ink: #ffffff; --info: #0b5d77; --warn: #a3301a; --muted: #24344d; }
+  body { background: var(--bg); color: var(--ink); font: 500 19px/1.5 var(--body); }
+  a { color: var(--act); }
+  a:hover { color: var(--ink); }
+  strong, b { color: var(--ink); }
+  /* system fonts only: the headings bold and plain, large */
+  h1, h2, h3 { font-family: var(--body); font-weight: 800; text-transform: none; -webkit-font-smoothing: auto; letter-spacing: 0; }
+  h1 { font-size: 44px; margin: 0 0 8px; }
+  h2 { font-size: 26px; line-height: 1.2; margin: 0 0 12px; padding-bottom: 6px; border-bottom: 4px solid var(--act); }
+  h3 { font-size: 20px; margin: 16px 0 6px; }
+  @media (max-width: 700px) { h1 { font-size: 34px; } h2 { font-size: 24px; } }
+  .top { padding-top: 16px; padding-bottom: 8px; }
+  .top p { margin: 0 0 10px; max-width: 60em; }
+  .bar .logo svg { width: 200px; }
+  .bar .btn.ghost { color: var(--ink); border-color: var(--ink); }
+  .bar .btn.ghost:hover { background: var(--ink); color: var(--bg); }
+  .sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 480px), 1fr)); gap: 20px; align-items: start;
+           padding-bottom: 40px; }
+  .card { background: var(--card); border: 3px solid var(--line); border-radius: 16px; padding: 16px 18px; min-width: 0; }
+  .card.wide { grid-column: 1 / -1; }
+  .card > :last-child { margin-bottom: 0; }
+  .card ul { margin: 0 0 12px; padding-left: 22px; } .card li { margin: 0 0 6px; }
+  .card p { margin: 0 0 10px; }
+  /* a control to press or turn: a boxed name, in oak (the box says it without the colour) */
+  kbd { font: 800 0.92em/1.2 var(--body); color: var(--ink); border: 3px solid var(--act); border-radius: 7px;
+        padding: 0 5px; white-space: nowrap; display: inline-block; }
+  /* a page or a value on the screen: capitals, plain */
+  .pg { font-weight: 800; white-space: nowrap; }
+  .tag { display: inline-block; font-size: 0.8em; font-weight: 800; border: 2px solid var(--ink); border-radius: 999px; padding: 0 8px;
+         margin-right: 4px; white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 18px; }
+  th, td { text-align: left; vertical-align: top; padding: 6px 8px; border-bottom: 3px solid var(--line); }
+  th { font-weight: 800; background: var(--bg); }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child, td.c { white-space: nowrap; }
+  @media (max-width: 700px) { td:first-child, td.c { white-space: normal; } table { font-size: 17px; } th, td { padding: 6px 4px; } }
+  /* a phone: the wide tables become one block a row, each cell named */
+  @media screen and (max-width: 700px) {
+    table.st, table.st tbody, table.st tr, table.st td { display: block; width: auto; }
+    table.st thead { display: none; }
+    table.st tr { border-bottom: 3px solid var(--line); padding: 8px 0; }
+    table.st td { border: 0; padding: 2px 0; white-space: normal; }
+    table.st.panel td:nth-child(1), table.st.panel td:nth-child(2) { display: inline-block; margin-right: 10px; }
+    table.st.panel td:nth-child(2)::before { content: "SMK-37 Pro: "; font-weight: 800; }
+    table.st.panel td:nth-child(3)::before { content: "Tap or turn: "; font-weight: 800; }
+    table.st.panel td:nth-child(4)::before { content: "Hold: "; font-weight: 800; }
+    table.st.lay td:nth-child(2)::before { content: "Keys: "; font-weight: 800; }
+    table.st.lay td:nth-child(3)::before { content: "Knobs: "; font-weight: 800; }
+  }
+  .note, .warn { background: var(--bg); border-left-color: var(--info); }
+  .warn { border-left-color: var(--warn); }
+  .note b.h, .warn b.h { font: 800 20px/1.2 var(--body); text-transform: none; }
+  .note b.h { color: var(--info); } .warn b.h { color: var(--warn); }
+  .note b:not(.h), .warn b:not(.h) { display: inline; font: inherit; font-weight: 800; text-transform: none; color: var(--ink); margin: 0; }
+  .note b.h, .warn b.h { display: block; margin-bottom: 6px; }
+  .key { border: 4px solid var(--act); }
+  .key .h { color: var(--act); }
+  .eng { columns: 2 240px; column-gap: 24px; margin: 0; padding: 0; list-style: none; }
+  .eng li { break-inside: avoid; margin: 0 0 6px; }
+  .eng b { font-weight: 800; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 20px; font-size: 18px; margin: 4px 0 16px; }
+  .foot { margin-top: 0; padding: 24px 0 32px; }
+  .foot p { color: var(--muted); }
+  .foot .copy { color: var(--ink); }
+  @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .foot { background: #e9e2d2; } }
+  /* paper: landscape, black on white, four columns, nothing to click */
+  @page { size: landscape; margin: 9mm; }
+  @media print {
+    :root { --ink: #000; --bg: #fff; --card: #fff; --line: #444; --act: #000; --info: #000; --warn: #000; --muted: #000; }
+    body { font-size: 8.6pt; line-height: 1.3; background: #fff; color: #000; }
+    .bar, .sail, .noprint, .foot { display: none !important; }
+    .wrap, .narrow { max-width: none; padding: 0; }
+    h1 { font-size: 16pt; margin: 0 0 2pt; } h2 { font-size: 10.5pt; margin: 0 0 3pt; padding-bottom: 1pt; border-bottom-width: 2px; }
+    h3 { font-size: 9pt; margin: 4pt 0 2pt; }
+    .top { padding: 0 0 4pt; } .top p { margin: 0 0 2pt; }
+    .sheet { display: block; columns: 3; column-gap: 5mm; padding: 0; }
+    .card { break-inside: avoid-column; border: 1.5px solid #000; border-radius: 4px; padding: 4pt 5pt; margin: 0 0 4pt; }
+    .card.wide { column-span: all; break-inside: auto; }
+    .card.wide .scroll { overflow: visible; }
+    #sounds .eng { columns: 5; }
+    table { font-size: 8pt; } th, td { padding: 1pt 2pt; border-bottom: 1px solid #777; } th { background: #fff; }
+    td:first-child, td.c { white-space: normal; }
+    kbd { border-width: 1.5px; border-radius: 3px; padding: 0 2px; color: #000; }
+    .note, .warn, .key { border-left-width: 4px; padding: 3pt 5pt; margin: 0 0 4pt; border-radius: 0; }
+    .note b.h, .warn b.h { font-size: 9pt; }
+    .eng { columns: 2; column-gap: 4mm; } .eng li { margin: 0 0 1pt; }
+    .card ul { padding-left: 12px; margin: 0 0 3pt; } .card li { margin: 0 0 1pt; } .card p { margin: 0 0 3pt; }
+    a { color: #000; text-decoration: none; }
+    .legend { font-size: 8pt; margin: 0 0 3pt; }
+  }
+</style>
+</head>
+<body>
+<header class="wrap bar"><a class="logo" href="./" aria-label="Stallion"><!--LOGO--></a>
+  <nav class="nav"><a class="btn ghost text" href="./">Home</a> <a class="btn ghost text" href="https://github.com/EberonLtd/stallion-fm1/blob/main/GUIDE.md">The guide</a></nav></header>
+<div class="sail" role="presentation"></div>
+<main>
+<div class="wrap top">
+  <h1>Stallion Cheat Sheet</h1>
+  <p>Stallion 1.0 on the M-VAVE FM-1 and the SMK-37 Pro: {{ENGINES}} engines, {{SOUNDS}} sounds. The whole guide: <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/GUIDE.md">GUIDE.md</a>; every MIDI message: <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/docs/midi.md">docs/midi.md</a>.</p>
+  <p class="legend"><span><kbd>BOXED</kbd> a button or knob: press or turn it</span><span><b>A &gt; B</b> tap A, then turn SELECT (or tap A again) to page B</span><span><b>A + B</b> hold A, press B</span><span><b>MENU</b> hold HOME (PATCH)</span></p>
+</div>
+
+<div class="wrap sheet">
+
+  <!-- ===================== THE PANEL ===================== -->
+  <section class="card wide" id="panel">
+    <h2>The panel</h2>
+    <div class="scroll"><table class="st panel">
+      <thead><tr><th scope="col">FM-1</th><th scope="col">SMK-37 Pro</th><th scope="col">Tap or turn</th><th scope="col">Hold</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>MASTER</kbd></td><td><kbd>K1</kbd></td><td>The volume. SMK-37 Pro: for 2 s after K1 moves, the thin bar under the four boxes shows it in white</td><td>—</td></tr>
+        <tr><td><kbd>SELECT</kbd></td><td><kbd>K2</kbd></td><td>On a page: the next or previous page of its group. On HOME: the tempo. In MENU: the section</td><td>FM-1, a key held: the RIBBON bend</td></tr>
+        <tr><td><kbd>ALGORITHM</kbd></td><td><kbd>K3</kbd></td><td>The next family of sounds (PAD, BASS, LEAD, PLCK, KEYS, STAB, FX...). With BROWSE = ALGORITHM: the next engine</td><td>—</td></tr>
+        <tr><td><kbd>PRESETS</kbd></td><td><kbd>K4</kbd></td><td>The next or previous sound</td><td>—</td></tr>
+        <tr><td><kbd>KNOB 1</kbd> to <kbd>KNOB 4</kbd></td><td><kbd>K5</kbd> to <kbd>K8</kbd></td><td>The screen's four values, each in its knob's colour. On HOME: the sound's main controls</td><td>—</td></tr>
+        <tr><td><kbd>HOME</kbd></td><td><kbd>PATCH</kbd></td><td>HOME, the playing screen</td><td><b>MENU</b>, the settings</td></tr>
+        <tr><td><kbd>EDIT</kbd></td><td><kbd>PARA</kbd></td><td>The engine's pages, VOICE, MACROS, LAYER, MORPH, RANDOM, UNDO</td><td>The EDIT layer (below)</td></tr>
+        <tr><td><kbd>GLO</kbd></td><td><kbd>GLOBE</kbd></td><td>GLOBAL, MASTER, TUNING, SYSTEM, MIDI, MIDI 2, MIDI 3; FM-1: TOUCH to TOUCH 6; SMK-37 Pro: AFTERTOUCH, PAD VEL, KEY AT to KEY AT 3, PAD AT, PAD AT 2</td><td>The GLO layer (below). <b>+ the lowest key: KEY AT on / off</b></td></tr>
+        <tr><td><kbd>SAVE</kbd></td><td><kbd>BT</kbd></td><td>PRESETS, USER (your presets), TOOLS</td><td>The keys still play</td></tr>
+        <tr><td><kbd>SEL</kbd></td><td><kbd>SCALE</kbd></td><td>SEL, SEL 2: key, scale, snap, chords, transpose, strum</td><td>The SEL layer (below)</td></tr>
+        <tr><td><kbd>ENV</kbd></td><td><kbd>CHORD</kbd></td><td>ENV, ENV DEST, ENV 2, ENV 2 LOOP</td><td>—</td></tr>
+        <tr><td><kbd>LFO</kbd></td><td><kbd>NOTE REPEAT</kbd></td><td>LFO, LFO DEST, MOD, BEND, BEND 2, LFO 2, LFO 3, MATRIX, MATRIX 2, MOD SEQ, MOD SEQ 2</td><td>—</td></tr>
+        <tr><td><kbd>FX</kbd></td><td><kbd>FX</kbd></td><td>FX (sends), FILTER, FILTER 2, INSERT, INSERT 2, DLY, DLY 2, REVERB, REVERB 2, CHORUS, EQ+COMP</td><td>The keys still play</td></tr>
+        <tr><td><kbd>ARP</kbd></td><td><kbd>ARP</kbd></td><td>The arpeggiator's pages: <span class="pg">ARP</span>, <span class="pg">ARP 2</span>, SPICE</td><td>Its layer (below): a key starts a mode, latches, or rolls. Held 1 to 3 s, nothing touched, let go: start in UP / stop</td></tr>
+        <tr><td><kbd>SEQ</kbd></td><td><kbd>SEQ</kbd></td><td>NOTES (the piano roll), PATTERN</td><td>The 16 steps (below)</td></tr>
+        <tr><td><kbd>PLAY</kbd></td><td><kbd>SEQ PLAY</kbd></td><td>Start and stop the sequencer</td><td>—</td></tr>
+        <tr><td><kbd>REC</kbd></td><td><kbd>SEQ REC</kbd></td><td>Record what you play into the pattern (stopped: arm, the first note starts it)</td><td>About 2 s: clear the pattern</td></tr>
+        <tr><td><kbd>OCT-</kbd> <kbd>OCT+</kbd></td><td><kbd>OCTAVE-</kbd> <kbd>OCTAVE+</kbd></td><td>The octave; both together: back to 0</td><td>FM-1, a key held: the LEVER bend</td></tr>
+        <tr><td>—</td><td><kbd>KNOB BANK</kbd></td><td>The sounds on the pads: one tap loads a sound. Again: closes them</td><td><b>+ the top key (C6)</b>: the pads' sounds from all banks (<b>B</b>, the default) or this engine only (<b>A</b>); the top line shows B or A</td></tr>
+        <tr><td>—</td><td><kbd>FADER BANK</kbd> <kbd>&lt;</kbd> <kbd>&gt;</kbd></td><td>The fader banks: A MACROS (BRITE TIMBR MOTN SPACE), B ENV (ADSR), C TONE (CUTOFF RES, LFO RATE, GLIDE), D MIX (CHORUS DELAY REVERB sends, LEVEL); again: the next bank. A fader takes over once it moves. <kbd>&lt;</kbd> <kbd>&gt;</kbd> step the banks, else the pages</td><td>—</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ===================== LAYERS ===================== -->
+  <section class="card wide" id="layers">
+    <h2>The held layers: hold the button, then use the keys and knobs</h2>
+    <p>A press of up to 1 s, touching nothing else, opens the button's pages (tap again: the next page); held, the layer shows after 0.35 s, or at once when you use a key or knob. <b>Layer button + <kbd>HOME</kbd></b>: the layer stays open with the button let go (LOCK); any other button but PLAY, REC and the octave buttons closes it. On the SMK-37 Pro the 16 pads do what the FM-1's 16 white keys do.</p>
+    <div class="scroll"><table class="st lay">
+      <thead><tr><th scope="col">Hold</th><th scope="col">Keys</th><th scope="col">Knobs</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>SEQ</kbd></td><td>The 16 white keys are the 16 steps: a key turns its step on or off. The first four black keys, or <kbd>OCT-</kbd> <kbd>OCT+</kbd>: step pages 1 to 4. A step held: <kbd>OCT-</kbd> clears its nudge, locks and fill setting, <kbd>OCT+</kbd> sets it to play normally, in fills only, or not in fills</td><td>No step held: <kbd>KNOB 1</kbd> the note to write, <kbd>KNOB 2</kbd> the step rate, <kbd>KNOB 3</kbd> swing, <kbd>KNOB 4</kbd> length.<br>A step held: <kbd>KNOB 1</kbd> note, <kbd>KNOB 2</kbd> velocity, <kbd>KNOB 3</kbd> ratchet (x1 to x8), <kbd>KNOB 4</kbd> nudge, <kbd>ALGORITHM</kbd> the lock's parameter, <kbd>PRESETS</kbd> its value</td></tr>
+        <tr><td><kbd>SEL</kbd> <span class="tag">SMK: SCALE</span></td><td>A key sets the key of the song (SMK-37 Pro: the pads are C4 to C5)</td><td><kbd>KNOB 1</kbd> chord, <kbd>KNOB 2</kbd> scale, <kbd>KNOB 3</kbd> snap to scale, <kbd>KNOB 4</kbd> transpose</td></tr>
+        <tr><td><kbd>EDIT</kbd> <span class="tag">SMK: PARA</span></td><td>A key: that note out of the pattern (as it plays, or all of it stopped). <kbd>OCT-</kbd> undo, <kbd>OCT+</kbd> redo</td><td><kbd>KNOB 1</kbd> shift, <kbd>KNOB 2</kbd> length x2 / half, <kbd>KNOB 3</kbd> transpose, <kbd>KNOB 4</kbd> a MOTION lane to clear (BEND, RIBBON, PRESS, ALL), cleared when EDIT is let go</td></tr>
+        <tr><td><kbd>ARP</kbd></td><td><b>SMK-37 Pro</b>: C3 to D#4 do what is printed above them (table below). <b>FM-1</b>: F3 starts UP / stops, F#3 HOLD on / off. Other keys (SMK-37 Pro: E4 and up): note repeat, a held key repeats on the grid, recorded as ratchets</td><td><kbd>KNOB 1</kbd> the note-repeat rate (1/8, 1/16, 1/32, 32T, 1/64), <kbd>KNOB 2</kbd> MODE, <kbd>KNOB 3</kbd> HOLD (right on, left off), <kbd>KNOB 4</kbd> RATE</td></tr>
+        <tr><td><kbd>GLO</kbd> <span class="tag">SMK: GLOBE</span></td><td><b>Lowest key: KEY AT on / off</b> (below). Key 9 held: fill. Key 10: fill on the next bar. Key 16: tap tempo</td><td><kbd>KNOB 1</kbd> the sound's level</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ===================== KEY AT ===================== -->
+  <section class="card" id="keyat">
+    <h2>Key aftertouch on and off</h2>
+    <div class="note key">
+      <b class="h">Hold <kbd>GLO</kbd> and press the lowest key</b>
+      <p>FM-1: <kbd>GLO</kbd> + <b>F3</b>. SMK-37 Pro: <kbd>GLOBE</kbd> + <b>C3</b>.</p>
+      <p>The screen says <b>K-AT ON</b> or <b>K-AT OFF</b>; <b>K-AT</b> stays in the top line, bright while it is on, dim while off. Kept with the settings.</p>
+    </div>
+    <ul>
+      <li><b>FM-1</b>: switches KEY TOUCH's aftertouch: VEL &harr; V+AT, and OFF &harr; AT.</li>
+      <li><b>SMK-37 Pro</b>: turns <b>KEY AT</b> on and off: the keys' aftertouch, made from how hard they are struck and held (the keys have no pressure sensor).</li>
+      <li><b>SMK-37 Pro pads</b> have their own aftertouch, always on: a light press plays, a harder squeeze is aftertouch. Set it on <b>GLO &gt; PAD AT</b> and <b>PAD AT 2</b>.</li>
+      <li><b>SMK-37 Pro</b>: the keys' and the pads' pressure glides to each new value over at least 10 ms (no steps on a resonant filter); a longer AT attack or release (GLO &gt; AFTERTOUCH) works as set. MIDI pressure is unchanged.</li>
+    </ul>
+  </section>
+
+  <!-- ===================== COMBOS ===================== -->
+  <section class="card" id="combos">
+    <h2>Combinations and panic</h2>
+    <table>
+      <tbody>
+        <tr><td><kbd>EDIT</kbd> + <kbd>OCT-</kbd> / <kbd>OCT+</kbd></td><td>Undo / redo</td></tr>
+        <tr><td><kbd>OCT-</kbd> + <kbd>OCT+</kbd></td><td>The octave back to 0</td></tr>
+        <tr><td>Layer + <kbd>HOME</kbd></td><td>Lock the layer open</td></tr>
+        <tr><td>A key + <kbd>OCT-</kbd> / <kbd>OCT+</kbd></td><td>FM-1: LEVER bend (GLO &gt; TOUCH 3)</td></tr>
+        <tr><td>A key + <kbd>SELECT</kbd></td><td>FM-1: RIBBON bend (GLO &gt; TOUCH 3, 4)</td></tr>
+        <tr><td><kbd>OCT-</kbd> at power-on</td><td>USB RESCUE (then install again)</td></tr>
+        <tr><td><kbd>OCT-</kbd> + <kbd>OCT+</kbd> at power-on</td><td>HARDWARE CALIBRATION: teach the buttons and knobs again</td></tr>
+      </tbody>
+    </table>
+    <div class="note"><b class="h">Panic</b><p>From a computer or controller: <b>CC 120</b> (all sound off) or <b>CC 123</b> (all notes off); a DAW's panic button sends them. <b>CC 121</b> resets the controllers.</p></div>
+  </section>
+
+  <!-- ===================== SOUNDS ===================== -->
+  <section class="card wide" id="sounds">
+    <h2>Sounds: {{ENGINES}} engines</h2>
+    <p>Pick an engine by picking one of its sounds, or with MENU &gt; SCREEN &gt; BROWSE = ALGORITHM. Its own values: <b>EDIT 1</b>, <b>EDIT 2</b> (and <b>EDIT 3</b> on MARE, PONY and RODEO).</p>
+    <ul class="eng">
+      <li><b>HYBRID</b>: three oscillators, two filters</li>
+      <li><b>PALOMINO</b>: big early-1980s eight-voice poly</li>
+      <li><b>STAMPEDE</b>: late-1970s poly, two channels</li>
+      <li><b>RODEO</b>: punchy, brassy 1979-84 polys. Its sounds do not follow the key with the filter, like the originals; EDIT 3 KYBD adds tracking (0 to 100 %, 86 % its earlier tracking). PW0: the pulse's rest width, 46.8 % on BP SWEEP PAD, SOLO LEAD, PULSE LEAD, SYNTH BASS, SVF BASS and MORPH PLUCK, 49.5 % on the others, 53 % RODEO's earlier width. RES 124 to 127: the filter sings a sine at the cutoff, as the originals at full resonance</li>
+      <li><b>MARE</b>: semi-modular, up to four VCOs, two stereo ladders; its warm, layered sounds play best in PARA (one filter, every key a VCO)</li>
+      <li><b>PONY</b>: 1980s DCO poly with chorus. EDIT 3: RANGE 16' 8' 4', KYBD (how far the filter follows the keys), VCA ENV or GATE, CHAR. EDIT 1: WAVE OFF (the sub or noise alone). MODL: OTA by default, LADDR its earlier sound. CHAR: the original's quirks, CLEAN (none), CLASSIC (the default: those that match recordings of it), FULL (all); the editor has a box each (CUSTOM: another mix): STEPS (the cutoff knob in 128 audible steps; on in RESO SWEEP, FUNK BASS, DARK PLUCK), HISS (the chorus hisses while on), HPF (after the voices; 0 a +10 dB bass boost), LEVER LFO (the wheel's vibrato from the LFO), GATE 1 MS, DARK NOISE (~5 kHz), and in FULL only VCA CURVE (fast tails), LFO DELAY (free LFO, a waiting delay), COARSE CUT (~1.35 semitone steps), CPU TICK (envelopes and LFO every 4.2 ms). CHOR I 0.53 Hz, II 0.87 Hz as measured on the original (about 4 dB louder on); I+II is PONY's own. WAVE OFF, SUB and NOIS 0, RES 120 or more: the filter sings alone, in tune with KYBD 100 %; the wheel's vibrato up to &plusmn;4 semitones</li>
+      <li><b>FMX</b>: six operators, any routing</li>
+      <li><b>FM6</b>: six-operator FM, 32 algorithms</li>
+      <li><b>DIGITAL</b>: four-operator FM pianos, bells</li>
+      <li><b>WAVE</b>: wavetables, and your own</li>
+      <li><b>WSEQ</b>: wave sequencing in tempo</li>
+      <li><b>VECTOR</b>: four waves, a moving mix</li>
+      <li><b>ANALOG</b>: virtual analog, filter models</li>
+      <li><b>ACID</b>: acid bass, accents, slides</li>
+      <li><b>STRINGS</b>: 1970s string machine ensemble</li>
+      <li><b>MACRO</b>: chords, swarm, additive, speech</li>
+      <li><b>PHASE</b>: phase distortion, bent sines</li>
+      <li><b>VPS</b>: phaseshaping into formant sweeps</li>
+      <li><b>TERRAIN</b>: an orbit over surfaces</li>
+      <li><b>PHYS</b>: plucked strings, bells, drums</li>
+      <li><b>TRIO</b>: 8-bit home computer chip</li>
+      <li><b>WHEEL</b>: tonewheel organ, nine drawbars</li>
+      <li><b>VOICE</b>: formant synthesis, sung vowels</li>
+      <li><b>NOISE</b>: hiss to metallic tones</li>
+      <li><b>GRAIN</b>: granular clouds, four sources</li>
+      <li><b>SAMPLE</b>: playable instruments, four sources</li>
+    </ul>
+  </section>
+
+  <section class="card" id="shape">
+    <h2>Shaping the sound</h2>
+    <h3>MACROS (EDIT &gt; MACROS)</h3>
+    <p><b>BRITE</b> the cutoff, <b>TIMBR</b> the engine's shape, <b>MOTN</b> vibrato and movement, <b>SPACE</b> reverb, delay and SPREAD. MIDI CC 16 to 19. HYBRID has its own M1 to M4 there instead.</p>
+    <h3>MATRIX (LFO &gt; MATRIX)</h3>
+    <p>24 slots, each a cable: <kbd>KNOB 1</kbd> SLOT, <kbd>KNOB 2</kbd> SRC, <kbd>KNOB 3</kbd> DST, <kbd>KNOB 4</kbd> AMT. The page shows six at a time; the selected cable in large type, for example <b>LFO1 &gt; CUT +62</b>, in its signal's colour. <b>MATRIX 2 &gt; CLEAR</b>: turn right twice within 1.5 s to take every cable out; UNDO brings them back.</p>
+    <h3>Patch bay (web editor)</h3>
+    <p>Drag cables between 64 jacks to patch the same matrix, on every engine; the MATRIX tab shows them as a table. It is the editor's one matrix.</p>
+    <h3>Web editor</h3>
+    <p>The Sound tab opens with the sound's NAME, MODE and parts A and B; every save takes the NAME. The browser: MULTI, USER and the engines on the left, their sounds on the right. <b>Work offline</b> edits without an instrument, to a file. Click a heading to fold its card; <b>Shift+click</b> opens that one and folds the rest; <b>Fold all</b> / <b>Open all</b> on the Sound tab. ENV and ENV 2 show where the newest note you play is; the LFO graph has RATE, PHASE and FADE to drag and a button per wave. The Settings tab shows each device page with its place, such as TOUCH 2 &middot; GLO 9/13.</p>
+    <h3>FILTER and FILTER 2 (FX)</h3>
+    <p>Nine models: SVF, LADDR, SK, DIODE, WARM, NOTCH, BP, HP, OTA. <b>FILTER</b>: MODL (ANALOG, WAVE, VECTOR, PONY), <b>SLOPE</b> 12, 24 or 48 dB (the 4-pole models: LADDR, OTA, DIODE), LINK. <b>FILTER 2</b>: MODL (OFF or a model), CUT, RES, ROUTE <b>SER</b> (in series), <b>PAR</b> (side by side), <b>SPLIT</b> (filter 1 left, filter 2 right). With LINK on, one cutoff sweeps both.</p>
+  </section>
+
+  <section class="card" id="voice">
+    <h2>Voices and layers</h2>
+    <h3>EDIT &gt; VOICE</h3>
+    <p><b>VCE</b>: POLY, MONO, LEG (legato), UNI (unison), UNI2, UNI4 (2 or 4 voices a note); GLD glide, GLMOD, PRIO. <b>VOICE 2</b>: ALLOC (ROT, REUSE, POLY2), DTUNE, PAN, VINTG. <b>VOICE 3</b>: SPRED, each voice its own place in the stereo field. 8 voices.</p>
+    <h3>EDIT &gt; LAYER</h3>
+    <p><b>MODE</b>: OFF, <b>LAYER</b> (a second sound on every note), <b>SPLIT</b> (the second sound below the split note), <b>MULTI</b> (two parts on two MIDI channels: CH, 2 by default). SOUND, SPLIT, LEVEL. <b>LAYER 2</b>: OCT, PAN, FILT, <b>SWAP</b> (edit the other sound).</p>
+    <h3>Also on EDIT</h3>
+    <p><b>MORPH</b> between two versions of a sound, <b>RANDOM</b> by section, <b>UNDO</b> with COMPARE.</p>
+  </section>
+
+  <!-- ===================== ARP QUICK ===================== -->
+  <section class="card" id="arpquick">
+    <h2>The arpeggiator in one move</h2>
+    <div class="note key">
+      <b class="h">Hold <kbd>ARP</kbd> and press a key</b>
+      <p>A mode key starts the arpeggiator in that mode; the mode already playing stops it. Or hold <kbd>ARP</kbd> 1 to 3 s, touch nothing, let go: start in UP, or stop. A short tap still opens the pages.</p>
+    </div>
+    <h3>SMK-37 Pro: the printed row, C3 to D#4</h3>
+    <table class="arpkeys">
+      <thead><tr><th scope="col">Key</th><th scope="col">Printed</th><th scope="col">Stallion</th></tr></thead>
+      <tbody>
+        <tr><td>C3</td><td>Up</td><td>MODE UP</td></tr>
+        <tr><td>C#3</td><td>Down</td><td>MODE DN</td></tr>
+        <tr><td>D3</td><td>Incl</td><td>MODE INCL: up and down, top and bottom notes twice</td></tr>
+        <tr><td>D#3</td><td>Excl</td><td>MODE UPDN</td></tr>
+        <tr><td>E3</td><td>Rand</td><td>MODE RND</td></tr>
+        <tr><td>F3</td><td>Order</td><td>MODE ORD</td></tr>
+        <tr><td>F#3</td><td>Repeat</td><td>MODE REPEAT</td></tr>
+        <tr><td>G3</td><td>Oct+</td><td>OCT 1, 2, 3, 4, back to 1</td></tr>
+        <tr><td>G#3</td><td>Latch</td><td>HOLD on / off</td></tr>
+        <tr><td>A3, A#3</td><td>Gate+, Gate&minus;</td><td>GATE longer, shorter</td></tr>
+        <tr><td>B3</td><td>Tap</td><td>Tap tempo</td></tr>
+        <tr><td>C4, C#4</td><td>Swing+, Swing&minus;</td><td>SWG more, less</td></tr>
+        <tr><td>D4, D#4</td><td>Tempo+, Tempo&minus;</td><td>Tempo up, down by 1</td></tr>
+        <tr><td>E4 and up</td><td>—</td><td>Note-repeat rolls</td></tr>
+      </tbody>
+    </table>
+    <ul>
+      <li><b>FM-1</b>: <kbd>ARP</kbd> + <b>F3</b> starts UP / stops; + <b>F#3</b> HOLD on / off; the other keys roll.</li>
+      <li>While <kbd>ARP</kbd> is held: <kbd>KNOB 1</kbd> roll rate, <kbd>KNOB 2</kbd> MODE, <kbd>KNOB 3</kbd> HOLD, <kbd>KNOB 4</kbd> RATE. The other modes (DNUP, UP+8, CONV, DIVG, PINKY, THUMB, WALK, CHORD, TURNG) are on <kbd>KNOB 2</kbd> and the arpeggiator's page.</li>
+      <li>The <b>sustain pedal</b> (the SMK-37 Pro's, or CC 64 over MIDI) holds the arpeggio's notes until it comes up.</li>
+      <li>The top line shows <b>ARP</b> while it runs, <b>ARPH</b> with HOLD on, and <b>HOLD</b> for a key latch with MODE OFF.</li>
+    </ul>
+  </section>
+
+  <!-- ===================== PLAYING ===================== -->
+  <section class="card" id="playing">
+    <h2>Playing</h2>
+    <ul>
+      <li><b>LFO &gt; BEND</b>, <b>BEND 2</b> (each sound): UP and DOWN range, VCF (filter bend), TARGT (ALL notes or the LEAD, the newest), which VCOs bend.</li>
+      <li><b>Aftertouch</b> (channel and poly, from MIDI too): <b>LFO &gt; MOD</b> AT&gt; to VIB, CUT, SHP, WAH or TREM, and the matrix's AT sources. MW&gt; does the same for the mod wheel.</li>
+      <li><b>KEY TOUCH</b> (FM-1, <b>GLO &gt; TOUCH &gt; KEYS</b>): OFF (every key at 100), VEL, V+AT, AT (pressure alone). The 20 keys from F3 to C5 measure touch. Run <b>TOUCH CAL</b> once. <b>TOUCH 2</b>: the pressure's curve, offset, attack, release. <b>ATOUT</b>: send it as channel or poly aftertouch.</li>
+      <li><b>SMK-37 Pro</b>: the middle 27 keys are the FM-1's; the five lowest and five highest add more notes. The pads play the 16 white keys F3 to G5, with velocity. <b>GLO &gt; PAD AT</b>: a light press plays, a squeeze is aftertouch. <b>KEY AT</b>: aftertouch made from the keys' hit and hold. <b>PAD VEL</b>, <b>AFTERTOUCH</b>: the curves. The pitch wheel bends, the mod wheel is CC 1.</li>
+      <li><b>LEVER</b> (FM-1): a key held, <kbd>OCT-</kbd> / <kbd>OCT+</kbd> bend. <b>GLO &gt; TOUCH 3 &gt; LEVER</b>: LATCH (default), SPRNG, HOLD, OFF; LTIME. Out as pitch bend.</li>
+      <li><b>RIBBON</b> (FM-1): a key held, turn <kbd>SELECT</kbd>. <b>TOUCH 3 &gt; RIB</b> the range (up to 24 semitones); <b>TOUCH 4</b>: STEPS, SPRNG (LATCH, SPRNG, HOLD), DELAY, RETRN. Out as CC 16.</li>
+      <li><b>Sustain pedal</b>: the SMK-37 Pro's PEDAL jack (plug it in before switching on), or CC 64 over MIDI. <b>GLO &gt; MIDI 3 &gt; SUST</b> = PATCH: the pedal holds no notes and only feeds the matrix.</li>
+    </ul>
+  </section>
+
+  <!-- ===================== ARP ===================== -->
+  <section class="card" id="arp">
+    <h2>The arpeggiator</h2>
+    <p>Tap <kbd>ARP</kbd>. <b>MODE</b>: OFF, UP, DN, UPDN, RND, ORD, REPEAT, DNUP, UP+8, CONV, DIVG, PINKY, THUMB, WALK, CHORD, TURNG (a Turing machine), INCL (up and down, the ends twice). RATE, OCT, GATE.</p>
+    <p>Second page: SWG, PROB, <b>HOLD</b>, ORD. <b>SPICE</b> page: SPICE, DICE, LOOP (with TURNG: how often it changes, another pattern, its length).</p>
+    <div class="note"><b class="h">HOLD with MODE OFF</b><p>The keys latch: the notes go on sounding and the next chord replaces them (HOME shows HOLD). It ends when the sound changes.</p></div>
+  </section>
+
+  <!-- ===================== SEQ ===================== -->
+  <section class="card" id="seq">
+    <h2>The step sequencer</h2>
+    <ul>
+      <li><b>Steps</b>: hold <kbd>SEQ</kbd>, the white keys are the steps; patterns up to 64 steps (PATTERN &gt; LEN), four pages of 16.</li>
+      <li><b>Locks</b>: hold SEQ and a step, <kbd>ALGORITHM</kbd> picks a parameter, <kbd>PRESETS</kbd> its value on that step.</li>
+      <li><b>Ratchets</b> x1 to x8 (<kbd>KNOB 3</kbd>; the step shows its count, such as C4 x8) and <b>nudge</b> (<kbd>KNOB 4</kbd>) on a held step; <kbd>ARP</kbd> held plays note repeats recorded as ratchets.</li>
+      <li><b>Fills</b>: hold <kbd>GLO</kbd> + key 9 (while held) or key 10 (the next bar). A note's FILL setting (NOTES, <kbd>OCT+</kbd> held) makes it play in fills only, or not in fills.</li>
+      <li><b>NOTES</b> (tap SEQ): the piano roll. <kbd>KNOB 1</kbd> walks the notes, <kbd>KNOB 2</kbd> pitch, <kbd>KNOB 3</kbd> length, <kbd>KNOB 4</kbd> force (GHOST, SOFT, NORM, HARD, ACC), <kbd>PRESETS</kbd> zoom. The keys write the step; <kbd>EDIT</kbd> tapped deletes the note; <kbd>OCT+</kbd> held: SLIDE, NUDGE, FILL, MOVE, COPY, DELETE.</li>
+      <li><b>REC</b> records the notes and, with TOUCH 3 &gt; MREC on, the bend, ribbon and pressure (MOTION lanes).</li>
+    </ul>
+  </section>
+
+  <!-- ===================== SAVING ===================== -->
+  <section class="card" id="saving">
+    <h2>Saving</h2>
+    <ul>
+      <li><b>Autosave</b>: what you are playing is kept across power-off.</li>
+      <li><b>User presets</b>: <b>SAVE &gt; USER</b>, 32 slots: <kbd>KNOB 1</kbd> the slot, then <kbd>KNOB 2</kbd> LOAD, <kbd>KNOB 3</kbd> ERASE or <kbd>KNOB 4</kbd> SAVE, each turned right twice. They keep everything new in 1.0. SMK-37 Pro: <b>M01</b> to <b>M16</b> after them hold multi sounds (parts A and B by name, the mode, B's settings).</li>
+      <li><b>Favourites</b>: on <b>SAVE &gt; PRESETS</b>, <kbd>KNOB 4</kbd> right puts the sound at the top of the list (up to 16), left takes it out. <kbd>KNOB 2</kbd> filters the list: ALL, one engine, USER.</li>
+      <li><b>Projects</b>: no project page on the instrument; the autosave keeps the sound, the pattern and the settings. The editor's <b>Backup</b> tab saves everything on the instrument in one file: make one before every update.</li>
+      <li><b>SAVE &gt; TOOLS</b>: CLRSQ (clear the pattern), INIT (a plain sound), NEW (start again), each turned right twice.</li>
+    </ul>
+  </section>
+
+  <!-- ===================== MIDI ===================== -->
+  <section class="card" id="midi">
+    <h2>MIDI</h2>
+    <ul>
+      <li><b>GLO &gt; MIDI</b>: <b>IN CH</b> OMNI or 1 to 16; <b>OUT</b> 1 to 16; <b>BEND</b> AUTO or 1 to 24 semitones (RPN 0 too); <b>LOCAL</b> ON / OFF.</li>
+      <li><b>GLO &gt; MIDI 2</b>: <b>PROG</b> program changes (and CC 0 banks) load sounds; <b>SEND</b> CC: the knobs send their CCs; <b>BRTH</b>: CC 2 breath plays the volume (VOL) and the aftertouch too (V+AT).</li>
+      <li><b>GLO &gt; MIDI 3</b>: CC A, CC B (any CC as a matrix source), SUST.</li>
+      <li><b>MPE</b>: MENU &gt; MIDI &gt; MPE (CH 2-16): each note's own bend, pressure and CC 74.</li>
+      <li><b>CC 11</b> expression (the volume); <b>CC 16 to 19</b> the four MACROS; <b>CC 1</b> mod wheel; <b>CC 64</b> sustain; CC 74 cutoff.</li>
+      <li><b>Clock</b>: <b>GLO &gt; SYSTEM &gt; SYNC</b> INT, USB or TRS (follow a master); IN NOTES or CLOCK; MIDI KEYS or SEQ (what goes out). <b>MENU &gt; MIDI &gt; CLOCK OUT (USB)</b> sends it.</li>
+      <li>USB on both; the FM-1 also takes MIDI in on its TRS jack, the SMK-37 Pro sends MIDI out on its TRS jack.</li>
+    </ul>
+  </section>
+
+  <!-- ===================== UPDATE ===================== -->
+  <section class="card" id="update">
+    <h2>Update and recovery</h2>
+    <ul>
+      <li><b>Install or update</b>: open <a href="./">the site</a> in Chrome or Edge (a computer) or Chrome on Android, with a USB data cable straight in. Press <b>Install on FM-1</b> or <b>Install on SMK-37 Pro</b>. Make a backup first.</li>
+      <li>The page checks the package, the instrument restarts into its <b>update mode</b> and Stallion is written.</li>
+    </ul>
+    <div class="warn"><b class="h">Do not unplug while it writes</b><p>If the write stops part way, the instrument stays in update mode: replug the cable and press Install again, and it finishes.</p></div>
+    <ul>
+      <li><b>Stallion does not start</b>: hold <kbd>OCT-</kbd> (<kbd>OCTAVE-</kbd>) alone while switching on: <b>STALLION USB RESCUE</b>, then install again.</li>
+      <li><b>Back to the official firmware</b>: FM-1, <i>Return to the official firmware</i> on the installer page; SMK-37 Pro, the maker's own updater.</li>
+      <li><b>macOS</b>: the MIDI port shows as Clipper or Hügelton Instruments - Clipper instead of Stallion? Unplug, delete that device in <b>Audio MIDI Setup &gt; MIDI Studio</b>, plug in again.</li>
+      <li><b>MENU &gt; SYS &gt; FACTORY RESET</b> erases your settings and saves (not the firmware): <kbd>OCT+</kbd> to ask, <kbd>OCT+</kbd> again within 5 s.</li>
+    </ul>
+  </section>
+
+  <!-- ===================== SETTINGS ===================== -->
+  <section class="card" id="settings">
+    <h2>Settings worth knowing</h2>
+    <ul>
+      <li><b>MENU &gt; SEQ &gt; PARA ASSIGN</b> (MARE PARA / PARA+): PLAYED (the default) the VCOs by the order the keys went down; LOW or HIGH always by pitch, the same voicing every time. <b>PARA ROUND ROBIN</b> ON (PLAYED only): each new key moves the VCOs on by one.</li>
+      <li><b>MENU &gt; SEQ &gt; PARA NOTE-OFF</b> (MARE PARA / PARA+): <b>KEEP</b> (the default) a key let go keeps its VCOs on its note until the next key goes down, so a chord fades as a chord; <b>HAND BACK</b> gives them at once to the keys still held. The FM-1 always keeps.</li>
+      <li><b>The top line</b>: the tempo (FM-1: after a metronome icon), the octave, <b>ARP</b> / <b>ARPH</b> / <b>HOLD</b>, SMK-37 Pro: the SOUNDS' <b>B</b> or <b>A</b>, <b>K-AT</b> (bright: the keys' aftertouch on), <b>USB</b>, the battery.</li>
+      <li><b>MENU &gt; SYS &gt; KNOB SPEED</b>: values a click on the number dials, X1, X2 or X4 (the SMK-37 Pro starts at X2).</li>
+      <li><b>MENU &gt; SCREEN &gt; KNOB ACCEL</b>: the faster you turn, the bigger the steps; OFF: one value a click.</li>
+      <li><b>MENU &gt; LIGHTS</b> (FM-1): <b>LIGHTS</b> every button's label from 1 (faint) to 8 (bright); KEYS lights the C keys, the white keys or all. On the SMK-37 Pro this section is <b>PADS</b>.</li>
+      <li><b>In MENU</b>: <kbd>SELECT</kbd> the section, <kbd>KNOB 1</kbd> to <kbd>KNOB 4</kbd> its rows, <kbd>PRESETS</kbd> the row cursor, <kbd>OCT+</kbd> OK, <kbd>OCT-</kbd> close.</li>
+      <li><b>MENU &gt; SCREEN</b>: COLOR, <b>ZOOM</b> (the touched value in large type), BROWSE.</li>
+      <li><b>GLO &gt; TUNING</b>: the system (EQUAL, JUST, PYTHA, MEANT, WERCK, KIRNB, RAST, BAYAT, SLEND, PELOG, 19, 24, 31-EDO, USER: a .scl from the editor), ROOT, <b>A4</b> 400 to 480 Hz.</li>
+      <li><b>GLO &gt; SYSTEM</b>: the fourth box turns through CPU, LATE and PEAK.</li>
+    </ul>
+  </section>
+
+</div>
+</main>
+<footer class="foot">
+  <div class="narrow">
+    <p>M-VAVE, FM-1 and SMK-37 are trademarks of their owners. Stallion is not affiliated with or endorsed by them. No warranty: you install it at your own risk.</p>
+    <p class="copy">Copyright (C) 2026 Eberon Limited (John Gorman)</p>
+  </div>
+</footer>
+</body>
+</html>

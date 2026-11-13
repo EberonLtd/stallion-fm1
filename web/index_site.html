@@ -1,0 +1,688 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Copyright (C) 2026 Eberon Limited (John Gorman)
+     Stallion's front page (the site's index.html, web/make_site.py with --smk37): what Stallion is, the two installers,
+     the best of it with the device's own screens (web/screens, tools/make_screens.py), the engines, how to install,
+     the editor, the credits. make_site.py fills the counts ({{ENGINES}} ...) from the firmware, the logo, web/site.css
+     and the photo slots (web/photos/hero-fm1.jpg in the hero: a drawn device frame around HOME until a photo is added;
+     hero-smk37.jpg above the SMK-37 Pro section: nothing until then; editor-sound.png and editor-patchbay.png in the editor section;
+     editor-matrix.png under the MATRIX page's screen) -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Stallion: free synthesizer firmware for the M-VAVE FM-1 and SMK-37 Pro. Install it from your browser.">
+<link rel="manifest" href="webapp/stallion.webmanifest"><meta name="theme-color" content="#0B1E36"><link rel="icon" href="webapp/icon-192.png">
+<title>Stallion synthesizer firmware</title>
+<style>
+  @font-face { font-family: "Stallion Pixel"; src: url("webapp/stallion-pixel.ttf") format("truetype"); font-display: swap; }
+/*SITE_CSS*/
+  /* the front page's own parts */
+  .hero { padding-top: 40px; padding-bottom: 64px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 48px; align-items: center; }
+  @media (max-width: 900px) { .hero { grid-template-columns: 1fr; gap: 32px; padding-top: 16px; } .hero-art .device { transform: none; } }
+  .hero h1 { font-size: 64px; }
+  .hero h1 em { font-style: normal; color: var(--oak); }
+  @media (max-width: 700px) { .hero h1 { font-size: 48px; } }
+  @media (max-width: 380px) { .hero h1 { font-size: 32px; } }
+  .choose { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 32px 0 20px; }
+  @media (max-width: 560px) { .choose { grid-template-columns: 1fr; } }
+  .choose .btn { flex-direction: column; align-items: flex-start; text-align: left; padding: 18px 22px; min-height: 120px; }
+  .choose .btn span.px { font-size: 32px; line-height: 1.1; }
+  .choose .btn span.big { font-size: 48px; line-height: 1; margin: 4px 0 2px; }
+  .choose .btn small { margin-top: 8px; }
+  .choose .btn small.on { margin: 0; font-size: 20px; font-weight: 700; }
+  @media (max-width: 1000px) { .choose .btn span.big { font-size: 32px; } }
+  .browser { font-size: 19px; color: var(--soft); }
+  .browser b { color: var(--sea); }
+  .hero-art { position: relative; }
+  .hero-art .device { transform: rotate(-2deg); max-width: 520px; margin: 0 auto; }
+  .hero-art .cap { text-align: center; color: var(--soft); font-size: 18px; margin: 18px 0 0; }
+  section.band { padding: 72px 0; }
+  section.band.alt { background: var(--deep); }
+  .intro { max-width: 46em; }
+  .feat { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin: 56px 0 0; }
+  .feat:nth-of-type(even) .feat-art { order: 2; }
+  @media (max-width: 860px) { .feat { grid-template-columns: 1fr; gap: 24px; } .feat:nth-of-type(even) .feat-art { order: 0; } }
+  .feat-art { display: grid; gap: 20px; }
+  .feat-art.two { grid-template-columns: 1fr 1fr; }
+  @media (max-width: 520px) { .feat-art.two { grid-template-columns: 1fr; } }
+  .feat h3 { color: var(--oak); }
+  .feat ul { margin: 0 0 16px; padding-left: 24px; } .feat li { margin: 0 0 10px; }
+  figure { margin: 0; }
+  figcaption { font-size: 18px; color: var(--soft); margin-top: 12px; line-height: 1.45; }
+  figcaption b { color: var(--sea); font-weight: 700; }
+  .eng3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 56px; }
+  @media (max-width: 900px) { .eng3 { grid-template-columns: 1fr; } }
+  .eng3 article { background: var(--panel); border-radius: 22px; padding: 22px; display: grid; gap: 16px; align-content: start; }
+  .eng3 h3 { color: var(--oak); margin: 0; } .eng3 p { margin: 0; }
+  .feat h3 { font-size: 48px; }
+  .more { padding-left: 26px; } .more li { margin: 0 0 12px; }
+  .nav { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .nav a.navl { font: 700 20px/1 var(--body); color: var(--sail); text-decoration: none; padding: 12px 14px; border-radius: 10px; }
+  .nav a.navl:hover { background: var(--panel); color: var(--oak); }
+  .eng4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 28px; margin-top: 40px; }
+  @media (max-width: 760px) { .eng4 { grid-template-columns: 1fr; } }
+  .eng4 article { background: var(--panel); border-radius: 22px; padding: 22px; display: grid; gap: 18px; }
+  .eng4 h3 { color: var(--oak); margin: 0; }
+  .eng4 p { margin: 0; }
+  .engines { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin: 32px 0 0; }
+  .engines div { background: var(--panel); border-radius: 14px; padding: 14px 18px; border-left: 8px solid var(--edge); }
+  .engines div.new { border-left-color: var(--oak); }
+  .engines dt { font: 400 32px/1.1 var(--pixel); text-transform: uppercase; }
+  .engines dd { margin: 4px 0 0; font-size: 18px; color: var(--soft); line-height: 1.45; }
+  .legend { font-size: 18px; color: var(--soft); margin-top: 16px; }
+  .legend i { display: inline-block; width: 28px; height: 16px; vertical-align: middle; border-left: 8px solid var(--oak); background: var(--panel); margin-right: 8px; }
+  .slot { display: grid; place-items: center; text-align: center; min-height: 260px; border: 4px dashed var(--edge);
+          border-radius: 22px; padding: 24px; color: var(--soft); background: var(--panel); }
+  .credits ul { padding-left: 24px; } .credits li { margin: 0 0 8px; }
+</style>
+</head>
+<body>
+<header class="wrap bar"><a class="logo" href="./" aria-label="Stallion"><!--LOGO--></a>
+  <nav class="nav"><a class="navl" href="whats-new.html" data-t="navNew"></a><a class="navl" href="#install" data-t="navInstall"></a><a class="navl" href="webapp/editor/" data-t="navEditor"></a><a class="navl" href="cheat-sheet.html" data-t="navCheat"></a><a class="navl" href="https://github.com/EberonLtd/stallion-fm1/blob/main/GUIDE.md" data-t="navGuide"></a></nav>
+  <div class="langs" role="group" aria-label="Language / Langue / 言語"><button class="lang" data-l="en">English</button><button class="lang" data-l="fr">Français</button><button class="lang" data-l="ja">日本語</button></div></header>
+
+<main>
+<div class="wrap hero">
+  <div>
+    <span class="kicker" data-t="kicker"></span>
+    <h1 data-t="h1"></h1>
+    <section data-l="en"><p class="lead">{{ENGINES}} synthesis engines and {{SOUNDS}} sounds, {{FILTERS}} filter models, a modulation matrix on every sound and {{TUNINGS}} tunings. Free and open source. Install it from your browser, and edit every sound on your computer.</p></section>
+    <section data-l="fr"><p class="lead">{{ENGINES}} moteurs de synthèse et {{SOUNDS}} sons, {{FILTERS}} modèles de filtre, une matrice de modulation sur chaque son et {{TUNINGS}} accordages. Libre et gratuit. Installe-le depuis ton navigateur, et édite chaque son sur ton ordinateur.</p></section>
+    <section data-l="ja"><p class="lead">{{ENGINES}} の音源エンジンと {{SOUNDS}} の音色、{{FILTERS}} 種類のフィルター・モデル、すべての音色にモジュレーション・マトリクス、{{TUNINGS}} のチューニング。無料のオープンソース。ブラウザからインストールでき、パソコンですべての音色を編集できます。</p></section>
+    <div class="choose">
+      <a class="btn" href="webapp/installer/"><small class="on" data-t="instOn"></small><span class="px big">FM-1</span><small data-t="instFm1s"></small></a>
+      <a class="btn" href="webapp/installer-smk37/"><small class="on" data-t="instOn"></small><span class="px big">SMK-37 Pro</span><small data-t="instSmks"></small></a>
+    </div>
+    <p class="browser"><b data-t="browserT"></b> <span data-t="browser"></span></p>
+  </div>
+  <div class="hero-art">
+    <!--PHOTO:hero-fm1.jpg alt="The M-VAVE FM-1 running Stallion"--><figure class="device"><img src="webapp/screens/shot-home@3x.png" srcset="webapp/screens/shot-home@2x.png 2x, webapp/screens/shot-home@3x.png 3x" width="480" height="480" alt="The FM-1's screen under Stallion: the sound GOLDEN PAD on the PALOMINO engine, a chord held, the scope moving"></figure><!--/PHOTO-->
+    <p class="cap" data-t="heroCap"></p>
+  </div>
+</div>
+<div class="sail" role="presentation"></div>
+
+<!--FEATURES-->
+<section class="band" id="engines-new">
+  <div class="wrap">
+    <span class="kicker" data-t="newK"></span>
+    <h2 data-t="newH"></h2>
+    <p class="lead intro" data-t="newP"></p>
+    <div class="feat">
+      <div class="feat-art"><figure class="device"><img src="webapp/screens/shot-palomino-edit@2x.png" srcset="webapp/screens/shot-palomino-edit@2x.png 1x, webapp/screens/shot-palomino-edit@3x.png 2x" width="480" height="480" loading="lazy" alt="PALOMINO's EDIT 1 page on XMOD BELL: triangle and sine waves, VCO 2 up 19 semitones, cross mod 55"></figure></div>
+      <div>
+        <h3>PALOMINO</h3>
+        <p data-t="palP"></p>
+        <ul><li data-t="pal1"></li><li data-t="pal2"></li><li data-t="pal3"></li><li data-t="pal4"></li><li data-t="pal5"></li><li data-t="pal6"></li></ul>
+      </div>
+    </div>
+    <div class="eng3">
+      <article><figure class="device"><img src="webapp/screens/shot-home-stampede@2x.png" srcset="webapp/screens/shot-home-stampede@2x.png 1x, webapp/screens/shot-home-stampede@3x.png 2x" width="480" height="480" loading="lazy" alt="HOME on STAMPEDE, the sound DUSK BRASS, a chord held"></figure>
+        <h3>STAMPEDE</h3><p data-t="staP"></p></article>
+      <article><figure class="device"><img src="webapp/screens/shot-home-rodeo@2x.png" srcset="webapp/screens/shot-home-rodeo@2x.png 1x, webapp/screens/shot-home-rodeo@3x.png 2x" width="480" height="480" loading="lazy" alt="HOME on RODEO, the sound NEON PAD, a chord held"></figure>
+        <h3>RODEO</h3><p data-t="rodP"></p></article>
+      <article><figure class="device"><img src="webapp/screens/shot-home-mare@2x.png" srcset="webapp/screens/shot-home-mare@2x.png 1x, webapp/screens/shot-home-mare@3x.png 2x" width="480" height="480" loading="lazy" alt="HOME on MARE, the sound SPACE PAD, a chord held"></figure>
+        <h3>MARE</h3><p data-t="marP"></p></article>
+    </div>
+  </div>
+</section>
+<section class="band alt" id="filters">
+  <div class="wrap">
+    <div class="feat">
+      <div class="feat-art two"><figure class="device"><img src="webapp/screens/shot-filter@2x.png" srcset="webapp/screens/shot-filter@2x.png 1x, webapp/screens/shot-filter@3x.png 2x" width="480" height="480" loading="lazy" alt="FX > FILTER: the OTA model, SLOPE 48 dB, LINK on"></figure><figure class="device"><img src="webapp/screens/shot-filter2@2x.png" srcset="webapp/screens/shot-filter2@2x.png 1x, webapp/screens/shot-filter2@3x.png 2x" width="480" height="480" loading="lazy" alt="FX > FILTER 2: band-pass, resonance 71 %, ROUTE SPLIT"></figure></div>
+      <div>
+        <span class="kicker" data-t="fK"></span>
+        <h2 data-t="fH"></h2>
+        <p data-t="fP"></p>
+        <ul><li data-t="f1"></li><li data-t="f2"></li><li data-t="f3"></li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="band" id="touch">
+  <div class="wrap">
+    <div class="feat">
+      <div class="feat-art two"><figure class="device"><img src="webapp/screens/shot-touch@2x.png" srcset="webapp/screens/shot-touch@2x.png 1x, webapp/screens/shot-touch@3x.png 2x" width="480" height="480" loading="lazy" alt="GLO > TOUCH on the FM-1: KEYS V+AT, SENS, ATOUT POLY"></figure><figure class="device"><img src="webapp/screens/shot-touchcal@2x.png" srcset="webapp/screens/shot-touchcal@2x.png 1x, webapp/screens/shot-touchcal@3x.png 2x" width="480" height="480" loading="lazy" alt="TOUCH CAL: play each lit key gently, with a live meter"></figure></div>
+      <div>
+        <span class="kicker" data-t="tK"></span>
+        <h2 data-t="tH"></h2>
+        <p data-t="tP"></p>
+        <ul><li data-t="t1"></li><li data-t="t2"></li><li data-t="t3"></li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="band alt" id="matrix">
+  <div class="wrap">
+    <div class="feat">
+      <div class="feat-art"><figure class="device"><img src="webapp/screens/shot-matrix@2x.png" srcset="webapp/screens/shot-matrix@2x.png 1x, webapp/screens/shot-matrix@3x.png 2x" width="480" height="480" loading="lazy" alt="The MATRIX page: six cables on MARE BASS, the selected one, ENV2 to CUT +62, in large green type"></figure><!--PHOTO:editor-matrix.png alt="The web editor's MATRIX tab: the same six cables on MARE BASS as a table, source, destination and amount"--><!--/PHOTO--></div>
+      <div>
+        <span class="kicker" data-t="mxK"></span>
+        <h2 data-t="mxH"></h2>
+        <p data-t="mxP"></p>
+        <ul><li data-t="mx1"></li><li data-t="mx2"></li><li data-t="mx3"></li><li data-t="mx4"></li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="band" id="shimmer">
+  <div class="wrap">
+    <div class="feat">
+      <div class="feat-art two"><figure class="device"><img src="webapp/screens/shot-reverb@2x.png" srcset="webapp/screens/shot-reverb@2x.png 1x, webapp/screens/shot-reverb@3x.png 2x" width="480" height="480" loading="lazy" alt="FX > REVERB: TYPE PLATE"></figure><figure class="device"><img src="webapp/screens/shot-reverb2@2x.png" srcset="webapp/screens/shot-reverb2@2x.png 1x, webapp/screens/shot-reverb2@3x.png 2x" width="480" height="480" loading="lazy" alt="FX > REVERB 2: SHIM 71 %"></figure></div>
+      <div>
+        <span class="kicker" data-t="rK"></span>
+        <h2 data-t="rH"></h2>
+        <p data-t="rP"></p>
+        
+      </div>
+    </div>
+  </div>
+</section>
+<section class="band alt" id="inserts">
+  <div class="wrap">
+    <div class="feat">
+      <div class="feat-art"><figure class="device"><img src="webapp/screens/shot-insert@2x.png" srcset="webapp/screens/shot-insert@2x.png 1x, webapp/screens/shot-insert@3x.png 2x" width="480" height="480" loading="lazy" alt="FX > INSERT: PITCH, a pitch shifter, with feedback"></figure></div>
+      <div>
+        <span class="kicker" data-t="iK"></span>
+        <h2 data-t="iH"></h2>
+        <p data-t="iP"></p>
+        <ul><li data-t="in1"></li><li data-t="in2"></li><li data-t="in3"></li><li data-t="in4"></li><li data-t="in5"></li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="band" id="lever">
+  <div class="wrap">
+    <div class="feat">
+      <div class="feat-art"><figure class="device"><img src="webapp/screens/shot-touch3@2x.png" srcset="webapp/screens/shot-touch3@2x.png 1x, webapp/screens/shot-touch3@3x.png 2x" width="480" height="480" loading="lazy" alt="GLO > TOUCH 3 on the FM-1: LEVER LATCH, LTIME 120 ms, RIB +12 st, MREC ON"></figure></div>
+      <div>
+        <span class="kicker" data-t="lK"></span>
+        <h2 data-t="lH"></h2>
+        <p data-t="lP"></p>
+        <ul><li data-t="l1"></li><li data-t="l2"></li><li data-t="l3"></li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="band alt" id="smk37">
+  <div class="wrap">
+    <!--PHOTO:hero-smk37.jpg alt="The M-VAVE SMK-37 Pro running Stallion"--><!--/PHOTO-->
+    <div class="feat">
+      <div class="feat-art two"><figure class="device"><img src="webapp/screens/shot-smk-keyat@2x.png" srcset="webapp/screens/shot-smk-keyat@2x.png 1x, webapp/screens/shot-smk-keyat@3x.png 2x" width="480" height="480" loading="lazy" alt="The KEY AT page and its graph: pressure over time for a soft, a medium and a full hit"></figure><figure class="device"><img src="webapp/screens/shot-smk-padat@2x.png" srcset="webapp/screens/shot-smk-padat@2x.png 1x, webapp/screens/shot-smk-padat@3x.png 2x" width="480" height="480" loading="lazy" alt="The PAD AT page and its graph: what a squeeze gives"></figure></div>
+      <div>
+        <span class="kicker" data-t="atK"></span>
+        <h2 data-t="atH"></h2>
+        <p data-t="atP"></p>
+        <ul><li data-t="at1"></li><li data-t="at2"></li><li data-t="at3"></li></ul>
+      </div>
+    </div>
+  </div>
+</section>
+<section class="band" id="more">
+  <div class="narrow">
+    <span class="kicker" data-t="moK"></span>
+    <h2 data-t="moH"></h2>
+    <ul class="more"><li data-t="mo1"></li><li data-t="mo2"></li><li data-t="mo3"></li><li data-t="mo4"></li><li data-t="mo5"></li><li data-t="mo6"></li><li data-t="mo7"></li></ul>
+    <p><a class="btn" href="whats-new.html" data-t="moAll"></a></p>
+  </div>
+</section>
+<!--/FEATURES-->
+
+<section class="band alt" id="engines">
+  <div class="wrap">
+    <span class="kicker" data-t="engK"></span>
+    <h2 data-t="engH"></h2>
+    <p class="lead intro" data-t="engP"></p>
+    <dl class="engines">
+      <div class="new"><dt>PALOMINO</dt><dd data-t="ePAL"></dd></div>
+      <div class="new"><dt>STAMPEDE</dt><dd data-t="eSTA"></dd></div>
+      <div class="new"><dt>RODEO</dt><dd data-t="eROD"></dd></div>
+      <div class="new"><dt>MARE</dt><dd data-t="eMAR"></dd></div>
+      <div><dt>HYBRID</dt><dd data-t="eHYB"></dd></div>
+      <div><dt>PONY</dt><dd data-t="ePON"></dd></div>
+      <div><dt>FMX</dt><dd data-t="eFMX"></dd></div>
+      <div><dt>FM6</dt><dd data-t="eFM6"></dd></div>
+      <div><dt>DIGITAL</dt><dd data-t="eDIG"></dd></div>
+      <div><dt>WAVE</dt><dd data-t="eWAV"></dd></div>
+      <div><dt>WSEQ</dt><dd data-t="eWSQ"></dd></div>
+      <div><dt>VECTOR</dt><dd data-t="eVEC"></dd></div>
+      <div><dt>ANALOG</dt><dd data-t="eANA"></dd></div>
+      <div><dt>ACID</dt><dd data-t="eACI"></dd></div>
+      <div><dt>STRINGS</dt><dd data-t="eSTR"></dd></div>
+      <div><dt>MACRO</dt><dd data-t="eMAC"></dd></div>
+      <div><dt>PHASE</dt><dd data-t="ePHA"></dd></div>
+      <div><dt>VPS</dt><dd data-t="eVPS"></dd></div>
+      <div><dt>TERRAIN</dt><dd data-t="eTER"></dd></div>
+      <div><dt>PHYS</dt><dd data-t="ePHY"></dd></div>
+      <div><dt>TRIO</dt><dd data-t="eTRI"></dd></div>
+      <div><dt>WHEEL</dt><dd data-t="eWHE"></dd></div>
+      <div><dt>VOICE</dt><dd data-t="eVOI"></dd></div>
+      <div><dt>NOISE</dt><dd data-t="eNOI"></dd></div>
+      <div><dt>GRAIN</dt><dd data-t="eGRA"></dd></div>
+      <div><dt>SAMPLE</dt><dd data-t="eSAM"></dd></div>
+    </dl>
+    <p class="legend"><i></i><span data-t="legend"></span></p>
+  </div>
+</section>
+
+<section class="band" id="install">
+  <div class="narrow">
+    <span class="kicker" data-t="insK"></span>
+    <h2 data-t="insH"></h2>
+    <ol class="steps">
+      <li><b data-t="i1T"></b><span data-t="i1"></span></li>
+      <li><b data-t="i2T"></b><span data-t="i2"></span></li>
+      <li><b data-t="i3T"></b><span data-t="i3"></span></li>
+      <li><b data-t="i4T"></b><span data-t="i4"></span></li>
+    </ol>
+    <div class="note" style="margin-top:28px"><b data-t="browserT"></b><p data-t="browserLong"></p></div>
+    <div class="choose">
+      <a class="btn" href="webapp/installer/"><span class="px" data-t="instFm1"></span></a>
+      <a class="btn" href="webapp/installer-smk37/"><span class="px" data-t="instSmk"></span></a>
+    </div>
+    <div class="warn"><b data-t="riskT"></b><p data-t="risk"></p></div>
+  </div>
+</section>
+
+<section class="band alt" id="editor">
+  <div class="wrap">
+    <div class="feat">
+      <div class="feat-art"><!--PHOTO:editor-sound.png alt="The Stallion web editor's SOUND page: PALOMINO's factory sound GOLDEN PAD loaded"--><div class="slot" data-t="edSlot"></div><!--/PHOTO--><!--PHOTO:editor-patchbay.png alt="The Stallion web editor's PATCH BAY tab: six cables on MARE BASS"--><div class="slot" data-t="edSlot2"></div><!--/PHOTO--></div>
+      <div>
+        <span class="kicker" data-t="edK"></span>
+        <h2 data-t="edH"></h2>
+        <p data-t="edP"></p>
+        <ul><li data-t="ed1"></li><li data-t="ed2"></li><li data-t="ed3"></li><li data-t="ed4"></li></ul>
+        <p><a class="btn" href="webapp/editor/" data-t="edOpen"></a></p>
+        <p><a href="webapp/editor/stallion-editor.html" download="stallion-editor.html" data-t="edOffline"></a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band credits" id="credits">
+  <div class="narrow">
+    <span class="kicker" data-t="crK"></span>
+    <h2 data-t="crH"></h2>
+    <p lang="en">Stallion is free, open-source firmware under the GPL-3.0-only licence, by Eberon Limited (John Gorman). It stands on the work of others, and keeps their names on it:</p>
+    <ul lang="en">
+      <li><a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> and Clipper Pro by 3dSam (isod89): Stallion grew out of Clipper, the synthesizer firmware for the FM-1, and Clipper Pro, its SMK-37 port (with M. Geisler).</li>
+      <li><a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a> by isod89: the groovebox firmware Clipper grew out of, and the model for this site and its guide.</li>
+      <li><a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita (@kurogedelic), Hügelton Instruments: the open firmware for the FM-1 that all of them are based on.</li>
+      <li>Many more, for engines, effects, fonts and tools: every one is named in <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/CREDITS.md" target="_blank" rel="noopener">CREDITS.md</a>, with the licences in <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/LICENSING.md" target="_blank" rel="noopener">LICENSING.md</a>.</li>
+    </ul>
+    <p><a href="https://github.com/EberonLtd/stallion-fm1" target="_blank" rel="noopener" data-t="source"></a> · <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/GUIDE.md" target="_blank" rel="noopener" data-t="guide"></a></p>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="narrow">
+    <div style="max-width:300px;margin:0 0 20px"><!--LOGO2--></div>
+    <p lang="en">M-VAVE, FM-1 and SMK-37 are trademarks of their owners. Stallion is not affiliated with or endorsed by them. No warranty: you install it at your own risk.</p>
+    <p class="copy">Copyright (C) 2026 Eberon Limited (John Gorman)</p>
+  </div>
+</footer>
+<script>
+const TEXT = {
+  en: {
+    kicker: "Free firmware for the M-VAVE FM-1 and SMK-37 Pro",
+    h1: "Turn your FM-1 or SMK-37 Pro into a deep synthesizer",
+    navNew: "What's new", navInstall: "Install", navEditor: "Editor", navGuide: "Guide", navCheat: "Cheat sheet",
+    instOn: "Install on", instFm1: "Install on FM-1", instSmk: "Install on SMK-37 Pro",
+    instFm1s: "The pocket synth with its own speaker", instSmks: "The 37-key keyboard with 16 pads",
+    browserT: "Your browser:",
+    browser: "Chrome or Edge on a computer, or Chrome on Android. Not Safari, iPhone or iPad.",
+    heroCap: "The FM-1's own screen, rendered from Stallion's code: PALOMINO playing GOLDEN PAD.",
+    newK: "New in Stallion 1.0", newH: "Four new engines, and PONY rebuilt from the ground up",
+    newP: "PALOMINO, STAMPEDE, RODEO and MARE: four new voices with 110 new sounds between them. PONY, rebuilt from the ground up, completes the herd. Play them on the FM-1 or the SMK-37 Pro.",
+    palP: "A big early-1980s polysynth: two oscillators with cross modulation and hard sync, into a warm resonant filter at 12 or 24 dB. Stallion gives it everything the later, smaller edition of its instrument added:",
+    pal1: "Six waves on both oscillators: sine and noise join oscillator 1, triangle and square join oscillator 2.",
+    pal2: "Oscillator 2's LOW range drops it eight octaves, into a slow modulator for wobbles and vibrato. Its fine tune sets how far it sits above oscillator 1.",
+    pal3: "P>VCO sends the LFO and envelope pitch modulation to both oscillators or to one, for sync sweeps and beating.",
+    pal4: "Envelopes that follow the key (ERATE): high notes are shorter, as on an acoustic instrument.",
+    pal5: "A second filter, steeper slopes and five new insert effects, on every sound.",
+    pal6: "32 sounds: pads, strings, brass, leads, basses and keys.",
+    staP: "A late-1970s poly with two complete channels on every note, each with a high-pass then a low-pass filter swept by its own envelope. Brass and strings that swell and breathe; PRESS BEND bends up as you press harder. 32 sounds.",
+    rodP: "The punchy 8-voice polys of 1979 to 1984, ported from zvenson's OberVave: two oscillators, hard sync, cross modulation and a filter in six modes. Brassy, bold and wide. 32 sounds.",
+    marP: "A semi-modular voice: two oscillators into two ladder filters, set apart in stereo, side by side or in series, with filter FM and ring modulation. Patch it on the MATRIX page. 32 sounds.",
+    fK: "Filters", fH: "A second filter on every sound",
+    fP: "FILTER 2 sits beside the first, with any of the {{FILTERS}} filter models.",
+    f1: "ROUTE: in series (a low-pass and a high-pass make a band-pass), in parallel (two peaks) or split (filter 1 left, filter 2 right: every voice in stereo).",
+    f2: "LINK: filter 2 follows filter 1's cutoff, so one knob sweeps both.",
+    f3: "SLOPE: the 4-pole filters at 12, 24 or 48 dB. And a new OTA model: the smooth resonant low-pass of the classic polys.",
+    tK: "FM-1 key touch", tH: "Velocity and aftertouch from the FM-1's keys",
+    tP: "GLO > TOUCH reads how you play the FM-1's own keys, with no change to the hardware.",
+    t1: "VEL plays velocity, V+AT velocity and pressure, AT pressure alone.",
+    t2: "TOUCH CAL calibrates your keys with a live meter, and names any key whose soft and hard presses read alike.",
+    t3: "The pressure can go out over MIDI as channel or poly aftertouch.",
+    mxK: "Matrix patching", mxH: "Patch it like a modular",
+    mxP: "Every sound has a modulation matrix of 24 cables, from any source to any destination. Stallion 1.0 adds new sources and destinations, and a MATRIX page you can read at a glance.",
+    mx1: "Triggers and gates: a key's GATE and the end of an envelope can restart an envelope or an LFO.",
+    mx2: "CC A and CC B: any MIDI controller, or the pedal, as a source.",
+    mx3: "New destinations: the arpeggiator's rate, the delay, reverb and chorus sends, an LFO's rate.",
+    mx4: "The selected cable in large type, coloured by its kind of signal, and CLEAR to take out all 24 cables at once.",
+    rK: "Reverb", rH: "Shimmer on any reverb",
+    rP: "REVERB 2 > SHIM adds an octave-up shimmer to ROOM, PLATE or HALL, from a touch to full. The reverbs are cleaner too: no chop in the left channel, no pulse, no flutter.",
+    iK: "Effects", iH: "Five new insert effects",
+    iP: "Every sound has its own INSERT effect. Stallion 1.0 adds five:",
+    in1: "PITCH: a pitch shifter, with feedback for rising or falling cascades.",
+    in2: "PIT2: two pitch-shifted voices, and the balance between them.",
+    in3: "PHAS6: a six-stage phaser.",
+    in4: "DELAY: a short delay of the sound's own, for slapback, doubling and combs.",
+    in5: "LOCMP: a lo-fi compressor.",
+    lK: "FM-1 lever and ribbon", lH: "Bend like a lever, slide like a ribbon",
+    lP: "Hold a key, then press OCT− or OCT+ to bend like a lever, or turn SELECT to bend like a ribbon: sprung, held or latched.",
+    l1: "Each sound's BEND page sets the range, the filter bend and which oscillators bend.",
+    l2: "MOTION lanes: the sequencer records the bend, the ribbon and the pressure with the notes.",
+    l3: "Each recorded note keeps its own pressure curve.",
+    atK: "SMK-37 Pro", atH: "Aftertouch on pads and keys",
+    atP: "Press a pad lightly to play the note; squeeze it harder for aftertouch. The keys have no pressure sensor, so Stallion makes pressure from how hard you hit, how long you hold and a slow swell.",
+    at1: "PAD AT: the dead zone, range and curve, set on a graph.",
+    at2: "KEY AT: the lift of a hit, where it settles and how holding swells it, drawn over time.",
+    at3: "A thin bar shows how hard you are pressing, and the volume for 2 seconds after K1 turns.",
+    moK: "And more", moH: "More in Stallion 1.0",
+    mo1: "BROWSE: the ALGORITHM knob jumps from engine to engine, and PRESETS steps through that engine's sounds.",
+    mo2: "LIGHTS 1 to 8: the button labels glow much brighter, and the keys can light up too.",
+    mo3: "CHAO: a chaotic LFO wave that never repeats.",
+    mo4: "POLY2: a new note cuts the notes already let go, for clean sequences and arpeggios.",
+    mo5: "Free delay times from 35 to 780 ms, beside the tempo values.",
+    mo6: "An analog attack on PALOMINO, STAMPEDE, RODEO and MARE: quick to charge, then easing in.",
+    mo7: "Every factory sound re-levelled, and no more clicks at the start and end of notes.",
+    moAll: "Everything Stallion 1.0 adds: 93 features and fixes",
+    engK: "Every engine", engH: "{{ENGINES}} engines, {{SOUNDS}} sounds",
+    engP: "Every sound is level-matched, so no preset jumps out louder or quieter than the next.",
+    ePAL: "Early-1980s poly: two oscillators, cross mod, hard sync, a warm filter at 12 or 24 dB.",
+    eSTA: "Late-1970s poly: two channels a note, high-pass then low-pass, swept by their own envelope.",
+    eROD: "1979 to 1984 poly: two oscillators, sync, cross mod, a filter in six modes.",
+    eMAR: "Semi-modular: two oscillators, two ladder filters apart in stereo, filter FM and ring.",
+    eHYB: "Three oscillators, two filters, a 16-slot matrix and four macros.",
+    ePON: "A classic 1980s DCO poly with its stereo chorus.",
+    eFMX: "Six operators, any routing, ten waves, 40 templates.",
+    eFM6: "Six-operator FM with the 32 classic algorithms; loads .syx banks.",
+    eDIG: "Four-operator FM: electric pianos, bells, basses.",
+    eWAV: "Wavetables: 16 built in, and your own.",
+    eWSQ: "Wave sequencing: waves, pitches and levels in time with the tempo.",
+    eVEC: "Vector synthesis: four waves mixed by a moving point.",
+    eANA: "Virtual analog: two oscillators and {{FILTERS}} filter models.",
+    eACI: "The acid bass line: ladder filter, accent, slides.",
+    eSTR: "A 1970s string machine with its ensemble chorus.",
+    eMAC: "Four macro oscillators: chords, swarm, additive, speech.",
+    ePHA: "Phase distortion, the 1980s digital way.",
+    eVPS: "Vector phaseshaping: from bent waves to formant sweeps.",
+    eTER: "Wave terrain: an orbit over eight surfaces.",
+    ePHY: "Physical models: strings, bells, drum heads.",
+    eTRI: "The 8-bit home computer sound chip.",
+    eWHE: "A tonewheel organ with nine drawbars.",
+    eVOI: "Formant synthesis: sung vowels.",
+    eNOI: "From analog hiss to metallic tones.",
+    eGRA: "Granular clouds from four sources of its own.",
+    eSAM: "The same four sources as playable instruments.",
+    legend: "New in Stallion 1.0",
+    insK: "Install", insH: "Installed in four steps",
+    i1T: "Open the installer for your instrument", i1: "Install on FM-1, or Install on SMK-37 Pro. Nothing to download: the firmware comes with the page.",
+    i2T: "Connect it by USB", i2: "A USB cable that carries data, straight into the computer, no hub. Close other apps that use MIDI.",
+    i3T: "Press Install", i3: "Allow MIDI when the browser asks. The page checks the firmware, then writes it. A bar shows how far it has got.",
+    i4T: "Play", i4: "The instrument restarts on the Stallion logo. Updating later? Save a backup with the editor first.",
+    browserLong: "Use Chrome or Edge on a computer (Windows, macOS, Linux or ChromeOS), or Chrome on Android. Safari, and every browser on iPhone and iPad, cannot install or edit: they have no Web MIDI.",
+    riskT: "Unofficial firmware",
+    risk: "Stallion is not made or supported by M-VAVE. It comes with no warranty: you install it at your own risk. You can go back to the official firmware at any time.",
+    edK: "The web editor", edH: "Every sound on your computer",
+    edP: "The editor runs in the same browsers as the installer. It talks to your instrument over USB and changes the sound as you move a control.",
+    ed1: "Every parameter of every engine, with large controls, in sections that fold away.",
+    ed2: "Drag the envelope's points and the LFO's rate, phase and fade with a mouse, a finger or a pen, and see where the note you play is.",
+    ed3: "The patch bay, on every engine: drag cables between 64 jacks to patch the matrix, or switch to the MATRIX tab to see the same cables as a table. Up to 24 cables per sound.",
+    ed4: "Your sound library and full backups of your instrument.",
+    edOpen: "Open the editor", edOffline: "Download the editor to use it without internet",
+    edSlot: "A picture of the editor will go here.",
+    edSlot2: "A picture of the patch bay will go here.",
+    crK: "Credits and licence", crH: "Built on open work",
+    source: "The source code", guide: "The complete guide",
+  },
+  fr: {
+    kicker: "Firmware libre pour la M-VAVE FM-1 et le SMK-37 Pro",
+    h1: "Fais de ta FM-1 ou de ton SMK-37 Pro un vrai synthétiseur",
+    navNew: "Nouveautés", navInstall: "Installer", navEditor: "Éditeur", navGuide: "Guide", navCheat: "Aide-mémoire (en anglais)",
+    instOn: "Installer sur", instFm1: "Installer sur FM-1", instSmk: "Installer sur SMK-37 Pro",
+    instFm1s: "Le synthé de poche avec son haut-parleur", instSmks: "Le clavier 37 touches avec 16 pads",
+    browserT: "Ton navigateur :",
+    browser: "Chrome ou Edge sur un ordinateur, ou Chrome sur Android. Pas Safari, ni iPhone, ni iPad.",
+    heroCap: "L'écran de la FM-1, rendu à partir du code de Stallion : PALOMINO joue GOLDEN PAD.",
+    newK: "Nouveau dans Stallion 1.0", newH: "Quatre nouveaux moteurs, et PONY reconstruit de fond en comble",
+    newP: "PALOMINO, STAMPEDE, RODEO et MARE : quatre nouvelles voix et 110 nouveaux sons. PONY, reconstruit de fond en comble, complète le troupeau. À jouer sur la FM-1 ou le SMK-37 Pro.",
+    palP: "Un grand polysynthé du début des années 1980 : deux oscillateurs avec modulation croisée et synchro, dans un filtre résonant chaud à 12 ou 24 dB. Stallion lui donne tout ce que l'édition plus récente et plus compacte de son instrument a ajouté :",
+    pal1: "Six formes d'onde sur les deux oscillateurs : sinus et bruit sur l'oscillateur 1, triangle et carré sur l'oscillateur 2.",
+    pal2: "La plage LOW de l'oscillateur 2 le descend de huit octaves : un modulateur lent pour les wobbles et le vibrato. Son accord fin règle son écart avec l'oscillateur 1.",
+    pal3: "P>VCO envoie la modulation de hauteur du LFO et de l'enveloppe aux deux oscillateurs ou à un seul, pour des balayages de synchro et des battements.",
+    pal4: "Des enveloppes qui suivent le clavier (ERATE) : les notes aiguës sont plus courtes, comme sur un instrument acoustique.",
+    pal5: "Un second filtre, des pentes plus raides et cinq nouveaux effets d'insert, sur chaque son.",
+    pal6: "32 sons : nappes, cordes, cuivres, leads, basses et claviers.",
+    staP: "Un poly de la fin des années 1970 avec deux canaux complets par note, chacun avec un passe-haut puis un passe-bas balayés par leur propre enveloppe. Des cuivres et des cordes qui enflent et respirent ; PRESS BEND monte quand tu appuies plus fort. 32 sons.",
+    rodP: "Les polys 8 voix percutants de 1979 à 1984, portés depuis OberVave de zvenson : deux oscillateurs, synchro, modulation croisée et un filtre à six modes. Cuivré, franc et large. 32 sons.",
+    marP: "Une voix semi-modulaire : deux oscillateurs dans deux filtres ladder, écartés en stéréo, côte à côte ou en série, avec FM de filtre et modulation en anneau. Câble-la sur la page MATRIX. 32 sons.",
+    fK: "Filtres", fH: "Un second filtre sur chaque son",
+    fP: "FILTER 2 s'ajoute au premier, avec l'un des {{FILTERS}} modèles de filtre.",
+    f1: "ROUTE : en série (un passe-bas et un passe-haut font un passe-bande), en parallèle (deux pics) ou séparés (filtre 1 à gauche, filtre 2 à droite : chaque voix en stéréo).",
+    f2: "LINK : le filtre 2 suit la coupure du filtre 1, un seul potard balaie les deux.",
+    f3: "SLOPE : les filtres 4 pôles à 12, 24 ou 48 dB. Et un nouveau modèle OTA : le passe-bas résonant et doux des polys classiques.",
+    tK: "Toucher des touches de la FM-1", tH: "Vélocité et aftertouch sur les touches de la FM-1",
+    tP: "GLO > TOUCH lit ta façon de jouer les touches de la FM-1, sans rien changer au matériel.",
+    t1: "VEL joue la vélocité, V+AT la vélocité et la pression, AT la pression seule.",
+    t2: "TOUCH CAL étalonne tes touches avec un indicateur en direct, et signale toute touche dont les appuis doux et forts se ressemblent.",
+    t3: "La pression peut sortir en MIDI, en aftertouch de canal ou polyphonique.",
+    mxK: "Matrice de modulation", mxH: "Câble-le comme un modulaire",
+    mxP: "Chaque son a une matrice de modulation de 24 câbles, de n'importe quelle source vers n'importe quelle destination. Stallion 1.0 ajoute des sources et des destinations, et une page MATRIX lisible d'un coup d'œil.",
+    mx1: "Déclencheurs et gates : le GATE d'une touche et la fin d'une enveloppe peuvent relancer une enveloppe ou un LFO.",
+    mx2: "CC A et CC B : n'importe quel contrôleur MIDI, ou la pédale, comme source.",
+    mx3: "Nouvelles destinations : la vitesse de l'arpégiateur, les envois de délai, de réverbération et de chorus, la vitesse d'un LFO.",
+    mx4: "Le câble choisi en grands caractères, coloré selon son type de signal, et CLEAR pour retirer les 24 câbles d'un coup.",
+    rK: "Réverbération", rH: "Du shimmer sur toutes les réverbérations",
+    rP: "REVERB 2 > SHIM ajoute un shimmer à l'octave au-dessus à ROOM, PLATE ou HALL, d'une touche légère au maximum. Les réverbérations sont aussi plus propres : plus de hachures à gauche, ni de pulsation, ni de flottement.",
+    iK: "Effets", iH: "Cinq nouveaux effets d'insert",
+    iP: "Chaque son a son propre effet INSERT. Stallion 1.0 en ajoute cinq :",
+    in1: "PITCH : un pitch shifter, avec réinjection pour des cascades qui montent ou descendent.",
+    in2: "PIT2 : deux voix transposées, et l'équilibre entre elles.",
+    in3: "PHAS6 : un phaser à six étages.",
+    in4: "DELAY : un délai court propre au son, pour le slapback, le doublage et les effets de peigne.",
+    in5: "LOCMP : un compresseur lo-fi.",
+    lK: "Levier et ruban de la FM-1", lH: "Plie comme un levier, glisse comme un ruban",
+    lP: "Tiens une touche, puis appuie sur OCT− ou OCT+ pour plier la note comme un levier, ou tourne SELECT comme un ruban : à ressort, maintenu ou verrouillé.",
+    l1: "La page BEND de chaque son règle l'amplitude, le pliage du filtre et les oscillateurs concernés.",
+    l2: "Pistes MOTION : le séquenceur enregistre le pliage, le ruban et la pression avec les notes.",
+    l3: "Chaque note enregistrée garde sa propre courbe de pression.",
+    atK: "SMK-37 Pro", atH: "Aftertouch sur les pads et les touches",
+    atP: "Appuie légèrement sur un pad pour jouer la note ; serre plus fort pour l'aftertouch. Les touches n'ont pas de capteur de pression : Stallion la fabrique à partir de la force de frappe, de la durée d'appui et d'une lente montée.",
+    at1: "PAD AT : la zone morte, la plage et la courbe, réglées sur un graphique.",
+    at2: "KEY AT : l'élan de la frappe, son niveau de repos et la montée pendant l'appui, dessinés dans le temps.",
+    at3: "Une fine barre montre la force de ton appui, et le volume pendant 2 secondes après un tour de K1.",
+    moK: "Et encore", moH: "Plus dans Stallion 1.0",
+    mo1: "BROWSE : le potard ALGORITHM passe d'un moteur à l'autre, et PRESETS parcourt les sons de ce moteur.",
+    mo2: "LIGHTS 1 à 8 : les noms des boutons s'éclairent beaucoup plus fort, et les touches peuvent s'allumer aussi.",
+    mo3: "CHAO : une onde de LFO chaotique qui ne se répète jamais.",
+    mo4: "POLY2 : une nouvelle note coupe les notes déjà relâchées, pour des séquences et des arpèges nets.",
+    mo5: "Des temps de délai libres de 35 à 780 ms, en plus des valeurs au tempo.",
+    mo6: "Une attaque analogique sur PALOMINO, STAMPEDE, RODEO et MARE : rapide à monter, puis plus douce.",
+    mo7: "Tous les sons d'usine remis à niveau, et plus de clics au début et à la fin des notes.",
+    moAll: "Tout ce qu'ajoute Stallion 1.0 : 93 nouveautés et corrections (en anglais)",
+    engK: "Tous les moteurs", engH: "{{ENGINES}} moteurs, {{SOUNDS}} sons",
+    engP: "Tous les sons sont mis à niveau : aucun preset ne sort plus fort ou plus faible que le suivant.",
+    ePAL: "Poly du début des années 1980 : deux oscillateurs, modulation croisée, synchro, un filtre chaud à 12 ou 24 dB.",
+    eSTA: "Poly de la fin des années 1970 : deux canaux par note, passe-haut puis passe-bas, balayés par leur propre enveloppe.",
+    eROD: "Poly de 1979 à 1984 : deux oscillateurs, synchro, modulation croisée, un filtre à six modes.",
+    eMAR: "Semi-modulaire : deux oscillateurs, deux filtres ladder écartés en stéréo, FM de filtre et anneau.",
+    eHYB: "Trois oscillateurs, deux filtres, une matrice de 16 emplacements et quatre macros.",
+    ePON: "Un poly DCO classique des années 1980 avec son chorus stéréo.",
+    eFMX: "Six opérateurs, n'importe quel routage, dix ondes, 40 modèles.",
+    eFM6: "FM à six opérateurs avec les 32 algorithmes classiques ; charge les banques .syx.",
+    eDIG: "FM à quatre opérateurs : pianos électriques, cloches, basses.",
+    eWAV: "Tables d'ondes : 16 intégrées, et les tiennes.",
+    eWSQ: "Wave sequencing : ondes, hauteurs et niveaux au tempo.",
+    eVEC: "Synthèse vectorielle : quatre ondes mélangées par un point qui bouge.",
+    eANA: "Analogique virtuel : deux oscillateurs et {{FILTERS}} modèles de filtre.",
+    eACI: "La basse acid : filtre ladder, accent, glissés.",
+    eSTR: "Une string machine des années 1970 avec son chorus d'ensemble.",
+    eMAC: "Quatre macro-oscillateurs : accords, essaim, additif, parole.",
+    ePHA: "La distorsion de phase, à la manière numérique des années 1980.",
+    eVPS: "Vector phaseshaping : des ondes déformées aux balayages de formants.",
+    eTER: "Wave terrain : une orbite au-dessus de huit surfaces.",
+    ePHY: "Modèles physiques : cordes, cloches, peaux de tambour.",
+    eTRI: "La puce sonore des ordinateurs familiaux 8 bits.",
+    eWHE: "Un orgue à roues phoniques avec neuf tirettes.",
+    eVOI: "Synthèse de formants : des voyelles chantées.",
+    eNOI: "Du souffle analogique aux sons métalliques.",
+    eGRA: "Des nuages granulaires à partir de quatre sources qui lui sont propres.",
+    eSAM: "Les mêmes quatre sources en instruments jouables.",
+    legend: "Nouveau dans Stallion 1.0",
+    insK: "Installer", insH: "Installé en quatre étapes",
+    i1T: "Ouvre l'installateur de ton instrument", i1: "Installer sur FM-1, ou Installer sur SMK-37 Pro. Rien à télécharger : le firmware est fourni avec la page.",
+    i2T: "Branche-le en USB", i2: "Un câble USB qui transmet les données, directement sur l'ordinateur, sans hub. Ferme les autres applis qui utilisent le MIDI.",
+    i3T: "Appuie sur Installer", i3: "Autorise le MIDI quand le navigateur le demande. La page vérifie le firmware, puis l'écrit. Une barre montre l'avancement.",
+    i4T: "Joue", i4: "L'instrument redémarre sur le logo Stallion. Pour une mise à jour plus tard, fais d'abord une sauvegarde avec l'éditeur.",
+    browserLong: "Utilise Chrome ou Edge sur un ordinateur (Windows, macOS, Linux ou ChromeOS), ou Chrome sur Android. Safari, et tous les navigateurs sur iPhone et iPad, ne peuvent ni installer ni éditer : ils n'ont pas le Web MIDI.",
+    riskT: "Firmware non officiel",
+    risk: "Stallion n'est ni fait ni pris en charge par M-VAVE. Il est fourni sans garantie : tu l'installes à tes risques. Tu peux revenir au firmware officiel à tout moment.",
+    edK: "L'éditeur web", edH: "Chaque son sur ton ordinateur",
+    edP: "L'éditeur fonctionne dans les mêmes navigateurs que l'installateur. Il parle à ton instrument par USB et change le son dès que tu bouges une commande.",
+    ed1: "Chaque paramètre de chaque moteur, avec de grandes commandes, en sections qui se replient.",
+    ed2: "Déplace les points de l'enveloppe et la vitesse, la phase et le fondu du LFO à la souris, au doigt ou au stylet, et vois où en est la note que tu joues.",
+    ed3: "Le patch bay, sur tous les moteurs : tire des câbles entre 64 prises pour patcher la matrice, ou passe à l'onglet MATRIX pour voir les mêmes câbles en tableau. Jusqu'à 24 câbles par son.",
+    ed4: "Ta bibliothèque de sons et des sauvegardes complètes de ton instrument.",
+    edOpen: "Ouvrir l'éditeur", edOffline: "Télécharger l'éditeur pour l'utiliser sans internet",
+    edSlot: "Une image de l'éditeur viendra ici.",
+    edSlot2: "Une image du patch bay viendra ici.",
+    crK: "Crédits et licence", crH: "Construit sur des travaux ouverts",
+    source: "Le code source", guide: "Le guide complet (en anglais)",
+  },
+  ja: {
+    kicker: "M-VAVE FM-1 と SMK-37 Pro のための無料ファームウェア",
+    h1: "FM-1 や SMK-37 Pro を本格的なシンセサイザーに",
+    navNew: "新機能", navInstall: "インストール", navEditor: "エディタ", navGuide: "ガイド", navCheat: "早見表（英語）",
+    instOn: "インストール先", instFm1: "FM-1 にインストール", instSmk: "SMK-37 Pro にインストール",
+    instFm1s: "スピーカー付きのポケット・シンセ", instSmks: "16 パッド付きの 37 鍵キーボード",
+    browserT: "ブラウザ：",
+    browser: "パソコンの Chrome か Edge、または Android の Chrome。Safari、iPhone、iPad では使えません。",
+    heroCap: "FM-1 の画面を Stallion のコードから描いたもの：PALOMINO で GOLDEN PAD を演奏中。",
+    newK: "Stallion 1.0 の新機能", newH: "4 つの新しい音源エンジンと、一から作り直した PONY",
+    newP: "PALOMINO、STAMPEDE、RODEO、MARE：4 つの新しいボイスと 110 の新しい音色。一から作り直した PONY が群れを完成させます。FM-1 でも SMK-37 Pro でも演奏できます。",
+    palP: "1980 年代初めの大型ポリシンセ：クロス・モジュレーションとハード・シンク付きの 2 オシレーターを、12 dB または 24 dB の温かいレゾナント・フィルターへ。その楽器の新しい小型版が加えたものを、Stallion はすべて備えています：",
+    pal1: "両オシレーターに 6 つの波形：オシレーター 1 にサインとノイズ、オシレーター 2 に三角波と矩形波が加わりました。",
+    pal2: "オシレーター 2 の LOW レンジで 8 オクターブ下がり、ウォブルやビブラート用のゆっくりしたモジュレーターになります。ファイン・チューンでオシレーター 1 との差を設定できます。",
+    pal3: "P>VCO で LFO とエンベロープのピッチ変調を両オシレーターか片方だけに送れます。シンク・スイープやうなりに。",
+    pal4: "鍵盤に追従するエンベロープ（ERATE）：アコースティック楽器のように、高い音ほど短くなります。",
+    pal5: "2 つめのフィルター、より急なスロープ、5 つの新しいインサート・エフェクトを、すべての音色に。",
+    pal6: "32 の音色：パッド、ストリングス、ブラス、リード、ベース、キー。",
+    staP: "1970 年代後半のポリシンセ。1 音ごとに完全な 2 チャンネルがあり、それぞれハイパスとローパスを専用のエンベロープで動かします。ふくらみ、呼吸するブラスとストリングス。PRESS BEND は強く押すとピッチが上がります。32 の音色。",
+    rodP: "1979〜1984 年のパンチのある 8 ボイス・ポリシンセ。zvenson の OberVave から移植：2 オシレーター、ハード・シンク、クロス・モジュレーション、6 モードのフィルター。力強く、広がりのあるブラス。32 の音色。",
+    marP: "セミモジュラーのボイス：2 オシレーターを 2 つのラダー・フィルターへ。フィルターはステレオで離す、並べる、直列にする、から選べ、フィルター FM とリング・モジュレーションも。MATRIX ページでパッチします。32 の音色。",
+    fK: "フィルター", fH: "すべての音色に 2 つめのフィルター",
+    fP: "FILTER 2 は 1 つめの隣で、{{FILTERS}} 種類のフィルター・モデルのどれでも使えます。",
+    f1: "ROUTE：直列（ローパスとハイパスでバンドパスに）、並列（2 つのピーク）、スプリット（フィルター 1 が左、フィルター 2 が右：各ボイスがステレオに）。",
+    f2: "LINK：フィルター 2 がフィルター 1 のカットオフに追従し、1 つのノブで両方を動かせます。",
+    f3: "SLOPE：4 ポールのフィルターを 12、24、48 dB で。新しい OTA モデルは、クラシックなポリシンセのなめらかなレゾナント・ローパスです。",
+    tK: "FM-1 のキー・タッチ", tH: "FM-1 の鍵盤でベロシティとアフタータッチ",
+    tP: "GLO > TOUCH が FM-1 の鍵盤の弾き方を読み取ります。ハードウェアの改造は不要です。",
+    t1: "VEL はベロシティ、V+AT はベロシティと圧力、AT は圧力だけ。",
+    t2: "TOUCH CAL はライブ・メーターで鍵盤をキャリブレーションし、弱く押しても強く押しても同じに読める鍵盤を知らせます。",
+    t3: "圧力は MIDI でチャンネルまたはポリフォニック・アフタータッチとして送れます。",
+    mxK: "マトリクス・パッチング", mxH: "モジュラーのようにパッチ",
+    mxP: "すべての音色に 24 本のケーブルのモジュレーション・マトリクスがあり、どのソースからどのデスティネーションへもつなげます。Stallion 1.0 は新しいソースとデスティネーション、ひと目で読める MATRIX ページを加えました。",
+    mx1: "トリガーとゲート：鍵盤の GATE やエンベロープの終わりで、エンベロープや LFO を再スタートできます。",
+    mx2: "CC A と CC B：どの MIDI コントローラーでも、ペダルでも、ソースにできます。",
+    mx3: "新しいデスティネーション：アルペジエーターの速さ、ディレイ・リバーブ・コーラスのセンド、LFO の速さ。",
+    mx4: "選んだケーブルを大きな文字で、信号の種類ごとの色で表示。CLEAR で 24 本を一度に外せます。",
+    rK: "リバーブ", rH: "どのリバーブにもシマー",
+    rP: "REVERB 2 > SHIM で ROOM、PLATE、HALL に 1 オクターブ上のシマーを、ほんのり〜最大まで加えられます。リバーブ自体もきれいになりました：左チャンネルの途切れ、うねり、揺れはありません。",
+    iK: "エフェクト", iH: "5 つの新しいインサート・エフェクト",
+    iP: "すべての音色に専用の INSERT エフェクトがあります。Stallion 1.0 で 5 つ追加：",
+    in1: "PITCH：ピッチ・シフター。フィードバックで上昇・下降するカスケードに。",
+    in2: "PIT2：ピッチをずらした 2 つの声と、そのバランス。",
+    in3: "PHAS6：6 段のフェイザー。",
+    in4: "DELAY：音色専用の短いディレイ。スラップバック、ダブリング、コム・フィルターに。",
+    in5: "LOCMP：ローファイ・コンプレッサー。",
+    lK: "FM-1 のレバーとリボン", lH: "レバーのように曲げ、リボンのように滑らせる",
+    lP: "鍵盤を押さえたまま OCT− か OCT+ を押すとレバーのように、SELECT を回すとリボンのようにピッチが曲がります。スプリング、ホールド、ラッチから選べます。",
+    l1: "各音色の BEND ページで、幅、フィルターの曲げ、どのオシレーターを曲げるかを設定します。",
+    l2: "MOTION レーン：シーケンサーがベンド、リボン、圧力をノートと一緒に記録します。",
+    l3: "記録した各ノートは自分の圧力カーブを持ちます。",
+    atK: "SMK-37 Pro", atH: "パッドと鍵盤でアフタータッチ",
+    atP: "パッドを軽く押すとノートが鳴り、さらに強く押すとアフタータッチになります。鍵盤には圧力センサーがないため、Stallion は打鍵の強さ、押さえている時間、ゆっくりしたふくらみから圧力を作ります。",
+    at1: "PAD AT：デッドゾーン、範囲、カーブをグラフで設定。",
+    at2: "KEY AT：打鍵の立ち上がり、落ち着く位置、押さえ続けたときのふくらみを時間軸で表示。",
+    at3: "細いバーで押している強さが見えます。K1 を回すと 2 秒間、音量も表示します。",
+    moK: "ほかにも", moH: "Stallion 1.0 のその他の新機能",
+    mo1: "BROWSE：ALGORITHM ノブでエンジンからエンジンへ移り、PRESETS でそのエンジンの音色を順に選べます。",
+    mo2: "LIGHTS 1〜8：ボタンの文字がずっと明るく光り、鍵盤も光らせられます。",
+    mo3: "CHAO：繰り返さないカオスな LFO 波形。",
+    mo4: "POLY2：新しいノートが、離した後のノートを止めます。すっきりしたシーケンスやアルペジオに。",
+    mo5: "テンポの値に加えて、35〜780 ms の自由なディレイ・タイム。",
+    mo6: "PALOMINO、STAMPEDE、RODEO、MARE にアナログらしいアタック：素早く立ち上がり、なめらかに落ち着きます。",
+    mo7: "すべてのファクトリー音色の音量をそろえ直し、ノートの始まりと終わりのクリックもなくなりました。",
+    moAll: "Stallion 1.0 で加わったすべて：93 の新機能と修正（英語）",
+    engK: "すべてのエンジン", engH: "{{ENGINES}} のエンジン、{{SOUNDS}} の音色",
+    engP: "すべての音色は音量がそろえてあり、どのプリセットも次より大きすぎたり小さすぎたりしません。",
+    ePAL: "1980 年代初めのポリ：2 オシレーター、クロス・モジュレーション、ハード・シンク、12 / 24 dB の温かいフィルター。",
+    eSTA: "1970 年代後半のポリ：1 音に 2 チャンネル、ハイパスからローパス、専用エンベロープで動かす。",
+    eROD: "1979〜1984 年のポリ：2 オシレーター、シンク、クロス・モジュレーション、6 モードのフィルター。",
+    eMAR: "セミモジュラー：2 オシレーター、ステレオで離した 2 つのラダー・フィルター、フィルター FM とリング。",
+    eHYB: "3 オシレーター、2 フィルター、16 スロットのマトリクス、4 つのマクロ。",
+    ePON: "ステレオ・コーラス付きのクラシックな 1980 年代の DCO ポリ。",
+    eFMX: "6 オペレーター、自由なルーティング、10 波形、40 のテンプレート。",
+    eFM6: "32 のクラシックなアルゴリズムの 6 オペレーター FM。.syx バンクを読み込めます。",
+    eDIG: "4 オペレーター FM：エレクトリック・ピアノ、ベル、ベース。",
+    eWAV: "ウェーブテーブル：内蔵 16 種と、自分のもの。",
+    eWSQ: "ウェーブ・シーケンス：波形、ピッチ、音量をテンポに合わせて。",
+    eVEC: "ベクター合成：動く点で 4 つの波形を混ぜる。",
+    eANA: "バーチャル・アナログ：2 オシレーターと {{FILTERS}} 種類のフィルター・モデル。",
+    eACI: "アシッド・ベースライン：ラダー・フィルター、アクセント、スライド。",
+    eSTR: "アンサンブル・コーラス付きの 1970 年代のストリング・マシン。",
+    eMAC: "4 つのマクロ・オシレーター：コード、スウォーム、加算、スピーチ。",
+    ePHA: "1980 年代デジタル流のフェイズ・ディストーション。",
+    eVPS: "ベクター・フェイズシェイピング：曲げた波形からフォルマント・スイープまで。",
+    eTER: "ウェーブ・テレイン：8 つの曲面の上を回る軌道。",
+    ePHY: "物理モデル：弦、ベル、ドラムの皮。",
+    eTRI: "8 ビット・ホーム・コンピューターのサウンド・チップ。",
+    eWHE: "9 本のドローバーのトーンホイール・オルガン。",
+    eVOI: "フォルマント合成：歌う母音。",
+    eNOI: "アナログのヒスから金属的な音まで。",
+    eGRA: "専用の 4 つの素材によるグラニュラーの雲。",
+    eSAM: "同じ 4 つの素材を演奏できる楽器として。",
+    legend: "Stallion 1.0 の新機能",
+    insK: "インストール", insH: "4 ステップでインストール",
+    i1T: "楽器用のインストーラーを開く", i1: "「FM-1 にインストール」か「SMK-37 Pro にインストール」。ダウンロードは不要：ファームウェアはページに含まれています。",
+    i2T: "USB でつなぐ", i2: "データ通信できる USB ケーブルでパソコンに直接、ハブなしで。MIDI を使う他のアプリは閉じてください。",
+    i3T: "「インストール」を押す", i3: "ブラウザに聞かれたら MIDI を許可。ページがファームウェアを確認してから書き込みます。バーで進み具合が見えます。",
+    i4T: "演奏する", i4: "楽器が Stallion のロゴで再起動します。あとで更新するときは、先にエディタでバックアップを。",
+    browserLong: "パソコン（Windows、macOS、Linux、ChromeOS）の Chrome か Edge、または Android の Chrome を使ってください。Safari と、iPhone・iPad のすべてのブラウザは Web MIDI がないため、インストールも編集もできません。",
+    riskT: "非公式のファームウェア",
+    risk: "Stallion は M-VAVE が作ったものでもサポートするものでもありません。無保証で、インストールは自己責任です。いつでも公式ファームウェアに戻せます。",
+    edK: "ウェブ・エディタ", edH: "パソコンですべての音色を",
+    edP: "エディタはインストーラーと同じブラウザで動きます。USB で楽器とやりとりし、コントロールを動かすとすぐに音が変わります。",
+    ed1: "すべてのエンジンのすべてのパラメーターを、大きなコントロールで。セクションは折りたためます。",
+    ed2: "エンベロープの点と LFO のレート、フェイズ、フェードをマウス、指、ペンでドラッグ。弾いているノートの位置も見えます。",
+    ed3: "パッチベイ（全エンジン対応）：64 個のジャック間にケーブルをドラッグしてマトリクスをパッチします。MATRIX タブでは同じケーブルを表で確認できます。1 サウンドにつき最大 24 本。",
+    ed4: "音色ライブラリーと、楽器全体のバックアップ。",
+    edOpen: "エディタを開く", edOffline: "インターネットなしで使うためにエディタをダウンロード",
+    edSlot: "ここにエディタの画像が入ります。",
+    edSlot2: "ここにパッチベイの画像が入ります。",
+    crK: "クレジットとライセンス", crH: "オープンな成果の上に",
+    source: "ソースコード", guide: "完全ガイド（英語）",
+  },
+};
+let lang = (navigator.language || "en").toLowerCase().startsWith("fr") ? "fr" : (navigator.language || "").toLowerCase().startsWith("ja") ? "ja" : "en";
+try { const v = localStorage.getItem("stallion-site-lang"); if (TEXT[v]) lang = v; } catch (e) { /* no storage */ }
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = TEXT[lang][e.dataset.t]; });
+  document.querySelectorAll("section[data-l]").forEach((e) => { e.hidden = e.dataset.l !== lang; });
+  document.querySelectorAll(".lang").forEach((b) => b.setAttribute("aria-current", String(b.dataset.l === lang)));
+}
+document.querySelectorAll(".lang").forEach((b) => b.addEventListener("click", () => {
+  lang = b.dataset.l;
+  try { localStorage.setItem("stallion-site-lang", lang); } catch (e) { /* no storage */ }
+  applyLang();
+}));
+applyLang();
+</script>
+</body>
+</html>

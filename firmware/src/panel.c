@@ -1,0 +1,197 @@
+/* SPDX-License-Identifier: GPL-3.0-only
+ * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+/* Physical panel: which matrix button / encoder carries which printed label.
+ * The default table can be overridden by HARDWARE CALIBRATION (hold OCT- and
+ * OCT+ while powering on), which asks for each label in turn. The learned
+ * table lives in .noinit and, with FELUCCA_FLASH, in flash with the settings
+ * (project.c). */
+/* (B_SCL: the button printed SEL, the key / scale button between FX and ENV) */
+enum { B_FX, B_SCL, B_ENV, B_LFO, B_EDIT, B_GLO, B_HOME, B_SAVE, B_ARP, B_SEQ, B_PLAY, B_REC,
+       B_OCTDN, B_OCTUP, NB };
+enum { EN_SELECT, EN_ALGO, EN_PRESET, EN_K1, EN_K2, EN_K3, EN_K4, NE };
+static const char *const B_NAME[NB] = {"FX", "SEL", "ENV", "LFO", "EDIT", "GLO", "HOME", "SAVE",
+                                        "ARP", "SEQ", "PLAY", "REC", "OCT-", "OCT+"};
+static const char *const E_NAME[NE] = {"SELECT", "ALGORITHM", "PRESETS", "KNOB 1", "KNOB 2",
+                                        "KNOB 3", "KNOB 4"};
+#if BOARD_SMK37
+#define PANEL_MAGIC 0x504E5334u          /* "PNS4" (SMK-37 Pro): bump when PANEL_DEFAULT changes */
+#else
+#define PANEL_MAGIC 0x50414E35u          /* "PAN5": bump when PANEL_DEFAULT changes */
+#endif
+
+typedef struct {
+    uint32_t magic;
+    uint8_t btn[NB];             /* matrix button id (0..13) per label */
+    uint8_t enc[NE];             /* matrix encoder (0..6) per role */
+    int8_t dir[NE];              /* +1 / -1 so that clockwise is + */
+} panel_t;
+panel_t panel __attribute__((section(".noinit")));
+
+#if BOARD_SMK37
+/* SMK-37 Pro (smk_input.h button ids, confirmed on a unit; the printed SMK label -> the FM-1 function):
+ * FX = FX, SCALE = SEL, CHORD = ENV, NOTE REPEAT = LFO, PARA = EDIT, GLOBE = GLO, PATCH = HOME, BT = SAVE,
+ * ARP, SEQ as printed, SEQ PLAY = PLAY, SEQ REC = REC, OCTAVE- / + as printed. KNOB BANK, FADER BANK, < and >
+ * have no FM-1 label here: ui_input.c reads them itself (KNOB BANK the SOUNDS on the pads, FADER BANK its screen
+ * and the next bank, < > the pages, as SELECT, or the SOUNDS pages and the fader banks while those are up). Knobs as the FM-1's top row:
+ * K1 = MASTER (smk_input.h: the FM-1's MASTER pot, as a virtual one), K2 = SELECT, K3 = ALGORITHM (track), K4 = PRESETS; K5..K8 = KNOB 1..4 (the screen's four dials).
+ * HARDWARE CALIBRATION (OCT- + OCT+ at power-on) re-teaches all of it. */
+static const panel_t PANEL_DEFAULT = {
+    PANEL_MAGIC,
+    {14, 8, 9, 7, 13, 10, 12, 11, 6, 15, 16, 17, 4, 5},
+    {1, 2, 3, 4, 5, 6, 7},
+    {1, 1, 1, 1, 1, 1, 1},
+};
+#else
+static const panel_t PANEL_DEFAULT = {
+    PANEL_MAGIC,
+    {2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 0, 1},   /* PLAY = 12, REC = 13 */
+    {0, 1, 6, 2, 3, 4, 5},                           /* SELECT = enc 0, ALGORITHM = enc 1, PRESETS = enc 6 */
+    {1, 1, 1, 1, 1, 1, 1},
+};
+#endif
+
+#ifndef UI_SMALL
+#define UI_SMALL                                   /* (gfx.c: minsize on the device; a test alone: nothing) */
+#endif
+UI_SMALL static void panel_init(void)                     /* also after a flash load: ids are used as array indexes and shifts */
+{
+    uint32_t i, ok = panel.magic == PANEL_MAGIC;
+    for (i = 0; ok && i < NB; i++)
+        ok = panel.btn[i] < FM1_NBTN;
+    for (i = 0; ok && i < NE; i++)
+        ok = panel.enc[i] < FM1_NENC && (panel.dir[i] == 1 || panel.dir[i] == -1);
+    if (!ok)
+        panel = PANEL_DEFAULT;
+}
+
+UI_SMALL static uint32_t panel_btn_of(uint32_t matrix_id)        /* label of a matrix button, NB if none */
+{
+    uint32_t b;
+    for (b = 0; b < NB; b++)
+        if (panel.btn[b] == matrix_id)
+            return b;
+    return NB;
+}
+
+UI_SMALL static void panel_led(uint32_t label, int on) { fm1_led_key(panel.btn[label], on); }
+
+/* steps of a role, + = clockwise */
+static uint32_t ui_input_ms;                    /* the last button, key or knob turn (ui_input.c; autosave) */
+/* the knobs (roles, bit per EN_*) not to be read again in this UI pass (ui_input: a layer took them, #102 of
+ * Felucca): panel_enc returns 0 and leaves their detents for the next pass */
+static uint32_t enc_hold;
+UI_SMALL static int32_t panel_enc(uint32_t role)
+{
+    int32_t s;
+    if ((enc_hold >> role) & 1u)
+        return 0;
+    s = fm1_enc_take(panel.enc[role]) * panel.dir[role];
+    if (s)
+        ui_input_ms = fm1_ms;                      /* a knob turning is not idle either: autosave waits */
+    return s;
+}
+
+/* user settings that survive a reset */
+#define SETTINGS_MAGIC 0x53455433u              /* "SET3" */
+#define SETTINGS_PALETTE_DEF 4u                 /* MONO (default; project.c factory_reset too) */
+struct { uint32_t magic, palette, lowcut, zoom; } settings __attribute__((section(".noinit")));
+
+/* the lights (menu LIGHTS / KEYS / NOTES), for playing in the dark: kept in flash with the settings
+ * (project.c persist_t.lights), read at every boot; not in .noinit, so nothing there moves. The same
+ * word keeps SYNC and the REC screen's MODE / START (seq.c rec_tempo, rec_count) */
+enum { LIGHTS_OFF, LIGHTS_LOW, LIGHTS_MID, LIGHTS_HIGH, LIGHTS_MAX = 8, LIGHTS_N };   /* the scale OFF, 1 .. 8 (1 2 3:
+                                                * LOW MID HIGH before; an older firmware reads 4 .. 8 as OFF) */
+enum { KEYS_OFF, KEYS_C, KEYS_WHITE, KEYS_ALL, KEYS_N };   /* (ALL: SLOOP 2.4; an older SLOOP reads it as OFF) */
+static uint8_t lights_lvl, lights_keys;
+static uint8_t lights_notes;                   /* 1: on a synth track the sounding notes light their keys */
+static uint8_t lights_sync;                    /* GLO > SYSTEM > SYNC (G_SYNC), kept here: 0 INT, 1 USB, 2 TRS */
+static uint8_t lights_mout;                    /* GLO > SYSTEM > MIDI (G_MIDI): 1 = the sequencer goes to MIDI OUT too */
+static uint8_t lights_min;                     /* GLO > SYSTEM > IN (G_ROUTE): 1 = MIDI in takes the clock only, no notes */
+static const uint16_t LIGHTS_NS[LIGHTS_N] = {0u, 500u, 1000u, 2000u, 3000u, 4000u, 5000u, 6000u, 8000u};   /* the
+                                                * backlight pulse a frame (ns): a lit LED ~95 us, the glow (landmarks)
+                                                * 4 us (fm1_input.h, which keeps the glow 1.5 x the backlight). Turned
+                                                * up as the eyes need: the eye is logarithmic, 4 us (5) reads about half
+                                                * lit; each us past the shift is a us of the scan interrupt waiting */
+static uint8_t usb_serial;                      /* menu USB SERIAL: 1 = the serial console presented (usb.c) */
+static uint8_t vis_style;                       /* the visualiser's style, 0..11 (ui_vis.c) */
+/* the bits of the settings word another firmware on this FM-1 keeps there and this one does not know (SLOOP 2.6: GLO >
+ * SYSTEM > IN = CH n in bits 21..25): kept as they were, so going back there finds its settings */
+#define LIGHTS_FOREIGN 0x03E00000u                   /* bits 21..25 (Clipper's MPE: 28..30; 26, 27, 31 as SLOOP 2.7) */
+static uint32_t lights_keep;
+/* 0.7, the bits SLOOP 2.7 gave the same meaning (going back and forth keeps them): 26 2ND CORE OFF (cpu1.c: ON by
+ * default), 27 KNOB ACCEL OFF (ui_input.c), 31 the REC screen's QUANT OFF (seq.c rec_quant_off) */
+static uint8_t cpu1_off;                        /* menu 2ND CORE: 1 = OFF, the whole render on core 0 (cpu1.c) */
+static uint8_t knob_accel_off;                  /* menu KNOB ACCEL: 1 = OFF, one value a detent however fast */
+static uint8_t step_adv_off;                    /* (1.0, after SLOOP 2.7.1) menu SEQ > STEP ADVANCE: 1 = OFF, the NOTES page's
+                                                 * cursor stays where it is when the keys are let go (KNOB 1 moves it);
+                                                 * kept in the settings' side record (project.c) */
+static uint8_t usb_rate;                        /* (0.7) menu USB RATE: 0 AUTO, 1 44.1, 2 48 kHz (usb.c usb_rate_mode, at the
+                                                 * next start; kept in the settings' side record, project.c) */
+enum { BR_PRESET, BR_ALGO };
+static uint8_t browse_mode;                     /* menu BROWSE (Clipper): PRESET, the PRESETS list by kind and ALGORITHM the
+                                                 * next kind; ALGORITHM, ALGORITHM the next engine and PRESETS its presets
+                                                 * (ui.c, ui_input.c; kept in the settings' side record, project.c) */
+/* (Stallion) menu SYS > KNOB SPEED: values a detent on the number dials (more than 16 values; lists of names and BPM stay
+ * one a detent), before KNOB ACCEL. 0: the board's own (the SMK-37's knobs click twice as often for the same turn as
+ * the FM-1's: X2 there, X1 on the FM-1), 1 X1, 2 X2, 3 X4; kept in the settings' side record (project.c, BROWSE's) */
+#if CLIPPER_SYNTH
+static uint8_t knob_speed;
+static const char *const KSPD_NAME[3] = {"X1", "X2", "X4"};
+UI_SMALL static uint32_t knob_speed_pos(void)                  /* 0 X1, 1 X2, 2 X4 */
+{
+    uint32_t k = knob_speed ? knob_speed - 1u : (BOARD_SMK37 ? 1u : 0u);
+    return k < 3u ? k : 0u;
+}
+UI_SMALL static int32_t knob_speed_mul(void) { return (int32_t)1 << knob_speed_pos(); }
+#endif
+UI_SMALL static uint32_t lights_word(void)
+{
+    return (uint32_t)lights_lvl | (uint32_t)lights_keys << 4 | (uint32_t)(lights_notes != 0u) << 8 |
+           (uint32_t)(rec_tempo != 0u) << 9 | (uint32_t)(rec_count != 0u) << 10 | (uint32_t)(usb_full != 0u) << 11 |
+           (uint32_t)(lights_sync % 3u) << 12 | (uint32_t)(lights_mout != 0u) << 14 | (uint32_t)(lights_min != 0u) << 15 |
+           (uint32_t)(usb_serial != 0u) << 16 | (uint32_t)(vis_style % 12u) << 17 | lights_keep |
+           (uint32_t)(cpu1_off != 0u) << 26 | (uint32_t)(knob_accel_off != 0u) << 27 | (uint32_t)(rec_quant_off != 0u) << 31
+#if CLIPPER_SYNTH
+           | (uint32_t)(mpe_mode % MPE_MODES) << 28          /* Clipper 0.4: MPE (voice.c) */
+#endif
+        ;
+}
+UI_SMALL static void lights_from_word(uint32_t w)
+{
+    lights_lvl = (uint8_t)((w & 15u) < LIGHTS_N ? (w & 15u) : LIGHTS_OFF);
+    lights_keys = (uint8_t)(((w >> 4) & 15u) < KEYS_N ? ((w >> 4) & 15u) : KEYS_OFF);
+    lights_notes = (uint8_t)((w >> 8) & 1u);
+    rec_tempo = (uint8_t)((w >> 9) & 1u);       /* the REC screen: MODE, START (seq.c) */
+    rec_count = (uint8_t)((w >> 10) & 1u);
+    usb_full = (uint8_t)((w >> 11) & 1u);       /* menu USB AUDIO (fx.c) */
+    lights_sync = (uint8_t)(((w >> 12) & 3u) % 3u);
+    lights_mout = (uint8_t)((w >> 14) & 1u);    /* GLO > SYSTEM > MIDI (seq.c) */
+    lights_min = (uint8_t)((w >> 15) & 1u);     /* GLO > SYSTEM > IN (seq.c) */
+    usb_serial = (uint8_t)((w >> 16) & 1u);
+    vis_style = (uint8_t)(((w >> 17) & 15u) % 12u);
+    lights_keep = w & LIGHTS_FOREIGN;
+    cpu1_off = (uint8_t)((w >> 26) & 1u);       /* (0.7) an older word reads ON */
+    cpu1_units = cpu1_off ? 0 : -1;
+    knob_accel_off = (uint8_t)((w >> 27) & 1u);
+    rec_quant_off = (uint8_t)((w >> 31) & 1u);
+#if CLIPPER_SYNTH
+    mpe_mode = (uint8_t)(((w >> 28) & 7u) % MPE_MODES);   /* (bits 21..25 are SLOOP 2.6's MIDI IN channel) */
+#endif   /* the visualiser (ui_vis.c); 0 in 2.3 = OSCILLOSCOPE */     /* menu USB SERIAL (usb.c usb_cdc_on, at the next start); 0 in 2.3 = OFF */
+}
+
+static void settings_save(void);              /* project.c: flash copy (FELUCCA_FLASH) */
+static int factory_reset(void);              /* project.c: MENU > SYS > FACTORY RESET, once confirmed (ui_menu.c) */
+static int freset_held(void);                /* project.c: its erase failed, the saves held (ui_menu.c: the row) */
+static uint8_t settings_later;                 /* changed while playing: saved once stopped (project.c) */
+
+UI_SMALL static void settings_init(void)
+{
+    if (settings.magic != SETTINGS_MAGIC || settings.palette >= NPALETTES) {
+        settings.magic = SETTINGS_MAGIC;
+        settings.palette = SETTINGS_PALETTE_DEF;
+        settings.lowcut = 0;
+        settings.zoom = 0;                     /* large readout of the touched value: off */
+    }
+    palette_set(settings.palette);
+    fx_lowcut = (uint8_t)(settings.lowcut != 0);
+}

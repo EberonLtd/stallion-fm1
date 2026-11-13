@@ -1,0 +1,9 @@
+# Stallion R9 (tests/denylist_test.py): the only places a doc a user reads may hold a word of tests/denylist.txt,
+# by exact text. One a line: file glob<TAB>kind<TAB>text<TAB>reason. kind: line (the whole line, exact: edit the
+# line and this entry together), phrase (a hit inside this exact text), word (the hit is exactly this, case and all).
+# Every entry must excuse something, or the test fails. Rename or describe instead wherever a text can change.
+*	word	ARP	the arpeggiator: the FM-1's ARP button, its pages and menus (a function, not the brand)
+*	word	arp	the arpeggiator, short
+*	phrase	CS-1	credit: CS-1 by twochannels (GPL-3.0), whose phaser the INSERT uses and whose ribbon LEVER / RIBBON follow
+LICENSING.md	phrase	`firmware/src/cs1_fx.h`	credit: the file that holds CS-1's phaser
+LICENSING.md	phrase	Greg Sullivan's Wurlitzer EP200 samples	credit: CC BY 3.0 attribution of E.PIANO's source, by its title

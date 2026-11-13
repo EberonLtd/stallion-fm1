@@ -1,0 +1,448 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+     Changes: Copyright (C) 2026 Eberon Limited (John Gorman)
+     Stallion's SMK-37 Pro installer (webapp/installer-smk37/). After the Clipper Pro installer (web/index_pro.html, isod89,
+     its install logic kept as it is); web/make_site.py (with --smk37) inlines smkpkg.js, smkota.js, the package's
+     metadata and web/site.css, and puts the FM-1 / SMK-37 Pro chooser at the BOARDS marker. Stallion supports the
+     SMK-37 Pro only: choose() refuses the other models before anything is sent -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Install Stallion, the synthesizer firmware, on the M-VAVE SMK-37 Pro keyboard from your browser.">
+<link rel="manifest" href="../stallion.webmanifest"><meta name="theme-color" content="#0B1E36"><link rel="icon" href="../icon-192.png">
+<title>Stallion installer for the SMK-37 Pro</title>
+<style>
+  @font-face { font-family: "Stallion Pixel"; src: url("../stallion-pixel.ttf") format("truetype"); font-display: swap; }
+/*SITE_CSS*/
+
+  /* the installer's own parts */
+  .boards { margin: 8px 0 32px; }
+  .boards p { font-size: 20px; margin: 0 0 10px; color: var(--soft); }
+  .boards div { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .boards a { display: block; text-align: center; font: 400 32px/1.1 var(--pixel); text-transform: uppercase; padding: 18px 8px;
+              border: 4px solid var(--edge); color: var(--sail); text-decoration: none; border-radius: 14px; }
+  .boards a:hover { border-color: var(--sail); }
+  .boards a[aria-current="page"] { background: var(--sail); color: var(--navy); border-color: var(--sail); }
+  .hero-i { padding: 24px 0 8px; }
+  .panel { background: var(--panel); border-radius: 20px; padding: 28px; margin: 0 0 28px; }
+  @media (max-width: 600px) { .panel { padding: 20px 16px; } }
+  button#go { width: 100%; min-height: 84px; font-size: 48px; }
+  #status { margin: 18px 0 0; min-height: 1.6em; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #status.bad { color: var(--rust); } #status.good { color: var(--sea); }
+  #device { color: var(--soft); font-size: 18px; min-height: 1.4em; margin: 12px 0 0; }
+  progress { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 18px; border: 0;
+             border-radius: 9px; background: var(--deep); overflow: hidden; margin-top: 20px; }
+  progress::-webkit-progress-bar { background: var(--deep); }
+  progress::-webkit-progress-value { background: var(--oak); }
+  progress::-moz-progress-bar { background: var(--oak); }
+  details.log { margin: 16px 0 0; } details.log summary { cursor: pointer; font-size: 18px; color: var(--soft); }
+  pre { color: var(--soft); font-size: 16px; white-space: pre-wrap; margin: 8px 0 0; max-height: 220px; overflow: auto;
+        background: var(--deep); padding: 12px; border-radius: 10px; }
+  label.ck { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 20px; cursor: pointer; font-size: 20px; }
+  input[type="checkbox"] { width: 28px; height: 28px; flex: none; margin-top: 2px; accent-color: var(--oak); }
+  .after { display: grid; gap: 14px; }
+  .after .btn { justify-content: flex-start; text-align: left; }
+  h2.sec { font-size: 32px; margin: 40px 0 16px; color: var(--sail); }
+  .trouble p { font-size: 20px; }
+  details.stock { background: var(--panel); border-radius: 16px; padding: 18px 22px; margin: 28px 0 0; }
+  details.stock summary { cursor: pointer; font: 400 32px/1.2 var(--pixel); text-transform: uppercase; color: var(--sail); }
+  details.stock[open] summary { margin-bottom: 14px; }
+  input[type="file"] { font: inherit; font-size: 18px; color: var(--sail); margin-top: 8px; }
+  button#stock-go { font: 400 32px/1 var(--pixel); text-transform: uppercase; background: transparent; color: var(--sail);
+                    border: 4px solid var(--sail); border-radius: 14px; padding: 14px 22px; cursor: pointer; }
+  button#stock-go:disabled { color: var(--soft); border-color: var(--edge); cursor: default; }
+  .back-home { font-size: 20px; }
+
+  #status.bad { color: var(--rust); }
+</style>
+</head>
+<body>
+<header class="wrap bar"><a class="logo" href="../../" aria-label="Stallion home"><!--LOGO--></a>
+  <div class="langs" role="group" aria-label="Language / Langue / 言語"><button class="lang" data-l="en">English</button><button class="lang" data-l="fr">Français</button><button class="lang" data-l="ja">日本語</button></div></header>
+<div class="sail" role="presentation"></div>
+<main class="narrow hero-i">
+  <!--BOARDS-->
+  <!--BANNER-->
+  <h1 data-t="h1"></h1>
+  <p class="lead" data-t="lead"></p>
+  <p class="back-home"><a href="../../" data-t="homeLink"></a></p>
+  <div class="note"><b data-t="proOnlyT"></b><p data-t="proOnly"></p></div>
+  <h2 class="sec" data-t="stepsT"></h2>
+  <ol class="steps">
+    <li><b data-t="s1T"></b><span data-t="s1"></span></li>
+    <li><b data-t="s2T"></b><span data-t="s2"></span></li>
+    <li><b data-t="s3T"></b><span data-t="s3"></span></li>
+  </ol>
+  <div class="note" style="margin-top:24px"><b data-t="backupT"></b><p data-t="backup"></p></div>
+  <div class="panel">
+    <label class="ck"><input type="checkbox" id="risk"> <span data-t="risk"></span></label>
+    <p><button id="go" class="btn" disabled data-t="install"></button></p>
+    <p id="device"></p>
+    <progress id="bar" max="100" value="0"></progress>
+    <p id="status" role="status" aria-live="polite"></p>
+    <p id="next" hidden><a class="btn text" href="../installer/" data-t="toFm1"></a></p>
+    <details class="log"><summary data-t="logT"></summary><pre id="log"></pre></details>
+  </div>
+  <h2 class="sec" data-t="afterT"></h2>
+  <div class="after"><a class="btn text" href="../editor/" data-t="editor"></a></div>
+  <section class="trouble">
+    <h2 class="sec" data-t="rescueT"></h2>
+    <p data-t="rescue"></p>
+    <p data-t="other2"></p>
+    <h2 class="sec" data-t="backT"></h2>
+    <p data-t="back"></p>
+    <p><a href="https://www.m-vave.com/download" target="_blank" rel="noopener">www.m-vave.com/download</a></p>
+  </section>
+</main>
+<footer class="foot">
+  <div class="narrow">
+    <p lang="en"><b>Stallion</b> is free, open-source firmware (GPL-3.0-only) by Eberon Limited (John Gorman):
+      <a href="https://github.com/EberonLtd/stallion-fm1" target="_blank" rel="noopener">github.com/EberonLtd/stallion-fm1</a>.
+      It grew out of <a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> and Clipper Pro by 3dSam (isod89), which grew out of
+      <a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a>; all are based on
+      <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita (@kurogedelic), Hügelton Instruments.
+      Everyone else whose work it uses is named in
+      <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/CREDITS.md" target="_blank" rel="noopener">CREDITS.md</a> and
+      <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/LICENSING.md" target="_blank" rel="noopener">LICENSING.md</a>.</p>
+    <p lang="en">M-VAVE, FM-1 and SMK-37 are trademarks of their owners. Stallion is not affiliated with or endorsed by them. No warranty: you install it at your own risk.</p>
+    <p class="copy">Copyright (C) 2026 Eberon Limited (John Gorman)</p>
+  </div>
+</footer>
+<script type="module">
+/*LIB*/
+const $ = (id) => document.getElementById(id);
+const TEXT = {
+  fr: {
+    boardPick: "Ton instrument :",
+    risk: "J'ai compris : firmware non officiel, sans garantie, installé à mes risques. Je ne débranche pas le câble pendant l'écriture.",
+    install: "Installer Stallion",
+    editor: "Ouvrir l'éditeur : édite chaque son depuis ton ordinateur",
+    backT: "Revenir au firmware M-VAVE",
+    back: "Sauvegardez d'abord vos sons avec l'éditeur (onglet Backup). Puis installez le firmware officiel de votre modèle avec M-UPGRADE, l'outil officiel de M-VAVE. Stallion ne touche pas à l'étalonnage : le clavier revient comme avant.",
+    rescueT: "Si quelque chose tourne mal",
+    rescue: "Si l'écriture s'arrête, rebranche le câble et appuie de nouveau sur Installer : le clavier reste en mode mise à jour et l'écriture reprend. Si Stallion ne démarre pas, maintiens OCTAVE− en allumant le clavier (STALLION USB RESCUE), puis installe de nouveau. Sous Windows, si ça reste sur « Passage en mode mise à jour », ferme complètement le navigateur (toutes les fenêtres), rebranche le clavier, rouvre cette page et appuie sur Installer.",
+    other2: "Clavier sous le firmware « Sloop SMK » de ChanceTheMaker (identité SMK-37_9xx) ? Il n'accepte que ses propres paquets : revenez d'abord au firmware M-VAVE (sa page de restauration ou M-UPGRADE), puis installez Stallion.",
+    nomidi: "Ce navigateur n'a pas le Web MIDI. Ouvrez la page dans Chrome ou Edge sur un ordinateur (Safari, iPhone et iPad ne peuvent pas).",
+    loadfail: "Chargement impossible : ",
+    ready: "Prêt : Stallion ",
+    start: "Démarrage",
+    verify: "Vérification",
+    loader: "Passage en mode mise à jour",
+    write: "Écriture",
+    waitota: "Le clavier redémarre en mode mise à jour (ne rien débrancher)… s : ",
+    noreq: "Le mode mise à jour ne demande rien encore… s : ",
+    backwait: "Redémarrage… s : ",
+    reboot: "Redémarrage",
+    done: "Terminé : le clavier tourne ",
+    stopped: "Arrêté. Rebranchez le câble USB et appuyez de nouveau sur Installer.",
+    error: "Erreur : ",
+    needRisk: "Cochez d'abord la case ci-dessus.",
+    denied: "L'accès MIDI (SysEx) a été refusé. Autorisez le MIDI dans les paramètres du site (barre d'adresse) et réessayez.",
+    notfound: "Clavier introuvable. Vérifiez le câble USB (un câble de données), fermez les autres applications MIDI, et réessayez.",
+    other: "Ce clavier tourne sous un firmware SMK de ChanceTheMaker (Felucca SMK, Sloop SMK, Melodee SMK, Doom), qui n'accepte que ses propres paquets. Rien n'a été écrit. Revenez d'abord au firmware M-VAVE, puis installez Stallion.",
+    fm1: "L'appareil branché est une FM-1. Rien n'a été écrit. Installez Stallion dessus avec l'installateur FM-1 :",
+    toFm1: "Installer sur FM-1",
+    nopkg: "Aucun paquet Stallion pour cet appareil : ",
+    model: "Le modèle ne correspond pas : ",
+    lost: "La connexion USB a été perdue. Rebranchez et réessayez.",
+    noloader: "Le clavier en mode mise à jour est introuvable par Chrome. N'éteignez pas le clavier : fermez Chrome complètement (toutes les fenêtres), rouvrez cette page et appuyez de nouveau sur Installer : ça reprend où ça s'est arrêté.",
+    noreturn: "Le clavier n'est pas revenu. Éteignez-le et rallumez-le.",
+    mismatch: "Écrit, mais le clavier annonce une autre version : ",
+    foreign: "Le clavier est en mode mise à jour d'un autre firmware. Terminez cette mise à jour avec son propre outil (M-UPGRADE), puis réessayez : ",
+    oldstock: "Ce clavier a un firmware M-VAVE plus ancien que V016 : mettez-le d'abord à jour en V016 avec M-UPGRADE. Rien n'a été envoyé : ",
+    timeout: "La vérification du paquet par le clavier n'a pas fini à temps : rien n'a été écrit. Éteignez-le et rallumez-le, puis réessayez.",
+    norequest: "Le mode mise à jour est apparu mais n'a rien demandé : rien n'a été écrit. Rebranchez le câble et réessayez.",
+    toomany: "Le clavier redemandait sans fin : arrêté. Rebranchez le câble et réessayez.",
+    badreq: "Le clavier a demandé des données hors du paquet : arrêté. Rechargez la page et réessayez : ",
+    fm1confirm: "Ce paquet est pour la FM-1 : rien n'a été écrit.",
+    fm1pkg: "Ce paquet est pour la FM-1 : rien n'a été écrit.",
+    board: "Ce paquet n'est pas pour cette carte : rien n'a été écrit.",
+    badpkg: "Le fichier à installer est endommagé. Rechargez la page.",
+    leave: "Écriture en cours. Ne fermez pas la page.",
+    device: "Appareil : ",
+    pkgFor: " → paquet ",
+    license: "GPL-3.0, sans garantie. Source :",
+    h1: "Installer Stallion sur le SMK-37 Pro",
+    lead: "Stallion fait du M-VAVE SMK-37 Pro un vrai synthétiseur polyphonique, joué avec ses 37 touches, 16 pads, 4 faders, les molettes et une pédale de sustain. L'installation se fait dans cette page : rien à télécharger.",
+    proOnly: "Stallion fonctionne sur le SMK-37 Pro uniquement. Cette page refuse les autres modèles (SMK-37 Elite, MKE-P37, Starrykey 37 Play) avant d'envoyer quoi que ce soit.",
+    proOnlyT: "SMK-37 Pro uniquement",
+    stepsT: "Avant de commencer",
+    s1T: "Utilise Chrome ou Edge sur un ordinateur, ou Chrome sur Android",
+    s1: "Safari, et tous les navigateurs sur iPhone et iPad, ne peuvent pas installer Stallion : ils n'ont pas le Web MIDI.",
+    s2T: "Branche le clavier directement sur l'ordinateur",
+    s2: "Utilise un câble USB qui transmet les données, sans hub. Ferme les autres applis et onglets qui utilisent le MIDI (logiciels de musique, éditeurs, M-UPGRADE).",
+    s3T: "Coche la case, appuie sur Installer et attends « Terminé »",
+    s3: "Le clavier redémarre en mode mise à jour, Stallion est écrit, puis le clavier redémarre. Stallion n'écrit jamais l'étalonnage d'usine du clavier.",
+    backupT: "Tu utilises déjà Stallion ?",
+    backup: "Fais d'abord une sauvegarde de tes sons avec l'éditeur (onglet Backup).",
+    afterT: "Après l'installation",
+    logT: "Journal technique (pour signaler un bug)",
+    homeLink: "Ce que fait Stallion : les moteurs, la matrice, l'éditeur",
+    notpro: "Stallion fonctionne sur le SMK-37 Pro uniquement. Rien n'a été écrit. Ce clavier s'annonce comme : ",
+  },
+  en: {
+    boardPick: "Your instrument:",
+    risk: "I understand: unofficial firmware, no warranty, installed at my own risk. I will not unplug the cable while it writes.",
+    install: "Install Stallion",
+    editor: "Open the editor: edit every sound from your computer",
+    backT: "Back to the M-VAVE firmware",
+    back: "First back up your sounds with the editor (Backup tab). Then install your model's official firmware with M-UPGRADE, M-VAVE's own updater. Stallion never touches the calibration: the keyboard comes back as it was.",
+    rescueT: "If something goes wrong",
+    rescue: "If the write stops, replug the cable and press Install again: the keyboard stays in update mode and the write carries on. If Stallion does not start, hold OCTAVE− while you switch the keyboard on (STALLION USB RESCUE), then install again. On Windows, if it stays at “Switching to update mode”, close the browser completely (every window), replug the keyboard, open this page again and press Install.",
+    other2: "Keyboard running ChanceTheMaker's “Sloop SMK” (identity SMK-37_9xx)? It takes only its own packages: go back to the M-VAVE firmware first (its restore page or M-UPGRADE), then install Stallion.",
+    nomidi: "This browser has no Web MIDI. Open the page in Chrome or Edge on a computer (Safari, iPhone and iPad cannot do it).",
+    loadfail: "Could not load: ",
+    ready: "Ready: Stallion ",
+    start: "Starting",
+    verify: "Verifying",
+    loader: "Switching to update mode",
+    write: "Writing",
+    waitota: "The keyboard restarts into update mode (unplug nothing)… s: ",
+    noreq: "The update mode has not asked for anything yet… s: ",
+    backwait: "Restarting… s: ",
+    reboot: "Restarting",
+    done: "Done: the keyboard runs ",
+    stopped: "Stopped. Replug the USB cable and press Install again.",
+    error: "Error: ",
+    needRisk: "Tick the box above first.",
+    denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and try again.",
+    notfound: "Keyboard not found. Check the USB cable (a data cable), close other apps that use MIDI, and try again.",
+    other: "This keyboard runs one of ChanceTheMaker's SMK firmwares (Felucca SMK, Sloop SMK, Melodee SMK, Doom), which take only their own packages. Nothing was written. Go back to the M-VAVE firmware first, then install Stallion.",
+    fm1: "The connected device is an FM-1. Nothing was written. Install Stallion on it with the FM-1 installer:",
+    toFm1: "Install on FM-1",
+    nopkg: "No Stallion package for this device: ",
+    model: "The model does not match: ",
+    lost: "The USB connection was lost. Replug it and try again.",
+    noloader: "Chrome does not see the keyboard in update mode. Do not switch the keyboard off: close Chrome completely (every window), open this page again and press Install again: it goes on where it stopped.",
+    noreturn: "The keyboard did not come back. Switch it off and on.",
+    mismatch: "Written, but the keyboard reports another version: ",
+    foreign: "The keyboard is in the update mode of another firmware. Finish that update with its own updater (M-UPGRADE), then try again: ",
+    oldstock: "This keyboard runs an M-VAVE firmware older than V016: update it to V016 with M-UPGRADE first. Nothing was sent: ",
+    timeout: "The keyboard's check of the package did not finish in time: nothing was written. Switch it off and on, then try again.",
+    norequest: "The update mode appeared but asked for nothing: nothing was written. Replug the cable and try again.",
+    toomany: "The keyboard kept asking: stopped. Replug the cable and try again.",
+    badreq: "The keyboard asked for data outside the package: stopped. Reload the page and try again: ",
+    fm1confirm: "This package is for the FM-1: nothing was written.",
+    fm1pkg: "This package is for the FM-1: nothing was written.",
+    board: "This package is not for this board: nothing was written.",
+    badpkg: "The file to install is damaged. Reload the page.",
+    leave: "Writing. Do not close the page.",
+    device: "Device: ",
+    pkgFor: " → package ",
+    license: "GPL-3.0, no warranty. Source:",
+    h1: "Install Stallion on the SMK-37 Pro",
+    lead: "Stallion turns the M-VAVE SMK-37 Pro into a deep polyphonic synthesizer, played from its 37 keys, 16 pads, 4 faders, the wheels and a sustain pedal. Installing takes place in this page: there is nothing to download.",
+    proOnly: "Stallion runs on the SMK-37 Pro only. This page refuses the other models (SMK-37 Elite, MKE-P37, Starrykey 37 Play) before it sends anything.",
+    proOnlyT: "SMK-37 Pro only",
+    stepsT: "Before you start",
+    s1T: "Use Chrome or Edge on a computer, or Chrome on Android",
+    s1: "Safari, and every browser on iPhone and iPad, cannot install Stallion: they have no Web MIDI.",
+    s2T: "Connect the keyboard straight to the computer",
+    s2: "Use a USB cable that carries data, and no hub. Close other apps and browser tabs that use MIDI (recording software, editors, M-UPGRADE).",
+    s3T: "Tick the box, press Install and wait for Done",
+    s3: "The keyboard restarts into update mode, Stallion is written, and the keyboard restarts again. Stallion never writes the keyboard's factory calibration.",
+    backupT: "Already using Stallion?",
+    backup: "Save a backup of your sounds with the editor first (the Backup tab).",
+    afterT: "After installing",
+    logT: "Technical log (for bug reports)",
+    homeLink: "What Stallion does: the engines, the matrix, the editor",
+    notpro: "Stallion runs on the SMK-37 Pro only. Nothing was written. This keyboard reports itself as: ",
+  },
+  ja: {
+    boardPick: "お使いの楽器：",
+    risk: "非公式・無保証のファームウェアを自己責任で入れることを理解しました。書き込み中はケーブルを抜きません。",
+    install: "Stallion をインストール",
+    editor: "エディタを開く：パソコンからすべての音色を編集",
+    backT: "M-VAVE のファームウェアに戻す",
+    back: "まずエディタで音色をバックアップ（Backup タブ）。そのあと M-VAVE 公式のアップデーター M-UPGRADE でモデルの公式ファームウェアを入れてください。キャリブレーションはそのままです。",
+    rescueT: "うまくいかないとき",
+    rescue: "書き込みが止まったら、ケーブルを挿し直してもう一度「インストール」を押してください（書き込みモードのまま続きから再開します）。Stallion が起動しないときは、OCTAVE− を押しながら電源を入れ（STALLION USB RESCUE）、もう一度インストールしてください。Windows で「書き込みモードに切り替え中」のまま進まないときは、ブラウザを完全に閉じ（すべてのウィンドウ）、キーボードを挿し直し、このページを開き直して「インストール」を押してください。",
+    other2: "ChanceTheMaker の「Sloop SMK」（SMK-37_9xx）が入っている場合：その専用パッケージしか受け付けません。先に M-VAVE のファームウェアに戻してから Stallion を入れてください。",
+    nomidi: "このブラウザには Web MIDI がありません。パソコンの Chrome か Edge で開いてください（Safari と iPhone・iPad では使えません）。",
+    loadfail: "読み込めませんでした: ",
+    ready: "準備完了：Stallion ",
+    start: "開始します",
+    verify: "確認中",
+    loader: "書き込みモードに切り替え中",
+    write: "書き込み中",
+    waitota: "書き込みモードで再起動中（抜かないで）… 秒: ",
+    noreq: "書き込みモードからの要求待ち… 秒: ",
+    backwait: "再起動中… 秒: ",
+    reboot: "再起動中",
+    done: "完了：",
+    stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    error: "エラー: ",
+    needRisk: "先に上のチェックを入れてください。",
+    denied: "MIDI（SysEx）の使用が許可されませんでした。サイト設定で MIDI を許可して、もう一度押してください。",
+    notfound: "キーボードが見つかりません。USB ケーブルを確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
+    other: "このキーボードは ChanceTheMaker の SMK ファームウェアで動いています。専用パッケージしか受け付けないため、何も書き込んでいません。先に M-VAVE のファームウェアに戻してください。",
+    fm1: "接続されているのは FM-1 です。何も書き込んでいません。FM-1 のインストーラーでインストールしてください：",
+    toFm1: "FM-1 にインストール",
+    nopkg: "この機器用の Stallion パッケージがありません: ",
+    model: "モデルが合いません: ",
+    lost: "USB の接続が切れました。挿し直してもう一度押してください。",
+    noloader: "Chrome から書き込みモードのキーボードが見えません。電源は切らずに、Chrome を完全に閉じてこのページを開き直し、もう一度押してください（続きから再開します）。",
+    noreturn: "キーボードが戻ってきません。電源を入れ直してください。",
+    mismatch: "書き込みは終わりましたが、別のバージョンを報告しています: ",
+    foreign: "キーボードは別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で終えてから、もう一度: ",
+    oldstock: "このキーボードの M-VAVE ファームウェアは V016 より古いです。先に M-UPGRADE で V016 に更新してください。何も送っていません: ",
+    timeout: "キーボードのパッケージ確認が時間内に終わりませんでした。何も書き込んでいません。電源を入れ直してもう一度。",
+    norequest: "書き込みモードになりましたが要求がありません。何も書き込んでいません。挿し直してもう一度。",
+    toomany: "キーボードが要求を繰り返しました。止めました。挿し直してもう一度。",
+    badreq: "キーボードがパッケージ外のデータを要求しました。止めました。再読み込みしてもう一度: ",
+    fm1confirm: "これは FM-1 用のパッケージです。何も書き込んでいません。",
+    fm1pkg: "これは FM-1 用のパッケージです。何も書き込んでいません。",
+    board: "このボード用のパッケージではありません。何も書き込んでいません。",
+    badpkg: "インストールするファイルが壊れています。ページを再読み込みしてください。",
+    leave: "書き込み中です。ページを閉じないでください。",
+    device: "機器: ",
+    pkgFor: " → パッケージ ",
+    license: "GPL-3.0、無保証。ソース:",
+    h1: "SMK-37 Pro に Stallion をインストール",
+    lead: "Stallion は M-VAVE SMK-37 Pro を本格的なポリフォニック・シンセサイザーに変えます。37 鍵、16 パッド、4 フェーダー、ホイール、サスティンペダルで演奏できます。インストールはこのページで完了します。ダウンロードは不要です。",
+    proOnly: "Stallion が動くのは SMK-37 Pro だけです。このページは他のモデル（SMK-37 Elite、MKE-P37、Starrykey 37 Play）を、何も送る前に断ります。",
+    proOnlyT: "SMK-37 Pro 専用",
+    stepsT: "はじめる前に",
+    s1T: "パソコンの Chrome か Edge、または Android の Chrome を使う",
+    s1: "Safari と、iPhone・iPad のすべてのブラウザは Web MIDI がないため、インストールできません。",
+    s2T: "キーボードをパソコンに直接つなぐ",
+    s2: "データ通信できる USB ケーブルを使い、ハブは通さないでください。MIDI を使う他のアプリやタブ（音楽ソフト、エディタ、M-UPGRADE）は閉じてください。",
+    s3T: "チェックを入れ、「インストール」を押して「完了」まで待つ",
+    s3: "キーボードが書き込みモードで再起動し、Stallion が書き込まれ、もう一度再起動します。工場のキャリブレーションは書き換えません。",
+    backupT: "すでに Stallion を使っていますか？",
+    backup: "先にエディタで音色のバックアップを保存してください（Backup タブ）。",
+    afterT: "インストールのあと",
+    logT: "技術ログ（不具合の報告用）",
+    homeLink: "Stallion でできること：音源エンジン、マトリクス、エディタ",
+    notpro: "Stallion が動くのは SMK-37 Pro だけです。何も書き込んでいません。このキーボードの名乗り: ",
+  },
+};
+const pickLang = () => { const l = (navigator.language || "en").toLowerCase(); return l.startsWith("fr") ? "fr" : l.startsWith("ja") ? "ja" : "en"; };
+let lang = pickLang();
+try { lang = localStorage.getItem("stallion-smk37-lang") || lang; } catch (_) {}
+const t = (k) => (TEXT[lang] && TEXT[lang][k]) ?? TEXT.en[k] ?? k;
+let lastKey = null, lastArg = "", lastCls = "";
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll(".lang").forEach((b) => b.setAttribute("aria-current", String(b.dataset.l === lang)));
+  if (lastKey) setStatus(t(lastKey) + lastArg, lastCls);
+}
+document.querySelectorAll(".lang").forEach((b) => b.addEventListener("click", () => {
+  lang = b.dataset.l;
+  try { localStorage.setItem("stallion-smk37-lang", lang); } catch (_) {}
+  applyLang();
+}));
+applyLang();
+function setStatus(txt, cls = "") { $("status").textContent = txt; $("status").className = cls; }
+/* the link to the FM-1 installer shows with the message that names an FM-1, and only then */
+const sayK = (k, arg = "", cls = "") => { lastKey = k; lastArg = arg; lastCls = cls; setStatus(t(k) + arg, cls); $("next").hidden = k !== "fm1"; };
+const log = (s) => { $("log").textContent += s + "\n"; $("log").scrollTop = 1e9; };
+const meta = /*META*/;   // { version, pkgs: [{ product, pkg, sha256 }] }: one package per model
+const images = new Map();                          // product -> logical image
+let writing = false;
+const lockAll = (on) => {
+  writing = on;
+  $("go").disabled = on || !images.size;
+  document.querySelectorAll("input").forEach((i) => { i.disabled = on; });
+};
+window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
+
+(async () => {
+  if (!navigator.requestMIDIAccess) { sayK("nomidi", "", "bad"); return; }
+  try {
+    /* never the browser's old copy: no-cache asks the server first, a mismatch is fetched once more past the cache;
+       a package whose SHA-256 or identity is not the one this page was made with is never offered */
+    const sha = async (b) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
+    const check = self.crypto && crypto.subtle;
+    for (const p of meta.pkgs) {
+      const get = async (cache) => {
+        const r = await fetch(p.pkg, { cache });
+        if (!r.ok) throw new Error(`${p.pkg}: HTTP ${r.status}`);
+        return new Uint8Array(await r.arrayBuffer());
+      };
+      let pkg = await get("no-cache");
+      if (check && (await sha(pkg)) !== p.sha256) pkg = await get("reload");
+      if (productOf(pkg) !== p.product) { sayK("badpkg", ` (${p.product})`, "bad"); return; }
+      if (check) {
+        const h = await sha(pkg);
+        if (h !== p.sha256) { sayK("badpkg", ` (${p.product})`, "bad"); log(`${p.product}: sha256 ${h}, expected ${p.sha256}`); return; }
+      }
+      images.set(p.product, logicalImage(pkg));
+    }
+    sayK("ready", `${meta.version} (${[...images.keys()].map((k) => k.split("_")[0]).join(", ")})`);
+    lockAll(writing);
+  } catch (e) { sayK("loadfail", e.message, "bad"); }
+})();
+
+let total = 74 + 1256;                             /* reads: step 1, step 2 (head + the SMK-37's app area) */
+const step = (k, a) => {
+  log(`${k} ${a ?? ""}`);
+  if (k === "start") sayK("start");
+  if (k === "verify") { sayK("verify"); $("bar").value = Math.min(100, (a / total) * 100); }
+  if (k === "loader") sayK("loader");
+  if (k === "write") { sayK("write"); $("bar").value = Math.min(100, ((74 + a) / total) * 100); }
+  if (k === "wait") sayK("waitota", a);
+  if (k === "noreq") sayK("noreq", a);
+  if (k === "reboot") sayK("reboot");
+  if (k === "back") sayK("backwait", a);
+  if (k === "done") { $("bar").value = 100; sayK("done", a || "", "good"); }
+};
+const failed = (e) => {
+  if (e && e.code && TEXT.en[e.code]) sayK(e.code, e.code === "other" || e.code === "fm1" ? "" : e.detail || "", "bad");
+  else sayK("error", e && e.message, "bad");
+  log(String(e && e.stack || e));
+};
+const pfail = (code, detail = "") => { const e = new Error(code); e.code = code; e.detail = detail; return e; };
+/* the package for this device, by its identity: Stallion runs on the SMK-37 Pro only (the other models of the same
+   keyboard, the SMK-37 Elite, the MKE-P37 and the Starrykey 37 Play, are refused before anything is sent) */
+function choose(idText) {
+  if (OTHER_SMK({ text: idText })) throw pfail("other");
+  const dm = idText.split("_")[0].replace(/^ota-/i, "");
+  if (/^FM-1$/i.test(dm)) throw pfail("fm1");
+  if (!/^SMK-37 Pro$/i.test(dm)) throw pfail("notpro", dm);
+  const c = pickPackage(idText, [...images.keys()]);
+  if (!c) throw pfail("nopkg", idText);
+  return c;
+}
+
+/* Chrome's MIDI in a disposable document (MidiSession, after ChanceTheMaker's sloop-smk; sloop-pro #3): held only while
+   the page talks to the keyboard, let go while it restarts (into its loader, into Stallion) and once it is done, so
+   Chrome does not hold the keyboard while it leaves the USB and comes back (on Windows that froze Chrome) */
+const session = new MidiSession(document, navigator);
+window.addEventListener("pagehide", () => { session.release(); });
+$("go").addEventListener("click", async () => {
+  if (writing) return;
+  if (!$("risk").checked) { sayK("needRisk", "", "bad"); return; }
+  lockAll(true);
+  $("bar").value = 0;
+  let midi;
+  try { midi = await session.open(); }
+  catch (e) { sayK("denied", "", "bad"); log(String(e && e.message || e)); await session.release(); lockAll(false); return; }
+  try {
+    const up = new Updater(midi, log, { session });
+    /* the keyboard on its named port, running or left in update mode; a loader under a generic name: looked for too */
+    const dev = (await up.find(null)) || (await up.find((id) => /^ota-/i.test(id.model), true));
+    const ota = dev && /^ota-/i.test(dev.id.model) ? dev : null;   /* left in update mode: the write resumes */
+    if (!dev) throw pfail("notfound", up.seen());
+    dev.link.close();
+    const c = choose(dev.id.text);
+    const image = images.get(c.product);
+    total = 74 + Math.ceil(image.length / 512);
+    $("device").textContent = t("device") + dev.id.text + t("pkgFor") + c.product;
+    if (ota) {                                     /* the write finished, then the keyboard is checked as install() does */
+      if (!(await up.resume(image, step, { package: c.product, anyModel: c.anyModel, verify: true }))) throw pfail("stopped");
+    } else await up.install(image, c.product, step, c.anyModel, { refuseOldStock: true });
+  } catch (e) { failed(e); }
+  await session.release();                         /* (done or not: the keyboard is not held between two clicks) */
+  lockAll(false);
+});
+/* the site without internet (webapp/sw.js), as the FM-1 installer: opened once online, this page and its packages are
+   kept by the browser */
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol))
+  navigator.serviceWorker.register("../sw.js").catch(() => {});
+</script>
+</body>
+</html>

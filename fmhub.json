@@ -1,0 +1,17 @@
+{
+  "what": "A synthesizer with 26 engines and 819 level-matched factory sounds: three-oscillator HYBRID, six-operator FM, wavetables, early-1980s polysynths, a semi-modular two-filter voice, physical models and more. One instrument with a modulation matrix, arpeggiator and step sequencer, edited in the browser.",
+  "author": "Eberon Limited (John Gorman)",
+  "kinds": [
+    "synth"
+  ],
+  "editor": "https://eberonltd.github.io/stallion-fm1/webapp/editor/",
+  "cheat": "https://eberonltd.github.io/stallion-fm1/cheat-sheet.html",
+  "image": "assets/logo/stallion-splash.png",
+  "color": "#D98E2F",
+  "smk37": {
+    "what": "The same 26 engines and 819 sounds on the SMK-37 Pro, played from its 37 keys with pad and key aftertouch, the wheels and a pedal. The installer takes the SMK-37 Pro only and never writes the keyboard's factory calibration.",
+    "image": "web/screens/shot-smk-padat@2x.png",
+    "install": "https://eberonltd.github.io/stallion-fm1/webapp/installer-smk37/",
+    "guide": "https://github.com/EberonLtd/stallion-fm1/blob/main/GUIDE.md#3-the-smk-37-pro"
+  }
+}

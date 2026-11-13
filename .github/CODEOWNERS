@@ -1,0 +1,4 @@
+# Stallion R12: the private-files check and its approved audio list need a maintainer's review (a user: GitHub
+# ignores an organisation as a code owner; enforced once branch protection is on, see docs/RELEASING.md)
+/tools/approved_audio.txt @jp-gorman
+/tools/private_check.py @jp-gorman

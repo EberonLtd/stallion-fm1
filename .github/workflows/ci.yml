@@ -1,0 +1,93 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Copyright (C) 2026 Eberon Limited (John Gorman)
+# Stallion's CI, on every push and pull request, from a clean clone of this repo alone (stallion R13: no private files, no SDK):
+#   checks      the licence audit (R52: SPDX headers; R55: assets/MANIFEST) and the private-files check (R12: no
+#               audio, no recordings, reference material or note scores added), as tools/hooks/pre-commit
+#   host-tests  tests/run_tests.sh with HOST_ONLY=1 (the generated headers made here) and SOAK_MIN=1, with gcc
+#   web         node web/test_web.mjs (the editor protocol, samples, packages, update protocol)
+# Not here: the target build (tools/build.py, build/felucca.fwsc) needs the JieLi pi32v2 toolchain and the AC79 SDK
+# files, which are proprietary and not redistributable, so it cannot run on a public runner. HOST_ONLY=1 skips the
+# three tests that need its output (the M-UPGRADE entry, the update loader, the target cost of the render loops in
+# build/felucca.dis); run the full suite with a target build before each release (docs/RELEASING.md).
+name: ci
+# Runs: a pull request (every update), a push to main (the merge), and by hand (Actions > ci > Run workflow).
+# Not every push to a branch: a branch's push and its pull request ran everything twice, and the private repo's
+# free Actions minutes (2000 a month) went in a few busy days (each host-tests run ~30 min). The long host tests
+# run on pull requests and by hand only; main's push runs the quick checks (the merge was tested in its PR).
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: licence audit, private files (R12, R52, R55)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0                  # the base of the push / pull request, for the files it adds
+      - name: licence audit (SPDX headers, assets/MANIFEST)
+        run: python3 tools/licence_check.py
+      - name: no private files in the tree
+        run: python3 tools/private_check.py --tree
+      - name: no audio, private file or riff score added
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+          DEFAULT: ${{ github.event.repository.default_branch }}
+        run: |
+          base="$BEFORE"
+          [ "$EVENT" = pull_request ] && base="$PR_BASE"
+          # a new branch's first push has no "before" (all zeros): its base is the default branch
+          if [ -z "$base" ] || ! git cat-file -e "$base^{commit}" 2>/dev/null; then base="origin/$DEFAULT"; fi
+          python3 tools/private_check.py --base "$base"
+
+  host-tests:
+    name: host tests (gcc, HOST_ONLY, SOAK_MIN=1)
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      # Pillow: the font, icons and logo headers and the icon atlas and logo checks (pinned: they compare pixels, and
+      # Ubuntu's Pillow 10 rasterises the logo otherwise); numpy: tools/sampleio.py.
+      # No valgrind: tests/cpu_baseline.txt holds instruction counts of the reference build (clang, arm64, macOS's
+      # kernel counter); gcc's x86-64 code counts other numbers (PHYS +27..40 % under callgrind), so here regress
+      # times the cost, which only warns (SKIP_CPU_VALGRIND). The counted budget is checked on macOS before a release.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: packages
+        run: python3 -m pip install pillow==12.3.0 numpy==2.2.6
+      - name: tests/run_tests.sh
+        env:
+          HOST_ONLY: 1
+          SOAK_MIN: 1
+          CC: gcc
+          CC_UB: gcc
+          CC_TSAN: gcc
+          SKIP_CPU_VALGRIND: 1
+        run: sh tests/run_tests.sh
+
+  web:
+    name: web tests (node)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node web/test_web.mjs

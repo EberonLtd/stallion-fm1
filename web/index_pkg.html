@@ -1,0 +1,522 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+     Changes: Copyright (C) 2026 Eberon Limited (John Gorman)
+     Stallion's FM-1 installer (webapp/installer/): web/make_site.py inlines fm1pkg.js, fm1ota.js, the package's metadata,
+     web/site.css, the logo and the counts; the install script below is the one Felucca and SLOOP made, kept as it is -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Install Stallion, the synthesizer firmware, on the M-VAVE FM-1 from your browser.">
+<!--PWA--><link rel="manifest" href="../stallion.webmanifest"><meta name="theme-color" content="#0B1E36"><link rel="icon" href="../icon-192.png"><!--/PWA-->
+<title>Stallion installer for the FM-1</title>
+<style>
+  @font-face { font-family: "Stallion Pixel"; src: url("../stallion-pixel.ttf") format("truetype"); font-display: swap; }
+/*SITE_CSS*/
+
+  /* the installer's own parts */
+  .boards { margin: 8px 0 32px; }
+  .boards p { font-size: 20px; margin: 0 0 10px; color: var(--soft); }
+  .boards div { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .boards a { display: block; text-align: center; font: 400 32px/1.1 var(--pixel); text-transform: uppercase; padding: 18px 8px;
+              border: 4px solid var(--edge); color: var(--sail); text-decoration: none; border-radius: 14px; }
+  .boards a:hover { border-color: var(--sail); }
+  .boards a[aria-current="page"] { background: var(--sail); color: var(--navy); border-color: var(--sail); }
+  .hero-i { padding: 24px 0 8px; }
+  .panel { background: var(--panel); border-radius: 20px; padding: 28px; margin: 0 0 28px; }
+  @media (max-width: 600px) { .panel { padding: 20px 16px; } }
+  button#go { width: 100%; min-height: 84px; font-size: 48px; }
+  #status { margin: 18px 0 0; min-height: 1.6em; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #status.bad { color: var(--rust); } #status.good { color: var(--sea); }
+  #device { color: var(--soft); font-size: 18px; min-height: 1.4em; margin: 12px 0 0; }
+  progress { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 18px; border: 0;
+             border-radius: 9px; background: var(--deep); overflow: hidden; margin-top: 20px; }
+  progress::-webkit-progress-bar { background: var(--deep); }
+  progress::-webkit-progress-value { background: var(--oak); }
+  progress::-moz-progress-bar { background: var(--oak); }
+  details.log { margin: 16px 0 0; } details.log summary { cursor: pointer; font-size: 18px; color: var(--soft); }
+  pre { color: var(--soft); font-size: 16px; white-space: pre-wrap; margin: 8px 0 0; max-height: 220px; overflow: auto;
+        background: var(--deep); padding: 12px; border-radius: 10px; }
+  label.ck { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 20px; cursor: pointer; font-size: 20px; }
+  input[type="checkbox"] { width: 28px; height: 28px; flex: none; margin-top: 2px; accent-color: var(--oak); }
+  .after { display: grid; gap: 14px; }
+  .after .btn { justify-content: flex-start; text-align: left; }
+  h2.sec { font-size: 32px; margin: 40px 0 16px; color: var(--sail); }
+  .trouble p { font-size: 20px; }
+  details.stock { background: var(--panel); border-radius: 16px; padding: 18px 22px; margin: 28px 0 0; }
+  details.stock summary { cursor: pointer; font: 400 32px/1.2 var(--pixel); text-transform: uppercase; color: var(--sail); }
+  details.stock[open] summary { margin-bottom: 14px; }
+  input[type="file"] { font: inherit; font-size: 18px; color: var(--sail); margin-top: 8px; }
+  button#stock-go { font: 400 32px/1 var(--pixel); text-transform: uppercase; background: transparent; color: var(--sail);
+                    border: 4px solid var(--sail); border-radius: 14px; padding: 14px 22px; cursor: pointer; }
+  button#stock-go:disabled { color: var(--soft); border-color: var(--edge); cursor: default; }
+  .back-home { font-size: 20px; }
+
+  /* the longship sails along the bar while the FM-1 is written (the boot logo's mark: the Sea Stallion from
+     Glendalough): it rocks on the swell, the sail fills, the oars sweep and the wave runs aft; it rides still at
+     100 %, and with reduced motion */
+  .ride { position: relative; margin-top: 16px; padding-top: 42px; }
+  .ride progress { display: block; margin-top: 0; }
+  .ship { position: absolute; top: 0; left: calc((100% - 60px) * var(--p, 0)); width: 60px; height: 42px;
+          transition: left .3s linear; pointer-events: none; }
+  .ship svg { display: block; width: 60px; height: 42px; overflow: hidden; }
+  .ship .oak { fill: var(--oak); } .ship .sl { fill: var(--sail); } .ship .ru { fill: var(--rust); }
+  .ship .st { fill: none; stroke: var(--oak); stroke-linecap: round; stroke-linejoin: round; }
+  .ship .oar { stroke-width: 1.3; transform-origin: var(--o) 23px; transform: rotate(40deg); }
+  .ship .wave { fill: none; stroke: var(--sea); stroke-width: 1.6; stroke-linecap: round; }
+  .ship .hull { transform-origin: 24px 23px; } .ship .sail { transform-origin: 24px 4px; }
+  .ride.run .ship .hull { animation: rock 1s ease-in-out infinite; }
+  .ride.run .ship .sail { animation: fill 1s ease-in-out infinite; }
+  .ride.run .ship .oar { animation: row 1s linear infinite; }
+  .ride.run .ship .wave { animation: swell 1s linear infinite; }
+  @keyframes rock { 0%, 100% { transform: translateY(.6px) rotate(0); } 25% { transform: rotate(-3deg); }
+                    50% { transform: translateY(-.6px) rotate(0); } 75% { transform: rotate(3deg); } }
+  @keyframes fill { 0%, 100% { transform: scale(.94, .96); } 50% { transform: scale(1.04, 1.04); } }
+  @keyframes row { 0%, 100% { transform: rotate(24deg); } 50% { transform: rotate(58deg); }
+                   75% { transform: rotate(40deg) scaleY(.72); } }
+  @keyframes swell { from { transform: translateX(0); } to { transform: translateX(-16px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .ship { transition: none; }
+    .ride.run .ship .hull, .ride.run .ship .sail, .ride.run .ship .oar, .ride.run .ship .wave { animation: none; } }
+
+</style>
+</head>
+<body>
+<header class="wrap bar"><a class="logo" href="../../" aria-label="Stallion home"><!--LOGO--></a>
+  <div class="langs" role="group" aria-label="Language / Langue / 言語"><button class="lang" data-l="en">English</button><button class="lang" data-l="fr">Français</button><button class="lang" data-l="ja">日本語</button></div></header>
+<div class="sail" role="presentation"></div>
+<main class="narrow hero-i">
+  <!--BOARDS-->
+  <!--STUDIO_GUIDE-->
+  <!--BANNER-->
+  <h1 data-t="h1"></h1>
+    <section data-l="en"><p class="lead">Stallion turns the FM-1 into a deep polyphonic synthesizer: {{ENGINES}} synthesis engines and {{SOUNDS}} sounds, {{FILTERS}} filter models, a modulation matrix on every sound and {{TUNINGS}} tunings. Installing takes place in this page: there is nothing to download.</p></section>
+    <section data-l="fr"><p class="lead">Stallion fait de la FM-1 un vrai synthétiseur polyphonique : {{ENGINES}} moteurs de synthèse et {{SOUNDS}} sons, {{FILTERS}} modèles de filtre, une matrice de modulation sur chaque son et {{TUNINGS}} accordages. L'installation se fait dans cette page : rien à télécharger.</p></section>
+    <section data-l="ja"><p class="lead">Stallion は FM-1 を本格的なポリフォニック・シンセサイザーに変えます。{{ENGINES}} の音源エンジンと {{SOUNDS}} の音色、{{FILTERS}} 種類のフィルター・モデル、すべての音色にモジュレーション・マトリクス、{{TUNINGS}} のチューニング。インストールはこのページで完了します。ダウンロードは不要です。</p></section>
+  <p class="back-home"><a href="../../" data-t="homeLink"></a></p>
+  <h2 class="sec" data-t="stepsT"></h2>
+  <ol class="steps">
+    <li><b data-t="s1T"></b><span data-t="s1"></span></li>
+    <li><b data-t="s2T"></b><span data-t="s2"></span></li>
+    <li><b data-t="s3T"></b><span data-t="s3"></span></li>
+  </ol>
+  <div class="note" style="margin-top:24px"><b data-t="backupT"></b><p data-t="backup"></p></div>
+  <div class="panel">
+    <div class="warn"><p data-t="warn"></p></div>
+    <p><button id="go" class="btn" disabled data-t="install"></button></p>
+<div class="ride" id="ride">
+    <div class="ship" aria-hidden="true"><svg viewBox="0 0 48 34">
+      <g class="wave"><path d="M-2 30.2q2-1.8 4 0t4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0"/></g>
+      <g class="hull">
+        <g class="st"><line class="oar" style="--o:13px" x1="13" y1="23" x2="13" y2="33"/><line class="oar" style="--o:18.5px" x1="18.5" y1="23" x2="18.5" y2="33"/><line class="oar" style="--o:29.5px" x1="29.5" y1="23" x2="29.5" y2="33"/><line class="oar" style="--o:35px" x1="35" y1="23" x2="35" y2="33"/></g>
+        <path class="oak" d="M5.5 19Q24 23.6 41 19L41.8 18.6C40.4 27.8 10.6 28.2 4.8 19.4Z"/>
+        <path class="st" stroke-width="2.2" d="M40.6 19.4Q44.4 16 43.2 10.6"/>
+        <path class="oak" d="M41.8 12.2L41.4 7.6L41.8 4.8L42.4 3.4L42.8 .6L44.2 2.6L45.6 3.6L47.9 6L47.9 8.6L46.2 8.6L45 7.8L44.8 12.2Z"/>
+        <circle cx="43.7" cy="4.8" r=".7" fill="var(--navy)"/>
+        <path class="st" stroke-width="2" d="M6 19.6Q2.8 17.2 3.6 12.9L3.8 11.9L4.2 11.2L4.8 10.6L5.6 10.2L6.4 10.2L7.1 10.3L7.7 10.7L8.2 11.2L8.5 11.8L8.5 12.4L8.3 13L8 13.5L7.6 13.8"/>
+        <path class="st" stroke-width="1.5" d="M24 21V.6M14.8 2.5H33.2"/>
+        <g class="sail"><clipPath id="sail-cut"><path d="M15.4 4.6H32.6Q34.2 10.8 32.2 16.4Q24 18.4 15.8 16.4Q13.8 10.8 15.4 4.6Z"/></clipPath>
+          <g clip-path="url(#sail-cut)"><rect class="sl" x="13" y="4" width="22" height="15"/><rect class="ru" x="17.4" y="4" width="3.8" height="15"/><rect class="ru" x="25" y="4" width="3.8" height="15"/></g></g>
+      </g>
+    </svg></div>
+    <progress id="bar" max="100" value="0"></progress>
+  </div>
+    <p id="status" role="status" aria-live="polite"></p>
+    <p id="next" hidden><a class="btn text" href="../installer-smk37/" data-t="toSmk"></a></p>
+    <details class="log"><summary data-t="logT"></summary><pre id="log"></pre></details>
+  </div>
+  <h2 class="sec" data-t="afterT"></h2>
+  <div class="after">
+    <a class="btn text" href="../editor/" data-t="editor"></a>
+    <a class="btn ghost text" href="../editor/stallion-editor.html" download="stallion-editor.html" data-t="edOffline"></a>
+    <button id="app" class="btn ghost text" hidden data-t="appInstall"></button>
+  </div>
+  <section class="trouble">
+    <h2 class="sec" data-t="troubleT"></h2>
+    <p data-t="rescue"></p>
+    <p data-t="direct"></p>
+    <p><span data-t="brick"></span>
+      <a href="https://github.com/kurogedelic/FM-1-transporter" target="_blank" rel="noopener">FM-1-transporter</a></p>
+    <div class="warn"><p data-t="beta"></p></div>
+  </section>
+  <details class="stock">
+    <summary data-t="stockTitle"></summary>
+    <p data-t="stockHelp"></p>
+    <p><a href="https://www.m-vave.com/download" target="_blank" rel="noopener">www.m-vave.com/download</a></p>
+    <p data-t="stockBackup"></p>
+    <p><a class="btn ghost" href="../editor/" data-t="stockEditor"></a></p>
+    <p><label><input id="stock-saved" type="checkbox"> <span data-t="stockSaved"></span></label></p>
+    <p><label><span data-t="stockFile"></span><br><input id="stock-file" type="file" accept=".fwsc"></label></p>
+    <p><button id="stock-go" disabled data-t="stockGo"></button></p>
+    <p data-t="back"></p>
+  </details>
+
+</main>
+<footer class="foot">
+  <div class="narrow">
+    <p lang="en"><b>Stallion</b> is free, open-source firmware (GPL-3.0-only) by Eberon Limited (John Gorman):
+      <a href="https://github.com/EberonLtd/stallion-fm1" target="_blank" rel="noopener">github.com/EberonLtd/stallion-fm1</a>.
+      It grew out of <a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> and Clipper Pro by 3dSam (isod89), which grew out of
+      <a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a>; all are based on
+      <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita (@kurogedelic), Hügelton Instruments.
+      Everyone else whose work it uses is named in
+      <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/CREDITS.md" target="_blank" rel="noopener">CREDITS.md</a> and
+      <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/LICENSING.md" target="_blank" rel="noopener">LICENSING.md</a>.</p>
+    <p lang="en">M-VAVE, FM-1 and SMK-37 are trademarks of their owners. Stallion is not affiliated with or endorsed by them. No warranty: you install it at your own risk.</p>
+    <p class="copy">Copyright (C) 2026 Eberon Limited (John Gorman)</p>
+  </div>
+</footer>
+<script type="module">
+/*LIB*/
+const $ = (id) => document.getElementById(id);
+const TEXT = {
+  ja: {
+    boardPick: "お使いの楽器：",
+    intro: "FM-1 を USB で接続してください。パソコンの Chrome か Edge（Windows、macOS、Linux、ChromeOS）、または Android の Chrome で使えます（Web MIDI）。Safari と iPhone・iPad のブラウザではインストールも編集もできません。",
+    warn: "Stallion の書き込み中は USB ケーブルを抜かないでください。",
+    install: "インストール",
+    other: "言語：日本語",
+    otherNext: "表示を英語に切り替える",
+    editor: "エディタを開く：パソコンからすべての音色を編集",
+    edOffline: "エディタを 1 つのファイルでダウンロード（インターネットなしで使う：Chrome か Edge で開く）",
+    appInstall: "アプリとしてインストール（エディタとインストーラーをオフラインでも・Android も）",
+    direct: "USB ケーブルはパソコンに直接つないでください。プローブなどの機材は不要です。",
+    brick: "万一インストールに失敗して起動しなくなった場合は、復旧に Transporter が必要です:",
+    beta: "これは無保証のカスタムファームウェアです。このファームウェアを使ったことで FM-1 が壊れたり不具合が起きたりしても、作者は一切の責任を負いません。自己責任でお使いください。",
+    nomidi: "このブラウザには Web MIDI がありません。パソコンの Chrome か Edge で開いてください（Safari と iPhone・iPad では使えません）。",
+    loadfail: "読み込めませんでした: ",
+    start: "開始します",
+    verify: "確認中",
+    loader: "書き込みモードに切り替え中",
+    write: "書き込み中",
+    reboot: "再起動中",
+    done: "完了しました",
+    stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    error: "エラー: ",
+    denied: "MIDI（SysEx）の使用が許可されませんでした。アドレスバーのサイト設定で MIDI を許可して、もう一度押してください。",
+    notfound: "FM-1 が見つかりません。USB ケーブル（データ通信用か）を確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
+    model: "接続されている機器は FM-1 ではありません。",
+    smk: "接続されている機器は {m} です（FM-1 ではありません）。何も書き込んでいません。SMK-37 Pro のインストーラーでインストールしてください：",
+    toSmk: "SMK-37 Pro にインストール",
+    lost: "USB の接続が切れました。挿し直してもう一度押してください。",
+    noloader: "書き込みモードの FM-1 が見つかりません。USB を挿し直してもう一度押してください（終わるまで書き込みモードのままです）。",
+    noreturn: "FM-1 が戻ってきません。電源を入れ直してください。",
+    mismatch: "書き込みは終わりましたが、FM-1 が別のバージョンを報告しています: ",
+    foreign: "FM-1 は別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で書き込みを終えてから、もう一度インストールしてください: ",
+    headother: "FM-1 は変更されていません。FM-1 の起動領域がこのファイルとは別の公式バージョンのものなので、このファイルは受け付けられませんでした。対処：1. FM-1 に最後に入っていた公式ファイルを選ぶ（最後が V16 なら V16、V15 なら V15）。2. または、まずそのファイルを入れてから、公式のアップデーターでこのバージョンに更新する。",
+    badpkg: "インストールするファイルが壊れています。ページを再読み込みしてください。",
+    leave: "書き込み中です。ページを閉じないでください。",
+    license: "GPL-3.0、無保証。ソース:",
+    stockTitle: "公式ファームウェアに戻す",
+    stockHelp: "M-VAVE のサイトから公式の FM-1 ファームウェア（V16、または V15）をダウンロードし、中の FM-1.fwsc（変更していないもの）を選んでください。ファイルはこのブラウザの中で確認され、どこにも送られません。",
+    stockBackup: "公式ファームウェアは Stallion の音色・プリセット・ウェーブテーブルを開けません。先にエディタでバックアップを保存してください（Backup タブ）。Stallion を入れ直せば、エディタから復元できます。",
+    stockEditor: "エディタを開いてバックアップする",
+    stockSaved: "バックアップをパソコンに保存しました",
+    stockFile: "公式の FM-1.fwsc",
+    stockGo: "公式ファームウェアをインストール",
+    stockValid: "公式ファームウェアを確認しました",
+    stockBad: "公式ファームウェア（V16 / V15）ではありません: ",
+    stockConfirm: "FM-1 に公式ファームウェアをインストールします。Stallion の曲は公式ファームウェアでは開けません。バックアップは保存しましたか？",
+    stockFinish: "FM-1 は Stallion の書き込みモードです。先に「インストール」で Stallion の書き込みを終えてから、公式ファームウェアに戻してください。",
+    back: "M-VAVE のアップデーター M-UPGRADE（Downloads → PC Software）でも戻せます。FM-1 が見つからない場合は、MIDI を使う他のアプリとブラウザのタブを閉じてください。",
+    h1: "FM-1 に Stallion をインストール",
+    stepsT: "はじめる前に",
+    s1T: "パソコンの Chrome か Edge、または Android の Chrome を使う",
+    s1: "Windows、macOS、Linux、ChromeOS で使えます。Safari と、iPhone・iPad のすべてのブラウザは Web MIDI がないため、インストールできません。",
+    s2T: "FM-1 をパソコンに直接つなぐ",
+    s2: "データ通信できる USB ケーブルを使い（充電専用ケーブルは不可）、ハブは通さないでください。MIDI を使う他のアプリやタブは閉じてください。",
+    s3T: "「インストール」を押して「完了」まで待つ",
+    s3: "ブラウザに聞かれたら MIDI を許可してください。FM-1 が書き込みモードで再起動し、Stallion が書き込まれ、Stallion のロゴで再起動します。",
+    backupT: "すでに Stallion を使っていますか？",
+    backup: "先にエディタで音色のバックアップを保存してください（Backup タブ）。何かあっても復元できます。",
+    afterT: "インストールのあと",
+    logT: "技術ログ（不具合の報告用）",
+    troubleT: "うまくいかないとき",
+    rescue: "インストールが途中で止まっても、FM-1 は書き込みモードのままです。ケーブルを挿し直してもう一度「インストール」を押せば、最後まで書き込みます。Stallion が起動しないときは、OCT− だけを押しながら FM-1 の電源を入れ（STALLION USB RESCUE）、もう一度「インストール」を押してください。",
+    homeLink: "Stallion でできること：音源エンジン、マトリクス、エディタ",
+  },
+  en: {
+    boardPick: "Your instrument:",
+    intro: "Connect the FM-1 by USB. Use Chrome or Edge on a computer (Windows, macOS, Linux, ChromeOS) or Chrome on Android: they have Web MIDI. Safari, and every browser on iPhone and iPad, cannot install or edit.",
+    warn: "Do not unplug the USB cable while Stallion is being written.",
+    install: "Install",
+    other: "Language: English",
+    otherNext: "Show the page in French",
+    editor: "Open the editor: edit every sound from your computer",
+    edOffline: "Download the editor as one file, to use it without internet (open it in Chrome or Edge)",
+    appInstall: "Install the app: the editor and the installer, offline too (Android as well)",
+    direct: "Connect the USB cable directly to the computer. You need no probe or other hardware.",
+    brick: "If an install fails and the FM-1 no longer starts, recovering it needs a Transporter:",
+    beta: "This is custom firmware with no warranty. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of it. Use it at your own risk.",
+    nomidi: "This browser has no Web MIDI. Open the page in Chrome or Edge on a computer (Safari, iPhone and iPad cannot do it).",
+    loadfail: "Could not load: ",
+    start: "Starting",
+    verify: "Verifying",
+    loader: "Switching to update mode",
+    write: "Writing",
+    reboot: "Restarting",
+    done: "Done",
+    stopped: "Stopped. Replug the USB cable and press Install again.",
+    error: "Error: ",
+    denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and press Install again.",
+    notfound: "FM-1 not found. Check the USB cable (a data cable), close other apps that use MIDI, and press Install again.",
+    model: "The connected device is not an FM-1.",
+    smk: "The connected device is an {m}, not an FM-1. Nothing was written. Install Stallion on it with the SMK-37 Pro installer:",
+    toSmk: "Install on SMK-37 Pro",
+    lost: "The USB connection was lost. Replug it and press Install again.",
+    noloader: "The FM-1 in update mode was not found. Replug the USB cable and press Install again (it stays in update mode until it is finished).",
+    noreturn: "The FM-1 did not come back. Power-cycle it.",
+    mismatch: "Written, but the FM-1 reports another version: ",
+    foreign: "The FM-1 is in the update mode of another firmware. Finish that update with its own updater (M-UPGRADE), then press Install again: ",
+    headother: "The FM-1 is unchanged. Its boot area is from another official version than this file, so the FM-1 refused it. What to do: 1. choose the official file the FM-1 last had (V16 if it last ran V16, V15 if V15); 2. or install that file first, then update to this version with the official updater.",
+    badpkg: "The file to install is damaged. Reload the page.",
+    leave: "Writing. Do not close the page.",
+    license: "GPL-3.0, no warranty. Source:",
+    stockTitle: "Return to the official firmware",
+    stockHelp: "Download the official FM-1 firmware (V16, or V15) from M-VAVE and select the FM-1.fwsc inside it, unmodified. The file is checked in this browser; it is not sent anywhere.",
+    stockBackup: "The official firmware cannot open Stallion's sounds, presets or wavetables. Save a backup with the editor first (the Backup tab); reinstall Stallion and restore it from the editor whenever you want them back.",
+    stockEditor: "Open the editor to back up",
+    stockSaved: "I saved a backup on this computer",
+    stockFile: "The official FM-1.fwsc",
+    stockGo: "Install the official firmware",
+    stockValid: "Official firmware verified",
+    stockBad: "Not the official firmware (V16 / V15): ",
+    stockConfirm: "Install the official firmware on the FM-1? The official firmware cannot open Stallion's music. Did you save a backup?",
+    stockFinish: "The FM-1 is in Stallion's update mode. Press Install to finish the Stallion update first, then return to the official firmware.",
+    back: "M-VAVE's own updater, M-UPGRADE (Downloads → PC Software), works too. If it does not find the FM-1, close every other app and browser tab that uses MIDI.",
+    h1: "Install Stallion on the FM-1",
+    stepsT: "Before you start",
+    s1T: "Use Chrome or Edge on a computer, or Chrome on Android",
+    s1: "Windows, macOS, Linux and ChromeOS all work. Safari, and every browser on iPhone and iPad, cannot install Stallion: they have no Web MIDI.",
+    s2T: "Connect the FM-1 straight to the computer",
+    s2: "Use a USB cable that carries data, not a charge-only cable, and no hub. Close other apps and browser tabs that use MIDI.",
+    s3T: "Press Install and wait for Done",
+    s3: "Allow MIDI when the browser asks. The FM-1 restarts into update mode, Stallion is written, and the FM-1 restarts on the Stallion logo.",
+    backupT: "Already using Stallion?",
+    backup: "Save a backup of your sounds with the editor first (the Backup tab). If anything goes wrong, you can restore it.",
+    afterT: "After installing",
+    logT: "Technical log (for bug reports)",
+    troubleT: "If something goes wrong",
+    rescue: "If an install stops part way, the FM-1 stays in update mode: replug the cable and press Install again, and it finishes. If Stallion does not start, hold OCT− alone while you switch the FM-1 on (STALLION USB RESCUE), then press Install again.",
+    homeLink: "What Stallion does: the engines, the matrix, the editor",
+  },
+  fr: {
+    boardPick: "Ton instrument :",
+    intro: "Branche la FM-1 en USB. Utilise Chrome ou Edge sur un ordinateur (Windows, macOS, Linux, ChromeOS) ou Chrome sur Android : ils ont le Web MIDI. Safari, et tous les navigateurs sur iPhone et iPad, ne peuvent ni installer ni éditer.",
+    warn: "Ne débranche pas le câble USB pendant l'écriture de Stallion.",
+    install: "Installer",
+    other: "Langue : français",
+    otherNext: "Afficher la page en japonais",
+    editor: "Ouvrir l'éditeur : édite chaque son depuis ton ordinateur",
+    edOffline: "Télécharger l'éditeur en un seul fichier, pour l'utiliser sans internet (ouvre-le dans Chrome ou Edge)",
+    appInstall: "Installer l'app : l'éditeur et l'installateur, hors ligne aussi (Android également)",
+    direct: "Branche le câble USB directement sur l'ordinateur. Aucune sonde ni autre matériel n'est nécessaire.",
+    brick: "Si une installation échoue et que la FM-1 ne démarre plus, il faut un Transporter pour la récupérer :",
+    beta: "C'est un firmware personnalisé sans garantie. L'auteur décline toute responsabilité si ta FM-1 est endommagée ou fonctionne mal à cause de lui. Utilise-le à tes risques.",
+    nomidi: "Ce navigateur n'a pas le Web MIDI. Ouvre la page dans Chrome ou Edge sur un ordinateur (Safari, iPhone et iPad ne peuvent pas).",
+    loadfail: "Chargement impossible : ",
+    start: "Démarrage",
+    verify: "Vérification",
+    loader: "Passage en mode mise à jour",
+    write: "Écriture",
+    reboot: "Redémarrage",
+    done: "Terminé",
+    stopped: "Arrêté. Rebranche le câble USB et appuie de nouveau sur Installer.",
+    error: "Erreur : ",
+    denied: "L'accès MIDI (SysEx) a été refusé. Autorise le MIDI dans les paramètres du site (barre d'adresse) et appuie de nouveau sur Installer.",
+    notfound: "FM-1 introuvable. Vérifie le câble USB (un câble de données), ferme les autres applis qui utilisent le MIDI, et appuie de nouveau sur Installer.",
+    model: "L'appareil branché n'est pas une FM-1.",
+    smk: "L'appareil branché est un {m}, pas une FM-1. Rien n'a été écrit. Installe Stallion dessus avec l'installateur SMK-37 Pro :",
+    toSmk: "Installer sur SMK-37 Pro",
+    lost: "La connexion USB a été perdue. Rebranche-la et appuie de nouveau sur Installer.",
+    noloader: "La FM-1 en mode mise à jour est introuvable. Rebranche le câble USB et appuie de nouveau sur Installer (elle reste en mode mise à jour jusqu'à la fin).",
+    noreturn: "La FM-1 n'est pas revenue. Éteins-la et rallume-la.",
+    mismatch: "Écrit, mais la FM-1 annonce une autre version : ",
+    foreign: "La FM-1 est en mode mise à jour d'un autre firmware. Termine cette mise à jour avec son propre outil (M-UPGRADE), puis appuie de nouveau sur Installer : ",
+    headother: "La FM-1 n'a pas été modifiée. Sa zone de démarrage vient d'une autre version officielle que ce fichier, elle l'a donc refusé. Que faire : 1. choisis le fichier officiel que la FM-1 avait en dernier (V16 si elle avait la V16, V15 si elle avait la V15) ; 2. ou installe d'abord ce fichier-là, puis passe à cette version avec l'outil de mise à jour officiel.",
+    badpkg: "Le fichier à installer est endommagé. Recharge la page.",
+    leave: "Écriture en cours. Ne ferme pas la page.",
+    license: "GPL-3.0, sans garantie. Source :",
+    stockTitle: "Revenir au firmware officiel",
+    stockHelp: "Télécharge le firmware officiel de la FM-1 (V16, ou V15) sur le site de M-VAVE et choisis le FM-1.fwsc qu'elle contient, sans le modifier. Le fichier est vérifié dans ce navigateur ; il n'est envoyé nulle part.",
+    stockBackup: "Le firmware officiel ne peut pas ouvrir les sons, les presets ni les tables d'ondes de Stallion. Fais d'abord une sauvegarde avec l'éditeur (onglet Backup) ; réinstalle Stallion et restaure-la depuis l'éditeur quand tu veux les retrouver.",
+    stockEditor: "Ouvrir l'éditeur pour sauvegarder",
+    stockSaved: "J'ai enregistré une sauvegarde sur cet ordinateur",
+    stockFile: "Le FM-1.fwsc officiel",
+    stockGo: "Installer le firmware officiel",
+    stockValid: "Firmware officiel vérifié",
+    stockBad: "Ce n'est pas le firmware officiel (V16 / V15) : ",
+    stockConfirm: "Installer le firmware officiel sur la FM-1 ? Le firmware officiel ne peut pas ouvrir la musique de Stallion. As-tu fait une sauvegarde ?",
+    stockFinish: "La FM-1 est en mode mise à jour de Stallion. Appuie d'abord sur Installer pour terminer la mise à jour de Stallion, puis reviens au firmware officiel.",
+    back: "L'outil de M-VAVE, M-UPGRADE (Downloads → PC Software), fonctionne aussi. S'il ne trouve pas la FM-1, ferme toutes les autres applis et onglets qui utilisent le MIDI.",
+    h1: "Installer Stallion sur la FM-1",
+    stepsT: "Avant de commencer",
+    s1T: "Utilise Chrome ou Edge sur un ordinateur, ou Chrome sur Android",
+    s1: "Windows, macOS, Linux et ChromeOS conviennent. Safari, et tous les navigateurs sur iPhone et iPad, ne peuvent pas installer Stallion : ils n'ont pas le Web MIDI.",
+    s2T: "Branche la FM-1 directement sur l'ordinateur",
+    s2: "Utilise un câble USB qui transmet les données (pas un câble de charge seule), sans hub. Ferme les autres applis et onglets qui utilisent le MIDI.",
+    s3T: "Appuie sur Installer et attends « Terminé »",
+    s3: "Autorise le MIDI quand le navigateur le demande. La FM-1 redémarre en mode mise à jour, Stallion est écrit, puis la FM-1 redémarre sur le logo Stallion.",
+    backupT: "Tu utilises déjà Stallion ?",
+    backup: "Fais d'abord une sauvegarde de tes sons avec l'éditeur (onglet Backup). En cas de problème, tu pourras la restaurer.",
+    afterT: "Après l'installation",
+    logT: "Journal technique (pour signaler un bug)",
+    troubleT: "En cas de problème",
+    rescue: "Si une installation s'arrête en route, la FM-1 reste en mode mise à jour : rebranche le câble et appuie de nouveau sur Installer, elle se termine. Si Stallion ne démarre pas, maintiens OCT− seul en allumant la FM-1 (STALLION USB RESCUE), puis appuie de nouveau sur Installer.",
+    homeLink: "Ce que fait Stallion : les moteurs, la matrice, l'éditeur",
+  },
+};
+const pickLang = () => { const l = (navigator.language || "en").toLowerCase(); return l.startsWith("fr") ? "fr" : l.startsWith("ja") ? "ja" : "en"; };
+let lang = pickLang();                               /* the browser's language first; the buttons switch, and the choice is remembered */
+try { const v = localStorage.getItem("clipper-installer-lang"); if (["en", "fr", "ja"].includes(v)) lang = v; } catch (e) { /* no storage */ }
+const t = (k) => TEXT[lang][k];
+let lastKey = null, lastArg = "";
+/* a text with {m} takes the argument in its place (the device's model), any other has it after */
+const fmt = (k, arg) => t(k).includes("{m}") ? t(k).replace("{m}", arg) : t(k) + arg;
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll("section[data-l]").forEach((e) => { e.hidden = e.dataset.l !== lang; });
+  document.querySelectorAll(".lang").forEach((b) => { b.setAttribute("aria-current", String(b.dataset.l === lang)); b.title = t("other"); });
+  if (lastKey) $("status").textContent = fmt(lastKey, lastArg);
+}
+document.querySelectorAll(".lang").forEach((b) => b.addEventListener("click", () => {
+  lang = b.dataset.l;
+  try { localStorage.setItem("clipper-installer-lang", lang); } catch (e) { /* no storage */ }
+  applyLang();
+}));
+applyLang();
+/* (1.1, after SLOOP 2.6) the site without internet (webapp/sw.js): opened once online, the installer, the firmware and
+ * the editor work offline too, still on https (Android: a downloaded file opens as content://, where Chrome refuses MIDI) */
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol))
+  navigator.serviceWorker.register("../sw.js").catch(() => {});
+{
+  let ask = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ask = e; $("app").hidden = false; });
+  window.addEventListener("appinstalled", () => { ask = null; $("app").hidden = true; });
+  $("app").addEventListener("click", async () => {
+    if (!ask) return;
+    ask.prompt();
+    await ask.userChoice.catch(() => {});
+    ask = null;
+    $("app").hidden = true;
+  });
+}
+/* the link to the SMK-37 Pro installer shows with the message that names an SMK-37 Pro, and only then */
+const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = fmt(k, arg); $("next").hidden = k !== "smk"; };
+const say = (txt) => { lastKey = null; $("status").textContent = txt; $("next").hidden = true; };
+const log = (t) => { $("log").textContent += t + "\n"; };
+let image = null;
+const meta = /*META*/;
+
+let writing = false, stock = null;
+const ride = () => {                               /* the longship: where the bar is, sailing while it fills */
+  const v = $("bar").value, r = $("ride");
+  r.style.setProperty("--p", v / 100);
+  r.classList.toggle("run", writing && v < 100);
+  r.classList.toggle("home", v >= 100);
+};
+const lockAll = (on) => {
+  writing = on;
+  ride();
+  $("go").disabled = on || !image;
+  $("stock-go").disabled = on || !stock || !$("stock-saved").checked;
+  $("stock-file").disabled = on;
+};
+window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
+
+(async () => {
+  if (!navigator.requestMIDIAccess) { sayK("nomidi"); return; }
+  try {
+    const r = await fetch(meta.pkg);
+    if (!r.ok) throw new Error(`${meta.pkg}: HTTP ${r.status}`);
+    const pkg = new Uint8Array(await r.arrayBuffer());
+    if (productOf(pkg) !== meta.product) { sayK("badpkg"); return; }
+    if (meta.sha256 && self.crypto && crypto.subtle) {   /* a damaged download is never offered (the loader checks its CRC too) */
+      const h = [...new Uint8Array(await crypto.subtle.digest("SHA-256", pkg))].map((b) => b.toString(16).padStart(2, "0")).join("");
+      if (h !== meta.sha256) { sayK("badpkg"); log(`sha256 ${h}, expected ${meta.sha256}`); return; }
+    }
+    image = logicalImage(pkg);
+    say(`Stallion ${meta.version}`);
+    lockAll(writing);
+  } catch (e) { sayK("loadfail", e.message); }
+})();
+
+const total = 74 + 1179;                           /* reads: step 1, step 2 (head + app area, SLOOP 2.0 loader) */
+const step = (k, a) => {
+  log(`${k} ${a ?? ""}`);
+  if (k === "start") sayK("start");
+  if (k === "verify") { sayK("verify"); $("bar").value = Math.min(100, (a / total) * 100); }
+  if (k === "loader") sayK("loader");
+  if (k === "write") { sayK("write"); $("bar").value = Math.min(100, ((74 + a) / total) * 100); }
+  if (k === "reboot") sayK("reboot");
+  if (k === "done") { $("bar").value = 100; sayK("done"); }
+  ride();
+};
+/* an SMK-37 Pro on the FM-1's page (its identity, or a port of that name when no FM-1 answered): the message names
+   it and the link goes straight to its installer */
+const SMK_PRO = /^(ota-)?SMK-37 Pro$/i;
+const failed = (e) => {
+  const model = e && e.code === "model" ? String(e.detail || "").split("_")[0].replace(/^ota-/i, "") : "";
+  if (SMK_PRO.test(model)) sayK("smk", model);
+  else if (e && e.code === "notfound" && /SMK-37 Pro/i.test(e.detail || "")) sayK("smk", "SMK-37 Pro");
+  else if (e && e.code === "model") sayK("model");
+  else if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
+  else sayK("error", e && e.message);
+  log(String(e && e.stack || e));
+};
+
+$("go").addEventListener("click", async () => {
+  if (writing) return;
+  lockAll(true);
+  let midi;
+  try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
+  catch (e) { sayK("denied"); lockAll(false); return; }
+  try {
+    const up = new Updater(midi, log);
+    const ota = await up.find((id) => /^ota-/i.test(id.model));
+    if (ota) {
+      ota.link.close();
+      sayK((await up.resume(image, step)) ? "done" : "stopped");
+    } else {
+      await up.install(image, meta.product, step);
+    }
+  } catch (e) { failed(e); }
+  lockAll(false);
+});
+
+/* back to the official firmware, V16 or V15 (after Felucca 1.0; V16 after 1.2): only the exact official files, a backup first (the editor),
+   through the same update path as M-UPGRADE; a device left in the official updater's mode is finished */
+$("stock-saved").addEventListener("change", () => lockAll(writing));
+$("stock-file").addEventListener("change", async () => {
+  const f = $("stock-file").files[0];
+  stock = null;
+  lockAll(writing);
+  if (!f) return;
+  try { stock = await validateStockPackage(new Uint8Array(await f.arrayBuffer())); sayK("stockValid"); }
+  catch (e) { sayK("stockBad", e.message); }
+  lockAll(writing);
+});
+$("stock-go").addEventListener("click", async () => {
+  if (writing || !stock || !$("stock-saved").checked || !confirm(t("stockConfirm"))) return;
+  lockAll(true);
+  let midi;
+  try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
+  catch (e) { sayK("denied"); lockAll(false); return; }
+  try {
+    const up = new Updater(midi, log);
+    const ota = await up.find((id) => /^ota-/i.test(id.model));
+    if (ota) {
+      ota.link.close();
+      if (OUR_LOADER(ota.id)) sayK("stockFinish");    /* our loader: finish the update first (Install) */
+      else sayK((await up.resume(stock.image, step, { product: stock.product })) ? "done" : "stopped");
+    } else {
+      await up.install(stock.image, stock.product, step);
+    }
+  } catch (e) { failed(e); }
+  lockAll(false);
+});
+</script>
+</body>
+</html>

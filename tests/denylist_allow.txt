@@ -1,0 +1,6 @@
+# Stallion R6: exact strings that may hold a word of tests/denylist.txt, one a line: the string, a tab, the reason.
+# Keep it short: rename instead where a name can change.
+ARP	the arpeggiator (the FM-1's ARP button, its page and menu); a word for the function, not the brand
+ARP 2	the arpeggiator's second page
+ARP H	the arpeggiator held (the header's flag)
+arp	the editor's key for the arpeggio phrases (shown as "Arpeggio")

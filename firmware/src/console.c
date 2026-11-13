@@ -1,0 +1,542 @@
+/* SPDX-License-Identifier: GPL-3.0-only
+ * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+/* Changes: Copyright (C) 2026 Eberon Limited (John Gorman) */
+/* Serial console on the CDC-ACM function (FELUCCA_CDC=1): read-only
+ * diagnostics. Runs in the main loop (cdc_task); usb_poll moves the bytes.
+ * The baud rate is ignored. Nothing here writes memory or flash; `uboot`
+ * does what the SysEx soft key does. */
+#ifndef UI_SMALL
+#define UI_SMALL                                   /* (gfx.c: minsize on the device; a test alone: nothing) */
+#endif
+#define CON_LINE 64u
+
+static struct {
+    char line[CON_LINE];
+    uint32_t len;
+    uint8_t dtr_seen, stalled;   /* stalled: the host stopped reading, drop the rest of this reply */
+} con;
+static uint32_t lowram_state(void);                  /* main.c: .lowram (app.ld), proved at boot */
+static uint32_t stack_free_main(void), stack_free_sup(void), stack_sp(void);   /* main.c: core 0's stacks, painted at boot */
+
+UI_SMALL static void con_putc(char c)
+{
+    uint32_t t0 = fm1_ms;
+    while (co_w - co_r >= CO_N) {                      /* full: wait for usb_poll, briefly */
+        if (!cdc.dtr || con.stalled || fm1_ms - t0 > 20u) {
+            con.stalled = 1;
+            return;
+        }
+        fm1_wdt_feed();
+    }
+    cdc_out[co_w % CO_N] = (uint8_t)c;
+    RING_PUBLISH();
+    co_w++;
+}
+
+UI_SMALL static void con_puts(const char *s)
+{
+    while (*s)
+        con_putc(*s++);
+}
+
+UI_SMALL static void con_hex(uint32_t v, uint32_t digits)
+{
+    while (digits--)
+        con_putc("0123456789ABCDEF"[(v >> (digits * 4u)) & 15u]);
+}
+
+UI_SMALL static void con_dec(int32_t v)
+{
+    char b[12];
+    uint32_t n = 0, u = v < 0 ? (uint32_t)-v : (uint32_t)v;
+    if (v < 0)
+        con_putc('-');
+    do
+        b[n++] = (char)('0' + u % 10u);
+    while ((u /= 10u) != 0 && n < sizeof b);
+    while (n)
+        con_putc(b[--n]);
+}
+
+UI_SMALL static void con_kv(const char *k, int32_t v)            /* "key value\r\n" */
+{
+    con_puts(k);
+    con_putc(' ');
+    con_dec(v);
+    con_puts("\r\n");
+}
+
+UI_SMALL static void con_kx(const char *k, uint32_t v)
+{
+    con_puts(k);
+    con_puts(" 0x");
+    con_hex(v, 8);
+    con_puts("\r\n");
+}
+
+UI_SMALL static uint32_t con_num(const char **p, int *ok)        /* decimal or 0x hex */
+{
+    const char *s = *p;
+    uint32_t v = 0, base = 10, d, n = 0;
+    while (*s == ' ')
+        s++;
+    if (s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
+        s += 2, base = 16;
+    for (;; s++, n++) {
+        char c = *s;
+        if (c >= '0' && c <= '9')
+            d = (uint32_t)(c - '0');
+        else if (base == 16 && c >= 'a' && c <= 'f')
+            d = (uint32_t)(c - 'a' + 10);
+        else if (base == 16 && c >= 'A' && c <= 'F')
+            d = (uint32_t)(c - 'A' + 10);
+        else
+            break;
+        v = v * base + d;
+    }
+    *ok = n > 0;
+    *p = s;
+    return v;
+}
+
+UI_SMALL static int con_word(const char **p, const char *w)       /* match a whole word */
+{
+    const char *s = *p;
+    while (*s == ' ')
+        s++;
+    while (*w && *s == *w)
+        s++, w++;
+    if (*w || (*s && *s != ' '))
+        return 0;
+    *p = s;
+    return 1;
+}
+
+UI_SMALL static void con_memr(const char *p)
+{
+    int ok, ok2;
+    uint32_t a = con_num(&p, &ok), n = con_num(&p, &ok2), i;
+    if (!ok) {
+        con_puts("usage: memr ADDR [LEN<=256]\r\n");
+        return;
+    }
+    if (!ok2 || !n)
+        n = 64;
+    if (n > 256u)
+        n = 256;
+    if (!fm1_mem_readable(a, n)) {
+        con_puts("only RAM 01C00000-01C80000 and XIP 02000000-02100000\r\n");
+        return;
+    }
+    for (i = 0; i < n; i++) {
+        if (i % 16u == 0) {
+            con_hex(a + i, 8);
+            con_putc(':');
+        }
+        con_putc(' ');
+        con_hex(fm1_peek8(a + i), 2);
+        if (i % 16u == 15u || i + 1u == n)
+            con_puts("\r\n");
+    }
+}
+
+#if FELUCCA_FLASH
+UI_SMALL static void con_flr(const char *p)                  /* flash read over SPI (no XIP decryption) */
+{
+    static uint8_t b[256];
+    int ok, ok2;
+    uint32_t a = con_num(&p, &ok), n = con_num(&p, &ok2), i;
+#if BOARD_SMK37
+    if (!ok || a < 0x9D000u || a >= 0x100000u) {
+        con_puts("usage: flr OFFSET [LEN<=256]   (0x9D000..0xFFFFF)\r\n");
+#else
+    if (!ok || a < 0x93000u || a >= 0x100000u) {
+        con_puts("usage: flr OFFSET [LEN<=256]   (0x93000..0xFFFFF)\r\n");
+#endif
+        return;
+    }
+    if (!ok2 || !n)
+        n = 64;
+    if (n > 256u)
+        n = 256;
+    if (a + n > 0x100000u)
+        n = 0x100000u - a;
+    if (!flash_ok || st_read(a, b, n)) {
+        con_puts("flash not available\r\n");
+        return;
+    }
+    for (i = 0; i < n; i++) {
+        if (i % 16u == 0) {
+            con_hex(a + i, 6);
+            con_putc(':');
+        }
+        con_putc(' ');
+        con_hex(b[i], 2);
+        if (i % 16u == 15u || i + 1u == n)
+            con_puts("\r\n");
+    }
+}
+#endif
+
+#if FELUCCA_FLASH && FELUCCA_OTA && !BOARD_SMK37
+UI_SMALL static void con_head(void)                       /* the flash head [0, 0x4000): its CRCs, which official head */
+{
+    uint8_t b[64];
+    uint32_t a, c16 = 0, c32 = 0, id;
+    for (a = 0; a < 0x4000u; a += sizeof b) {
+        if (!flash_ok || st_read(a, b, sizeof b)) {
+            con_puts("flash not available\r\n");
+            return;
+        }
+        c16 = ota_crc16(b, sizeof b, c16);
+        c32 = ota_crc32(b, sizeof b, c32);
+    }
+    id = ota_head_id(c16, c32);
+    con_puts("head 0000-3FFF  crc16 ");
+    con_hex(c16, 4);
+    con_puts("  crc32 ");
+    con_hex(c32, 8);
+    con_puts(id == 15u ? "  015\r\n" : id == 16u ? "  016\r\n" : "  unknown\r\n");
+}
+#endif
+
+UI_SMALL static void con_status(void)
+{
+    const engine_t *e = ENGINES[TSEL->eng_req % NENGINES];
+    con_puts(FELUCCA_VERSION);   /* CLIPPER 0.1 */
+    con_puts("\r\n");
+    con_kv("uptime_ms", (int32_t)fm1_ms);
+    con_kv("cpu_pct", (int32_t)(song.cpu_q8 * 100u / 256u));
+    con_kv("cpu1_gave_up", (int32_t)fm1_c1_gave_up);      /* (SLOOP 2.8.3) 1 a wrong job read, 2 one late, 3 barred till power-off */
+    con_kv("cpu1_bad", (int32_t)fm1_c1_mb.bad);           /* jobs core 1 read wrong and refused (fm1_cpu1.h) */
+    con_kx("cpu1_bad_fn", fm1_c1_mb.bad_fn);
+#if FELUCCA_CPU1                                         /* (0.7, after SLOOP 2.7) the second core */
+    con_kv("cpu1", (int32_t)cpu1_state);                 /* 1 did not start, 2 self-test failed, 3 running (cpu1.c) */
+    con_kx("cpu1_trace", fm1_c1_trace);
+    con_kv("cpu1_timeouts", (int32_t)cpu1_timeouts);
+    con_kv("cpu1_units", cpu1_units);                    /* -1 the voices split, 0 off (menu 2ND CORE) */
+#if CLIPPER_SYNTH
+    con_kv("cpu1_blocks", (int32_t)vs_jobs);             /* blocks a part's voices went to both cores (voice.c) */
+    con_kv("cpu1_voices", (int32_t)vs_split);            /* .. voices it rendered in all */
+#if VS_CHECK
+    con_kv("vs_checks", (int32_t)vs_checks);             /* (bench, voice.c vs_check) blocks core 1's voices were rendered again */
+    con_kv("vs_diffs", (int32_t)vs_diffs);               /* .. core 1's output not this core's */
+    con_kv("vs_sdiffs", (int32_t)vs_sdiffs);             /* .. its voices left otherwise */
+#endif
+#endif
+    con_kv("cpu1_stack_free", (int32_t)cpu1_stack_free());   /* bytes of its stack the render never reached */
+#endif
+    con_kv("lowram", (int32_t)lowram_state());           /* .lowram (app.ld): 1 proved at boot, 2 not (main.c) */
+    con_kv("stack_free", (int32_t)stack_free_main());    /* core 0's main stack (24 KB): bytes never reached since boot */
+    con_kv("sstack_free", (int32_t)stack_free_sup());    /* its supervisor stack (8 KB) */
+    con_kx("sp", stack_sp());                           /* where the main loop runs now: which of the two regions */
+    con_kv("audio_max_us", (int32_t)felucca_dbg.max_us);
+    con_kv("voices_shed", (int32_t)shed_count);
+    con_kv("voices_given_up", (int32_t)voice_kills);
+#if CLIPPER_SYNTH
+    con_kv("voices_fit", (int32_t)vc_fit(TSEL));         /* (load-steal, voice.c) the voices the sound may have now */
+    con_kv("load_fit_q8", (int32_t)vc_ratio);            /* .. measured / predicted load, x 256 */
+    con_kv("load_floor_q", (int32_t)vc_base);            /* .. the render with no voice, 1/4096 of the half */
+    con_kv("voices_load_taken", (int32_t)vc_steals);     /* .. voices given up for the load */
+#endif
+    con_kv("track", (int32_t)song.sel + 1);
+    con_kv("batt_raw", song.batt_raw);
+    con_puts("engine ");
+    con_puts(e->name);
+    con_puts("\r\n");
+    con_puts("preset ");
+    con_puts(TSEL->preset < e->npresets ? e->presets[TSEL->preset].name : "-");
+    con_puts("\r\n");
+    con_kv("bpm", song.g[G_BPM]);
+    con_kv("playing", song.playing);
+    con_kv("boots", (int32_t)felucca_dbg.boots);
+    con_kv("usb_resets", (int32_t)usb.resets);
+    con_kv("usb_sof", (int32_t)usb.sof_seen);
+    con_kv("usb_suspends", (int32_t)usb.suspends);
+    con_kv("usb_retries", (int32_t)usb.retries);
+    con_kv("usb_frame", (int32_t)usb.frame);
+    con_kv("usb_frame_stalls", (int32_t)usb.frame_stalls);
+    con_kv("usb_max_gap_polls", (int32_t)usb.max_gap);
+    con_kv("midi_rx_pkts", (int32_t)usb.rx_pkts);
+    con_kv("midi_tx_pkts", (int32_t)usb.tx_pkts);
+#if FELUCCA_FLASH
+    con_kv("flash", flash_ok);
+#endif
+}
+
+/* (Stallion) clk: the clocks, the flash and the second core, measured now (hal/fm1_clk.h). Read only; the audio stops
+ * for a moment (the interrupts off up to ~2 ms at a time, the 40 ms of TIMER3 counting with them on) */
+UI_SMALL static void con_clk(void)
+{
+    static const char *const SRC[4] = {"t3_lsb_hz", "t3_src1_hz", "t3_osc_hz", "t3_src3_hz"};
+    uint32_t v[FM1_CLK_NREG], i, n = 20000u, r8, r24, x8, x24, mhz;
+    fm1_clk_regs(v);
+    for (i = 0; i < FM1_CLK_NREG && FM1_CLK_REGS[i]; i++) {
+        con_puts("reg_");
+        con_hex(FM1_CLK_REGS[i], 7);
+        con_puts(" 0x");
+        con_hex(v[i], 8);
+        con_puts("\r\n");
+    }
+    for (i = 0; i < 4u; i++)                         /* TIMER3 from each clock source over 10 ms of TIMER4 (osc: 24 MHz) */
+        con_kv(SRC[i], (int32_t)fm1_clk_timer_hz(i));
+    fm1_irq_off();
+    r8 = fm1_clk_loop_ticks(1, 8u, n), r24 = fm1_clk_loop_ticks(1, 24u, n);
+    fm1_irq_on();
+    fm1_irq_off();
+    x8 = fm1_clk_loop_ticks(0, 8u, n), x24 = fm1_clk_loop_ticks(0, 24u, n);
+    fm1_irq_on();
+    mhz = r24 > r8 ? (uint32_t)((uint64_t)16u * n * 24u * 10u / (r24 - r8)) : 0u;
+    con_kv("cpu_mhz_x10", (int32_t)mhz);             /* 16 adds a turn more, over the time they take more (RAM) */
+    con_kv("ram_add8_ticks", (int32_t)r8);           /* TIMER4 (24 MHz) ticks of 20000 turns, 8 adds + a branch */
+    con_kv("ram_add24_ticks", (int32_t)r24);
+    con_kv("xip_add8_ticks", (int32_t)x8);           /* the same from the flash, the loop in the cache */
+    con_kv("xip_add24_ticks", (int32_t)x24);
+    if (mhz) {                                       /* cycles a turn (x100) at that clock: 9 for 8 adds + 1 branch */
+        con_kv("ram_cyc_turn8_x100", (int32_t)((uint64_t)r8 * mhz * 10u / 24u / n));
+        con_kv("xip_cyc_turn8_x100", (int32_t)((uint64_t)x8 * mhz * 10u / 24u / n));
+        con_kv("xip_cyc_turn24_x100", (int32_t)((uint64_t)x24 * mhz * 10u / 24u / n));
+    }
+#if FELUCCA_FLASH
+    {   /* reads a line (32 B) apart: 2048 over 64 KB of the store (read only); 256 over 64 KB 256 B apart; 128 lines
+         * read twice, the second time timed (cache hits): ns x10 a read */
+        uint32_t a = FL_XIP(FL_DATA_LO), s32, s256, hit;
+        fm1_irq_off();
+        s32 = fm1_clk_fill_ticks(a, 2048u, 32u);
+        fm1_irq_on();
+        fm1_irq_off();
+        s256 = fm1_clk_fill_ticks(a, 256u, 256u);
+        fm1_irq_on();
+        fm1_irq_off();
+        fm1_clk_fill_ticks(a, 128u, 32u);
+        hit = fm1_clk_fill_ticks(a, 128u, 32u);
+        fm1_irq_on();
+        con_kv("fill_seq32_ns_x10", (int32_t)(s32 * 10000u / 24u / 2048u));
+        con_kv("fill_str256_ns_x10", (int32_t)(s256 * 10000u / 24u / 256u));
+        con_kv("fill_hit_ns_x10", (int32_t)(hit * 10000u / 24u / 128u));
+    }
+#endif
+    con_kv("boot_mhz_x10", (int32_t)clk_mhz10);      /* the same measured at boot (main.c clk_boot; GLO's CPU column) */
+    con_kv("boot_fill_ns_x10", (int32_t)clk_fill10); /* .. a line's fill less a hit */
+    con_kv("cpu_pct", (int32_t)(song.cpu_q8 * 100u / 256u));
+    con_kv("audio_max_us", (int32_t)felucca_dbg.max_us);
+    con_kv("late", (int32_t)felucca_dbg.late);
+#if FELUCCA_CPU1
+    con_kv("cpu1", (int32_t)cpu1_state);             /* 3 running (cpu1.c) */
+    con_kv("cpu1_gave_up", (int32_t)fm1_c1_gave_up); /* 0 never; 1 a wrong job, 2 one late, 3 barred till power-off */
+    con_kv("cpu1_units", cpu1_units);                /* -1 the voices split, 0 off (menu 2ND CORE) */
+#if CLIPPER_SYNTH
+    con_kv("cpu1_blocks", (int32_t)vs_jobs);
+    con_kv("cpu1_voices", (int32_t)vs_split);
+    {   /* per engine (voice.c): blocks of 2+ voices of an engine that may split (vs_ok: none listed, it never splits),
+         * the blocks core 1 shared, its voices; the sound's own engine always listed */
+        con_puts("engine ");
+        con_puts(ENGINES[TSEL->engine % NENGINES]->name);
+        con_puts("\r\n");
+        for (i = 0; i < NENGINES; i++)
+            if (vs_eblk[i] || i == TSEL->engine % NENGINES) {
+                con_puts("split ");
+                con_puts(ENGINES[i]->name);
+                con_putc(' ');
+                con_dec((int32_t)vs_esplit[i]);
+                con_putc('/');
+                con_dec((int32_t)vs_eblk[i]);
+                con_puts(" blocks, voices ");
+                con_dec((int32_t)vs_evoices[i]);
+                con_puts("\r\n");
+            }
+    }
+#endif
+#endif
+    {   /* the code in RAM (app.ld): the guard's RAM code window */
+        extern uint32_t _rt_start[], _rt_end[];
+        con_kx("ram_code_lo", (uint32_t)(uintptr_t)_rt_start);
+        con_kx("ram_code_hi", (uint32_t)(uintptr_t)_rt_end);
+    }
+}
+
+UI_SMALL static void con_dbg(void)
+{
+    const uint32_t *w = (const uint32_t *)&felucca_dbg;
+    static const char *const NAMES[] = {"magic", "halves", "max_us", "nested", "in_audio", "late",
+                                        "timer_irqs", "ui_frames", "last_us", "cpu_q8", "boots",
+                                        "stage", "page", "home", "prev_stage", "prev_page",
+                                        "prev_home", "prev_rst", "prev_frames"};
+    uint32_t i;
+    for (i = 0; i < sizeof NAMES / sizeof NAMES[0] && i < sizeof felucca_dbg / 4u; i++)
+        con_kx(NAMES[i], w[i]);
+}
+
+UI_SMALL static void con_crash(void)
+{
+    if (fm1_crash.magic != FM1_CRASH_MAGIC) {
+        con_puts("no crash record\r\n");
+        return;
+    }
+    con_kv("count", (int32_t)fm1_crash.count);
+    con_kx("vec", fm1_crash.vec);
+    con_kx("pc", fm1_crash.pc);
+    con_kx("rets", fm1_crash.rets);
+    con_kx("emu", fm1_crash.emu);
+    con_kx("sp", fm1_crash.sp);
+    con_kx("psr", fm1_crash.psr);
+    con_kv("uptime_ms", (int32_t)fm1_crash.uptime_ms);
+    con_kv("early", (int32_t)fm1_crash.early);
+}
+
+UI_SMALL static void con_params(void)
+{
+    uint32_t i;
+    for (i = 0; i < P_COUNT; i++) {
+        con_dec((int32_t)i);
+        con_putc('=');
+        con_dec(TSEL->p[i]);
+        con_puts(i % 8u == 7u || i + 1u == P_COUNT ? "\r\n" : " ");
+    }
+}
+
+#if BOARD_SMK37
+static void con_smk(void)                               /* the SMK-37 Pro inputs (smk_input.h) */
+{
+    uint32_t i;
+    con_kv("adc_ok", (int32_t)fm1_in.adc_ok);
+    con_kv("adc_miss", (int32_t)fm1_in.adc_miss);
+    con_kv("frames", (int32_t)fm1_in.frames);
+    con_puts("pad raw ");
+    for (i = 0; i < SMK_NPAD; i++) { con_dec(fm1_in.pad_raw[i]); con_putc(' '); }
+    con_puts("\r\npad base ");
+    for (i = 0; i < SMK_NPAD; i++) { con_dec(fm1_in.pad_base[i]); con_putc(' '); }
+    con_puts("\r\npad st ");
+    for (i = 0; i < SMK_NPAD; i++) { con_dec(fm1_in.pad_st[i]); con_putc(' '); }
+    con_puts("\r\nfader raw ");
+    for (i = 0; i < 4u; i++) { con_dec(fm1_in.fad_raw[i]); con_putc(' '); }
+    con_puts("\r\nfader ");
+    for (i = 0; i < 4u; i++) { con_dec(fm1_in.fader[i]); con_putc(' '); }
+    con_puts("\r\n");
+    con_kv("wheel0", fm1_in.wheel[0]);
+    con_kv("wheel1", fm1_in.wheel[1]);
+    con_kv("bend", part_ctl[0].bend);
+    con_kv("modw", part_ctl[0].mw);
+    con_kv("pedal", fm1_in.pedal);
+    con_kv("batt", fm1_in.batt);
+    con_kx("buttons", fm1_in.buttons);
+    con_kx("notes", fm1_in.notes);
+    for (i = 0; i < FM1_NENC; i++) {
+        con_puts("enc");
+        con_dec((int32_t)i);
+        con_putc('=');
+        con_dec(fm1_in.enc_steps[i]);
+        con_putc(i + 1u == FM1_NENC ? '\r' : ' ');
+    }
+    con_puts("\r\n");
+}
+
+/* what the firmware sends the pads: GRB words by hardware pad (8..15 top row, 0..7 bottom row) */
+static void con_leds(void)
+{
+    uint32_t i;
+    for (i = 0; i < SMK_NPAD; i++) {
+        con_puts("pad");
+        con_dec((int32_t)i);
+        con_puts(" grb ");
+        con_hex(padled_rgb[i], 6);
+        con_puts(i % 4u == 3u ? "\r\n" : "  ");
+    }
+}
+
+/* the pad LEDs' colour order: hardware pad 8 (top left) red, 9 green, 10 blue, 11 white, for 20 s */
+static void con_padtest(void)
+{
+    uint32_t i;
+    for (i = 0; i < SMK_NPAD; i++)
+        padled_set(i, 0, 0, 0);
+    padled_set(8, 40, 0, 0);
+    padled_set(9, 0, 40, 0);
+    padled_set(10, 0, 0, 40);
+    padled_set(11, 40, 40, 40);
+    padled_hold_until = ms_deadline(20000u);
+    con_puts("top row from the left: red green blue white\r\n");
+}
+#endif
+
+UI_SMALL static void con_exec(const char *p)
+{
+    if (con_word(&p, "help") || con_word(&p, "?"))
+#if FELUCCA_FLASH && FELUCCA_OTA && !BOARD_SMK37
+        con_puts("status  clk  dbg  crash  params  memr ADDR [LEN]  flr OFF [LEN]  head  uboot yes\r\n");
+#else
+        con_puts("status  clk  dbg  crash  params  memr ADDR [LEN]  flr OFF [LEN]  uboot yes\r\n");
+#endif
+    else if (con_word(&p, "status"))
+        con_status();
+    else if (con_word(&p, "clk"))
+        con_clk();
+    else if (con_word(&p, "dbg"))
+        con_dbg();
+    else if (con_word(&p, "crash"))
+        con_crash();
+    else if (con_word(&p, "params"))
+        con_params();
+#if BOARD_SMK37
+    else if (con_word(&p, "smk"))
+        con_smk();
+    else if (con_word(&p, "padtest"))
+        con_padtest();
+    else if (con_word(&p, "leds"))
+        con_leds();
+#endif
+    else if (con_word(&p, "memr"))
+        con_memr(p);
+#if FELUCCA_FLASH
+    else if (con_word(&p, "flr"))
+        con_flr(p);
+#endif
+#if FELUCCA_FLASH && FELUCCA_OTA && !BOARD_SMK37
+    else if (con_word(&p, "head"))
+        con_head();
+#endif
+    else if (con_word(&p, "uboot")) {
+        if (con_word(&p, "yes")) {
+            con_puts("entering UBOOT\r\n");
+            usb.uboot_req = 1;                         /* main loop: same path as the SysEx key */
+        } else {
+            con_puts("type 'uboot yes'\r\n");
+        }
+    } else if (*p)
+        con_puts("? (help)\r\n");
+}
+
+UI_SMALL static void cdc_task(void)                              /* main loop */
+{
+    if (cdc.dtr && !con.dtr_seen) {
+        con_puts("\r\n");
+        con_puts(FELUCCA_VERSION);
+        con_puts(" console - 'help'\r\n> ");
+    }
+    con.dtr_seen = cdc.dtr;
+    while (ci_r != ci_w) {
+        char c;
+        RING_PUBLISH();                                /* usb_poll (producer) can preempt us */
+        c = (char)cdc_in[ci_r % CI_N];
+        RING_PUBLISH();
+        ci_r++;
+        if (c == '\r' || c == '\n') {
+            if (c == '\n' && con.len == 0)
+                continue;                              /* the LF of a CR LF */
+            con_puts("\r\n");
+            con.line[con.len] = 0;
+            con.stalled = 0;
+            con_exec(con.line);
+            con.len = 0;
+            con_puts("> ");
+        } else if (c == 0x7F || c == 0x08) {
+            if (con.len) {
+                con.len--;
+                con_puts("\b \b");
+            }
+        } else if (c >= ' ' && c < 0x7F && con.len + 1u < CON_LINE) {
+            con.line[con.len++] = c;
+            con_putc(c);
+        }
+    }
+}

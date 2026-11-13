@@ -1,0 +1,138 @@
+# Stallion 1.0: what tests/denylist_test.py's source check lets through. One a line: file glob<TAB>kind<TAB>exact
+# text<TAB>reason; kind: line (the whole line, exact), phrase (a hit inside this exact text). Only third-party names we
+# must keep (credits, project names of free software), technical terms that only look like a note, and upstream
+# Clipper's and SLOOP's lines as they wrote them (each line as it is in their release: edit it and its entry goes
+# stale, and the test fails). Every entry must excuse something.
+# --- credits and free-software project names ---
+*	phrase	OberVave	credit: zvenson's OberVave (GPL-3.0), the free project RODEO is ported from
+# --- technical terms ---
+firmware/src/storage.c	phrase	the owner tag	the store's owner tag: which firmware the flash store belongs to
+firmware/src/storage.c	phrase	The owner of the store	the store's owner tag: which firmware the flash store belongs to
+# --- user support ---
+QUICKSTART.md	phrase	GitHub or YouTube	where users reply with a bug report (the project's public channels)
+DEMARRAGE-RAPIDE-FR.md	phrase	GitHub ou YouTube	where users reply with a bug report (the project's public channels)
+# --- upstream lines as written (Clipper, Clipper Pro, SLOOP) ---
+firmware/src/core.h	line	#define ENGI_ACID 14u            /*   a 303-style bass line (eng_acid.c) */	upstream's line as written
+firmware/src/core.h	line	#define ENGI_WSEQ 20u            /*   wave sequencing (eng_wseq.c, after the Wavestation) */	upstream's line as written
+firmware/src/core.h	line	#define ENGI_VECTOR 22u          /*   vector synthesis: four waves, a joystick (eng_vector.c, after the Prophet VS) */	upstream's line as written
+firmware/src/core.h	line	    F_SWING,                    /* 0..100: MPC swing, 50 % (straight) .. 75 % */	upstream's line as written
+firmware/src/core.h	line	 * their own (ANALOG): 1 SVF (12 dB, as before), 2 MOOG (the 24 dB ladder, dsp.c). The same slot: projects and user	upstream's line as written
+firmware/src/dsp.c	line	/* Clipper: a four-pole transistor ladder (the Moog type), after V. Zavalishin's TPT ladder ("The Art of VA	upstream's line as written
+firmware/src/dsp.c	line	 * (ANALOG, WAVE, VECTOR): their cutoff and resonance, another circuit. SVF and MOOG as before, bit for bit; then	upstream's line as written
+firmware/src/dsp.c	line	 *   MS20   two one-pole low-passes (12 dB) with the feedback through a saturation, after the Korg MS-20's Sallen-Key	upstream's line as written
+firmware/src/dsp.c	line	 *          (Zavalishin's Korg-35 idea, ZDF as the ladder): bright, a screaming resonance that bites back on loud notes	upstream's line as written
+firmware/src/dsp.c	line	 *   DIODE  four poles, the first at half the cutoff (the diode ladder's coupled first stage, the TB-303's idea): 18 dB	upstream's line as written
+firmware/src/dsp.c	line	 *   SEM    the state-variable low-pass driven softly, its resonance short of oscillating (the Oberheim SEM's)	upstream's line as written
+firmware/src/dsp.c	line	 *   NOTCH BP HP  the same SVF's other outputs (the SEM's mode knob)	upstream's line as written
+firmware/src/dsp.c	line	    default: {                                         /* SEM NOTCH BP HP: one SVF, its outputs */	upstream's line as written
+firmware/src/editor_fmx.c	line	 *              an FMX record as it is, a DX7 voice converted, an empty slot rc 2)	upstream's line as written
+firmware/src/eng_acid.c	line	/* ACID: a bass line synthesizer in the manner of the 1981 Roland TB-303 (Clipper 0.2). One voice (mono).	upstream's line as written
+firmware/src/eng_analog.c	line	        v->ph[0] = 0;                                 /* a fresh note: from phase 0 (an 808 starts the same every time) */	upstream's line as written
+firmware/src/eng_analog.c	line	    v->s[3] = v->s[4] = v->s[5] = v->s[6] = 0;        /* (MOOG: the ladder's four stages) */	upstream's line as written
+firmware/src/eng_analog.c	line	        s = m2 ? mulq15(a, m1) + mulq15(b, m2) : a;  /* (MIX 0, the 808s and subs: one oscillator) */	upstream's line as written
+firmware/src/eng_fmx.c	line	 * request for "the Korg opsix on the FM-1": the ideas, not any code). FM6 stays the DX7 (its patches, its exact	upstream's line as written
+firmware/src/eng_fmx.c	line	 *     twice, the high notes on the 8-harmonic copy; HALF ABS QUART the OPL's, SIN8 a sine on 16 steps)	upstream's line as written
+firmware/src/eng_fmx.c	line	 *   - MODE per operator: PM (phase modulation, the DX7's "FM"), FM (true, linear, through-zero frequency	upstream's line as written
+firmware/src/eng_fmx.c	line	 *     itself: feedback); any operator to the output, its own level (out[]). The 32 DX7 algorithms and 8 more are	upstream's line as written
+firmware/src/eng_fmx.c	line	 * in the bank's spare word: FM6 sees an empty slot there), and an FMX sound on a slot holding a DX7 voice plays it,	upstream's line as written
+firmware/src/eng_fmx.c	line	 * this sample, by a lower one (or itself) its last (itself: the mean of its last two, the DX7's); everything else	upstream's line as written
+firmware/src/eng_fmx.c	line	    {   /* F9: OPL-style keys: quarter and half sines */	upstream's line as written
+firmware/src/eng_fmx.c	line	            f->amt[d][f->n[d]++] = (int16_t)(s == d ? a : a << 3);   /* (feedback: an eighth of the scale, the DX7's:	upstream's line as written
+firmware/src/eng_fmx.c	line	/* a DX7 voice (fm6_unpack's 155 bytes) as an FMX patch */	upstream's line as written
+firmware/src/eng_hybrid.c	line	 *   SINE   sine, SHP self feedback (sine -> saw-like, as a DX7 operator's feedback)	upstream's line as written
+firmware/src/eng_hybrid.c	line	    int32_t f[2][4];             /* filters: two SVF stages each (ic1, ic2), or MOOG's four (Q4) */	upstream's line as written
+firmware/src/eng_hybrid.c	line	/* MOOG: the ladder (dsp.c ladder_tick) over a buffer, its four stages in st[0..3] */	upstream's line as written
+firmware/src/eng_hybrid.c	line	/* the 90s supersaw (after Adam Szabo's analysis of the JP-8000): seven saws, their offsets at full detune	upstream's line as written
+firmware/src/eng_pony.c	line	 * in four positions; a 24 dB resonant low-pass; and the BBD chorus, I, II or both). No code or sample of Roland's.	upstream's line as written
+firmware/src/eng_pony.c	line	 *   WAVE  SAW, PLS (the pulse), S+P (both, as the 106's two buttons)	upstream's line as written
+firmware/src/eng_pony.c	line	 *   HPF   0 a little bass boost, 1 flat, 2 and 3 a high-pass at ~240 and ~720 Hz (the 106's four positions)	upstream's line as written
+firmware/src/eng_strings.c	line	/* STRINGS: a string machine in the manner of the 1970s ensembles (Solina, ARP, Elka) (Clipper 0.2).	upstream's line as written
+firmware/src/eng_vector.c	line	/* VECTOR (Clipper 0.8): vector synthesis, after the Sequential Prophet VS and the Korg Wavestation's joystick (the	upstream's line as written
+firmware/src/eng_vps.c	line	 * V -> 1, and the output is -cos(2 pi P(phi)). V below 1: a pulse-like, phase-distorted wave (CZ style); V above 1:	upstream's line as written
+firmware/src/eng_wave.c	line	 * either side crossfaded (a smooth morph, PPG / Serum style). The ENV and the LFO move POS through the part's SHP	upstream's line as written
+firmware/src/eng_wave.c	line	 * EDIT 2  CUT RES DRV KTR: ANALOG's filter (FX > FILTER > MODL: SVF or the MOOG ladder) and drive.	upstream's line as written
+firmware/src/eng_wseq.c	line	/* WSEQ: wave sequencing (Clipper 0.6, after the Korg Wavestation and wavestate: the idea, not any code). Each note	upstream's line as written
+firmware/src/engines.c	line	#include "eng_acid.c"           /* ACID: a 303-style bass line */	upstream's line as written
+firmware/src/fx.c	line	 * It runs at half the rate (22.05 kHz, as the Lexicon 224 ran at 20 kHz): the paper's lengths (29.76 kHz) x 0.741,	upstream's line as written
+firmware/src/main.c	line	     * blocks (1378 / s against the 909 / s scan) */	upstream's line as written
+firmware/src/main.c	line	    TDRUM->p[P_E0] = DRUM_DEFAULT_KIT;        /* the 808 kit */	upstream's line as written
+firmware/src/params.c	line	    case F_SWING:                                     /* 0 straight .. 100 the most (2.5: it showed MPC's 50..75 %,	upstream's line as written
+firmware/src/project.c	line	 * steps, the drum track's notes become its lanes, the swings x 0.8 for the MPC scale), 2 ("FUN2") and 1	upstream's line as written
+firmware/src/project.c	line	                                                                                            * the bend range, 6..7 EWI) */	upstream's line as written
+firmware/src/seq.c	line	/* 1.0 (a comment from an EWI player), GLO > MIDI 2 > EWI: CC 2 (a breath controller) is the volume (as CC 11; 0	upstream's line as written
+firmware/src/seq.c	line	/* units an odd step starts late: the track's + the global SWING (MPC: 0 = 50 %, 100 = 75 %) */	upstream's line as written
+firmware/src/seq.c	line	 * to what it was at the next step without a lock on it (Elektron style: notes still ringing follow, the	upstream's line as written
+firmware/src/seq.c	line	 * every step the sequencer enters while the key is held (MPC style); stopped: from every step. */	upstream's line as written
+firmware/src/seq.c	line	/* 0.9, the arp's TURNG (after Music Thing Modular's Turing Machine): a shift register of LOOP bits (SPICE page) turns	upstream's line as written
+firmware/src/seq.c	line	    case 2:                                           /* (1.0) breath (GLO > MIDI 2 > EWI) */	upstream's line as written
+firmware/src/seq.c	line	            input_on(t, d1, midi_breath && t == &trk[0] ? 100u : d2);   /* (1.1) EWI: the velocity of the keys, the	upstream's line as written
+firmware/src/storage.c	line	/* The owner of the store. Several FM-1 firmwares are ported to the SMK-37 Pro with the same board layer and	upstream's line as written
+firmware/src/ui_input.c	line	/* TRACKS page: KNOB 1 SWING (the groove of every track, MPC 50..75 %), 2 LEVEL (0 = mute; the drum	upstream's line as written
+firmware/src/ui_layers.c	line	/* a step key (white key w) of the SEQ layer, Elektron style: an empty step is set at once (drums: the	upstream's line as written
+firmware/src/ui_synth.c	line	       X_MBRTH,                                        /* 1.0: EWI (seq.c midi_breath) */	upstream's line as written
+firmware/src/ui_synth.c	line	                                                        * Hydrasynth's; OPS: FMX's operators, opsix style) */	upstream's line as written
+firmware/src/ui_synth.c	line	/* 0.7, RANDOM > WHAT OPS on FMX: the operators of the part's patch, as the opsix's randomizer: ratios from the musical	upstream's line as written
+firmware/src/voice.c	line	static uint8_t midi_breath;                             /* (1.0) GLO > MIDI 2 > EWI (seq.c): 0 OFF, 1 VOL, 2 V+AT */	upstream's line as written
+firmware/src/voice.c	line	/* (1.1, the EWI player again: "a soft note adds a second one, at full level") an EWI is a monophonic instrument and	upstream's line as written
+firmware/src/voice.c	line	 * its breath is the level: with EWI on, the instrument (and its LAYER) plays one note at a time, legato, whatever	upstream's line as written
+firmware/src/voice.c	line	/* Clipper 0.9, VINTAGE (VOICE 2 > VINTG): the voices of an analog polysynth are never quite alike (the Prophet-5's	upstream's line as written
+tests/clipper_ui_test.c	line	        /* BREATH (an EWI player's comment): CC 2 the volume, and the aftertouch */	upstream's line as written
+tests/dsyn_test.c	line	 *   SYN1 (a copy of 808) plays every lane bit for bit as the 808 kit; an edit is heard at once, undone it is the same	upstream's line as written
+tests/dsyn_test.c	line	              "SYN1 (808) plays the 16 sounds bit for bit as the 808 kit");	upstream's line as written
+tests/editor_fuzz.c	line	    if (rn(400) == 0) {                            /* Clipper: MPE, IN CH, EWI, MULTI layer: the receive modes */	upstream's line as written
+tests/fade_noise_test.c	line	 * (MASTER ignored), and 808 SLIDE (sine, DRV, DIST 30) at 4096.	upstream's line as written
+tests/fade_noise_test.c	line	/* sine: the analog engine's SIN, no drive, no FX; else 808 SLIDE as it comes (its DIST), dry (no sends). usb: capture	upstream's line as written
+tests/fm6_test.c	line	/* 2.4.1: an operator with AMS > 0 (a quarter of the DX7 patches in circulation) played noise, whatever the LFO's	upstream's line as written
+tests/fmx_test.c	line	 *   BANK      an FMX patch stored in a bank slot comes back exactly (PTCH Bn); FM6 sees that slot empty; a DX7 voice	upstream's line as written
+tests/fmx_test.c	line	 *   DX7       each FM6 factory patch converted: the pitch FM6 plays it at	upstream's line as written
+tests/fmx_test.c	line	       "bank: a DX7 voice in slot 6 (FM6's write), slot 4 still FMX's");	upstream's line as written
+tests/fmx_test.c	line	        snprintf(w, sizeof w, "bank: the DX7 voice in slot 6 plays on FMX, converted (%.1f Hz, peak %.0f)", f, pk2);	upstream's line as written
+tests/fmx_test.c	line	            snprintf(w, sizeof w, "DX7 %u converted: FM6 %.1f Hz, FMX %.1f Hz", k, fa, fb);	upstream's line as written
+tests/fmx_test.c	line	    ok(good, "DX7: FM6's factory patches converted play at FM6's pitch");	upstream's line as written
+tests/hold_rec_test.c	line	    live_take(1, -1, "track 2 RHODES (POLY)", 1);	upstream's line as written
+tests/hold_rec_test.c	line	    free_take(1, -1, "track 2 RHODES (POLY)", 0);	upstream's line as written
+tests/hold_rec_test.c	line	    free_take(1, -1, "track 2 RHODES (POLY)", 1);	upstream's line as written
+tests/hold_rec_test.c	line	    armed_take(1, "track 2 RHODES (POLY)");	upstream's line as written
+tests/hold_rec_test.c	line	    overdub(1, -1, "track 2 RHODES (POLY)", 10);	upstream's line as written
+tests/hold_rec_test.c	line	    overdub(1, -1, "track 2 RHODES (POLY)", 5);	upstream's line as written
+tests/hold_rec_test.c	line	    overdub(1, -1, "track 2 RHODES (POLY)", 7);	upstream's line as written
+tests/model_switch_test.c	line	 * every model: a ladder's states (x 4096) read by an SVF burst at full scale (DIODE -> SEM: 17994, steady ~1800) until	upstream's line as written
+tests/mseq_ui_test.c	line	        ppm("filter-ms20");	upstream's line as written
+tests/preset_level.c	line	    if (has(n, "RHODES") || has(n, "WURLI") || has(n, "CLAV") || has(n, "KEYS") || has(n, "STAB") || has(n, "PNO") || has(n, "PIANO") ||	upstream's line as written
+tests/project_test.c	line	 * defaults, the swings onto the MPC scale (x 0.8), synth steps as they were, the drum track's notes onto	upstream's line as written
+tests/project_test.c	line	    bad += check("FUN3 -> FUN5: globals (swing 50 -> 40: the MPC scale), the new ones default", ok);	upstream's line as written
+tests/regress.c	line	    static const uint8_t SEND_E[2][2] = {{0, 7}, {1, 0}};   /* ANALOG TRAP PLUCK, DIGITAL RHODES */	upstream's line as written
+tests/run_tests.sh	line	run "Clipper 0.2 filters: the MOOG ladder (response, resonance, no dead band, bounded), soft SVF states, ANALOG MODL" "$OUT/filter_test"	upstream's line as written
+tests/run_tests.sh	line	run "Clipper 0.6 FMX: presets in tune, waves, PM / FM / RING, routing, 40 templates, PEG, bank (FMX and DX7 slots), DX7 converted" "$OUT/fmx_test" build/fmx_demo	upstream's line as written
+tests/run_tests.sh	line	run "Clipper 0.9: the filter MODELs (SVF MOOG MS20 DIODE SEM NOTCH BP HP: bounded, responses, switch without a click), VINTAGE, the TUNING (JUST, 19-EDO, RAST, a USER scale), the TURNG arp and LOOP, projects and user presets" "$OUT/synth9_test"	upstream's line as written
+tests/seq2_test.c	line	/* SLOOP 2.7.1 (a YouTube comment): several notes held while recording, on a POLY part. Each goes on until its own key is let	upstream's line as written
+tests/synth9_test.c	line	 *            the low-passes keep the bass and lose the top, HP the other way round, BP a peak, NOTCH a dip; MS20 and	upstream's line as written
+tests/synth9_test.c	line	        ok(good, "MODELS: SVF MOOG MS20 DIODE SEM low-pass (the bass kept, the top 10 dB down, 12 for MOOG and DIODE)");	upstream's line as written
+tests/synth9_test.c	line	    {   /* MS20 and DIODE sing at full resonance (a quiet note: the resonance rings on) */	upstream's line as written
+tests/synth9_test.c	line	        ok(r[0] > 200 && r[1] > 200, "MODELS: MS20 and DIODE ring at full resonance");	upstream's line as written
+tests/synth9_test.c	line	        ok(!rail && bounded(), "CLEAN: the loudest mix (2 parts, 8 hot voices, every send, FUZZ, MS20): no sample at the rail");	upstream's line as written
+tests/unison_level_test.c	line	 * +13.7 dB, PHASE CZ CHOIR +12.8, FMX +11 .. +15, MACRO CHORD / SWARM +13, SAMPLE +7.6 on average). Each engine now	upstream's line as written
+tools/gen_drumkits.py	line	        KICK2=S("sine", 44, 12, 220, 40, 1900, 124, click=16, drive=44),            # the sliding 808	upstream's line as written
+tools/gen_drumkits.py	line	        KICK2=S("sine", 45, 12, 50, 60, 1600, 124, click=30, drive=110),           # blown-out 808	upstream's line as written
+tools/gen_fmx.py	line	  HALF (a half-wave rectified sine, the OPL's), ABS (a rectified sine, one arch a period: at the note's pitch, not the	upstream's line as written
+tools/gen_fmx.py	line	  octave up the OPL's has), QUART (a quarter-sine pulse a period, the same),	upstream's line as written
+tools/gen_fmx.py	line	Algorithms, FMX_NALG: the 32 of the DX7, derived from fm6_core.c's FM6_ALG bus table (the same sounds as FM6), then	upstream's line as written
+tools/gen_fmx.py	line	def dx7(a):	upstream's line as written
+tools/gen_fmx.py	line	    """the modulation graph of a DX7 algorithm: mods[op] = set of modulating ops, carriers"""	upstream's line as written
+tools/gen_fmx.py	line	    algs = [dx7(a) for a in FM6_ALG] + [graph(e, c) for _, e, c in EXTRA]	upstream's line as written
+tools/gen_fmx.py	line	    # (the DX7's algorithm 1: 6 (feedback) > 5 > 4 > 3 carrier, 2 > 1 carrier)	upstream's line as written
+tools/gen_fmx.py	line	    # DX7 fixed frequencies: 10^(fine / 100), Q16 (FMX's FIX mode: 1, 10, 100, 1000 Hz x this)	upstream's line as written
+tools/gen_vector.py	line	def spec_digi():                                    # a PPG-like digital spectrum: random levels and phases, fixed seed	upstream's line as written
+tools/gen_wavetables.py	line	    """phase distortion (the CZ's): a cosine read through a bent phase, the bend from none to deep"""	upstream's line as written
+tools/gen_wavetables.py	line	    """a band of harmonics walking up (the PPG's digital sweeps): a window 8 harmonics wide, from 1 to 64"""	upstream's line as written
+web/editor.html	line	   The tone (a wave with a falling pitch, a second partial), the click, the noise (white, the 808's six metallic	upstream's line as written
+web/editor.html	line	  const SIZE = 128, NSLOT = 16, NFACTORY = 27;   /* (0.2: + MOOG BASS, MOOG LEAD, LADDER PAD after INIT) */	upstream's line as written
+web/editor.html	line	   outputs, a template to start from (the DX7's 32 and 8 more), the pitch envelope. LIVE sends each change; STORE	upstream's line as written
+web/test_web.mjs	line	  const roland = F.parseSysex(Uint8Array.from([0xF0, 0x41, 0x10, 0x42, 0x12, 0x40, 0x00, 0x7F, 0x00, 0x41, 0xF7]));	upstream's line as written
+web/test_web.mjs	line	  ok(!roland.voices.length && roland.kinds[0] === "maker:41", "v9: another maker's SysEx: its ID");	upstream's line as written
+web/test_web.mjs	line	  const kit = { name: "MY 808", crush: 0x21, src: 0, sounds: Array.from({ length: 16 }, (_, l) => raw.slice(1 + l * 22, 23 + l * 22)) };	upstream's line as written
+web/test_web.mjs	line	  ok(back.name === "MY 808" && back.crush === 0x21 && js(back.sounds.map((x) => Array.from(x))) === js(kit.sounds.map((x) => Array.from(x))) && /not a SLOOP/.test(bad)	upstream's line as written
+web/test_web.mjs	line	    && bank.length === 1464 && dec && dec[3].name === "MY 808" && dec[2].crush === 0x21 && js(Array.from(dec[1].sounds[15])) === js(Array.from(kit.sounds[15]))	upstream's line as written
+web/test_web.mjs	line	/* ------------------------------------------- 2.5: a DX7 cartridge into the bank --- */	upstream's line as written
+web/test_web.mjs	line	  ok(pn(acc(["Arturia KeyStep Pro", "USB-MIDI", "X0X FM-1", "Clipper"], ["SLOOP"])) ===	upstream's line as written
+web/test_web.mjs	line	  ok(pn(acc(["Arturia KeyStep Pro", "loopMIDI Port"])) === "", "editor: no FM-1 name: nothing to try");	upstream's line as written

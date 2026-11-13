@@ -1,0 +1,417 @@
+/* SPDX-License-Identifier: GPL-3.0-only
+ * Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments */
+/* Persistent storage on the SPI NOR.
+ *
+ * Every object has an A/B sector pair. A save goes to the copy that is not
+ * the current one: erase the sector, program the payload (from offset 256),
+ * then the 32-byte header at offset 0 last. The header is the commit record;
+ * on load the valid copy with the highest seq wins, so a torn write leaves
+ * the previous copy in charge.
+ *
+ * Flash access goes through three hooks (also used by the host test):
+ *   st_read(off, dst, n)   st_erase(off)   st_prog(off, src, n)
+ */
+#ifndef UI_SMALL
+#define UI_SMALL                                   /* (gfx.c: minsize on the device; a test alone: nothing) */
+#endif
+#define ST_MAGIC 0x554C4546u                   /* "FELU" */
+#define ST_SECTOR 4096u
+#define ST_PAYLOAD_OFF 256u
+#define ST_PAYLOAD_MAX (ST_SECTOR - ST_PAYLOAD_OFF)
+
+/* flash map (FL_DATA 0x97000..0xDFFFF, FL_GLOB 0xFC000..): settings 0xFC000 / 0xFD000, projects
+ * 0x97000..0x9EFFF, user sample slots 0xA0000..0xDBFFF (eng_sample.c), user preset banks 0xDC000..0xDFFFF
+ * (upreset.c); the working project (autosave, project.c): copy A 0x9F000, copy B 0xFE000 (the two sectors
+ * left: A/B needs no two neighbours); the FM6 patch bank (fm6_bank.c, SLOOP 2.4): 0xE5000 / 0xE6000, the first
+ * two sectors of the free 0xE5000..0xFBFFF after the update staging (FL_FM6, fm1_flash.h) */
+enum { OBJ_SETTINGS, OBJ_PROJECT0, OBJ_UPRESET0 = OBJ_PROJECT0 + 4, OBJ_AUTOSAVE = OBJ_UPRESET0 + 2, OBJ_FM6BANK,
+#if BOARD_SMK37
+       OBJ_MULTI,                                /* (Stallion, SMK-37) the multi sounds (multi.c): after the owner tag */
+#endif
+       OBJ_COUNT };
+
+typedef struct {
+    uint32_t magic;
+    uint16_t type, slot;
+    uint32_t seq, len, crc, rsv[2];
+    uint32_t hcrc;
+} st_hdr_t;
+
+static int st_read(uint32_t off, void *dst, uint32_t n);
+static int st_erase(uint32_t off);
+static int st_prog(uint32_t off, const void *src, uint32_t n);
+
+UI_SMALL static uint32_t st_crc32(const void *p, uint32_t n)   /* zlib CRC-32, 4 bits per step */
+{
+    static const uint32_t T[16] = {
+        0x00000000u, 0x1DB71064u, 0x3B6E20C8u, 0x26D930ACu, 0x76DC4190u, 0x6B6B51F4u, 0x4DB26158u, 0x5005713Cu,
+        0xEDB88320u, 0xF00F9344u, 0xD6D6A3E8u, 0xCB61B38Cu, 0x9B64C2B0u, 0x86D3D2D4u, 0xA00AE278u, 0xBDBDF21Cu};
+    const uint8_t *b = p;
+    uint32_t c = 0xFFFFFFFFu;
+    while (n--) {
+        c ^= *b++;
+        c = (c >> 4) ^ T[c & 15u];
+        c = (c >> 4) ^ T[c & 15u];
+    }
+    return ~c;
+}
+
+#if BOARD_SMK37
+/* SMK-37 Pro (see the fm1-to-smk37 guide): every object in FL_DATA 0x9D000..0xBAFFF (the stock VM),
+ * A/B neighbours: projects 0x9D000..0xA4FFF, user preset banks 0xA5000..0xA8FFF, autosave 0xA9000 /
+ * 0xAA000, FM6 bank 0xAB000 / 0xAC000, settings 0xAD000 / 0xAE000, the owner tag 0xAF000 (below), the multi sounds
+ * (multi.c, Stallion) 0xB0000 / 0xB1000 (after the tag: the tag never moves); 0xB2000..0xBAFFF spare. Never near
+ * BTIF / USRTRIM (0xC0000..0xC1FFF) or key_mac (0xFF000). */
+#define ST_SMK_BASE 0x9D000u
+#define ST_SMK_SECTORS (2u * (OBJ_FM6BANK + 1u))   /* the objects before the owner tag (OBJ_MULTI is after it) */
+#define ST_MULTI_OFF (ST_SMK_BASE + (ST_SMK_SECTORS + 1u) * ST_SECTOR)
+_Static_assert(ST_SMK_BASE + ST_SMK_SECTORS * ST_SECTOR <= 0xBB000u, "SMK store: past FL_DATA");
+_Static_assert(ST_MULTI_OFF == 0xB0000u && ST_MULTI_OFF + 2u * ST_SECTOR <= 0xBB000u, "SMK multi sounds: past FL_DATA");
+UI_SMALL static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* flash offset of copy A (0) / B (1) */
+{
+    if (obj == OBJ_MULTI)
+        return ST_MULTI_OFF + (copy & 1u) * ST_SECTOR;
+    static const uint8_t ORDER[OBJ_COUNT] = {
+        [OBJ_PROJECT0] = 0, [OBJ_PROJECT0 + 1] = 1, [OBJ_PROJECT0 + 2] = 2, [OBJ_PROJECT0 + 3] = 3,
+        [OBJ_UPRESET0] = 4, [OBJ_UPRESET0 + 1] = 5, [OBJ_AUTOSAVE] = 6, [OBJ_FM6BANK] = 7, [OBJ_SETTINGS] = 8};
+    return ST_SMK_BASE + (ORDER[obj % OBJ_COUNT] * 2u + (copy & 1u)) * ST_SECTOR;
+}
+
+/* The owner of the store. Several FM-1 firmwares are ported to the SMK-37 Pro with the same board layer and
+ * this same store area, each with its own object formats: a firmware must never parse another's data. The
+ * sector after the objects (0xAF000) holds "SMK37DATA" + the firmware family (FELUCCA_DATA_FAMILY, build.py).
+ * Ours: load as ever. None (erased): data written before the tag existed, by the SLOOP family only
+ * (FELUCCA_DATA_UNTAGGED_OK): keep it; anyone else clears it. Another family's: clear the objects (the other
+ * firmware's projects; its own backups are its business) and take the store. Samples (FL_SMP) validate
+ * themselves. Calibration, BT pairing and key_mac are outside FL_DATA: never touched. */
+#ifndef FELUCCA_DATA_FAMILY
+#define FELUCCA_DATA_FAMILY "SLOOP"
+#endif
+#ifndef FELUCCA_DATA_UNTAGGED_OK
+#define FELUCCA_DATA_UNTAGGED_OK 1
+#endif
+#define ST_OWNER_OFF (ST_SMK_BASE + ST_SMK_SECTORS * ST_SECTOR)
+_Static_assert(ST_OWNER_OFF + ST_SECTOR <= 0xBB000u, "SMK store owner: past FL_DATA");
+static uint8_t st_owner_cleared;                /* (the UI may say so) */
+UI_SMALL static void st_owner_check(void)
+{
+    static const char FAM[] = FELUCCA_DATA_FAMILY;
+    uint8_t tag[16], want[16];
+    uint32_t i, erased = 1, ours = 1, s;
+    for (i = 0; i < 16u; i++)
+        want[i] = i < 9u ? (uint8_t)"SMK37DATA"[i] : i - 9u < sizeof FAM - 1u ? (uint8_t)FAM[i - 9u] : 0u;
+    if (st_read(ST_OWNER_OFF, tag, 16))
+        return;
+    for (i = 0; i < 16u; i++) {
+        erased &= tag[i] == 0xFFu;
+        ours &= tag[i] == want[i];
+    }
+    if (ours)
+        return;
+    if (!erased || !FELUCCA_DATA_UNTAGGED_OK) {     /* another firmware's store: clear it */
+        for (s = 0; s < ST_SMK_SECTORS; s++) {
+            st_erase(ST_SMK_BASE + s * ST_SECTOR);
+            fm1_wdt_feed();                         /* (21 erases at boot, before the main loop feeds it:
+                                                     * up to ~0.5 s each at the driver's timeout, past the 8 s watchdog) */
+        }
+        st_erase(ST_MULTI_OFF);                     /* (the multi sounds, after the tag) */
+        st_erase(ST_MULTI_OFF + ST_SECTOR);
+        fm1_wdt_feed();
+        st_owner_cleared = 1;
+    }
+    st_erase(ST_OWNER_OFF);
+    st_prog(ST_OWNER_OFF, want, 16);
+}
+
+/* The stock firmware's mapping in USRFLASH (fm1_flash_map.h FL_STOCKTAG): global settings at 0xC2000 (magic A3 3A),
+ * 8 presets at 0xC3000 + n * 0x5000 (a note per key from byte 5), the end marker "usrdata\0" at 0xEAFF8. While the
+ * marker is there the stock firmware loads the area as it is and never rebuilds it, so after a return to stock the
+ * user slots (USR1 0xC2000, USR2 0xD6000: Clipper's wavetables) would be its key, knob and fader mapping. So the
+ * marker's sector is erased (the stock firmware then rebuilds its factory mapping at its next start): before the
+ * first erase in USRFLASH (felucca.c fl_erase4k_quiet: st_stock_touch) and at boot when the marker sits over data
+ * that is not the stock mapping (st_stock_boot). After genkigenki's SLOOP SMK-37 layer */
+UI_SMALL static int st_stock_tagged(void)
+{
+    static const uint8_t TAG[8] = {'u', 's', 'r', 'd', 'a', 't', 'a', 0};
+    uint8_t t[8];
+    uint32_t i;
+    if (st_read(FL_STOCKTAG_OFF, t, 8))
+        return 0;
+    for (i = 0; i < 8u; i++)
+        if (t[i] != TAG[i])
+            return 0;
+    return 1;
+}
+UI_SMALL static int st_stock_intact(void)                /* the marker over the stock layout (none of our data there) */
+{
+    static const uint32_t PRESET[2] = {0xC3000u, 0xD7000u}, SLOT[2] = {0xC2000u, 0xD6000u};   /* presets 0, 4 */
+    uint8_t b[9];
+    uint32_t k, i;
+    if (!st_stock_tagged() || st_read(FL_SMP_LO, b, 2) || b[0] != 0xA3u || b[1] != 0x3Au)
+        return 0;
+    for (k = 0; k < 2u; k++) {
+        if (st_read(SLOT[k], b, 4) || (b[0] == 'F' && b[1] == 'S' && b[2] == 'M' && b[3] == 'P') ||
+            (b[0] == 'F' && b[1] == 'W' && b[2] == 'T' && b[3] == 'B'))
+            return 0;                           /* a slot's header (sample "FSMP", wavetable "FWTB") */
+        if (st_read(PRESET[k], b, 9))
+            return 0;
+        for (i = 5; i < 9u; i++)
+            if (b[i] & 0x80u)
+                return 0;                       /* not a preset's key notes (erased, or our data) */
+    }
+    return 1;
+}
+UI_SMALL static int st_stock_release(void)               /* erase the marker's sector; 1 when it was there (later calls: 0) */
+{
+    if (!st_stock_tagged())
+        return 0;
+    st_erase(FL_STOCKTAG_LO);
+    return 1;
+}
+UI_SMALL static void st_stock_touch(uint32_t off)        /* an erase at off: in USRFLASH, the marker first */
+{
+    if (off >= FL_SMP_LO && off < FL_SMP_HI)
+        st_stock_release();
+}
+UI_SMALL static void st_stock_boot(void)                 /* the marker over data that is not the stock mapping: released */
+{
+    if (st_stock_tagged() && !st_stock_intact())
+        st_stock_release();
+}
+#else
+UI_SMALL static void st_owner_check(void) {}
+UI_SMALL static uint32_t st_sector(uint32_t obj, uint32_t copy)  /* flash offset of copy A (0) / B (1) */
+{
+    if (obj == OBJ_SETTINGS)
+        return 0xFC000u + copy * ST_SECTOR;
+    if (obj == OBJ_AUTOSAVE)
+        return copy ? 0xFE000u : 0x9F000u;
+    if (obj == OBJ_FM6BANK)
+        return 0xE5000u + copy * ST_SECTOR;
+    if (obj >= OBJ_UPRESET0 && obj < OBJ_AUTOSAVE)
+        return 0xDC000u + (obj - OBJ_UPRESET0) * 2u * ST_SECTOR + copy * ST_SECTOR;
+    return 0x97000u + (obj - OBJ_PROJECT0) * 2u * ST_SECTOR + copy * ST_SECTOR;
+}
+#endif
+
+static uint8_t st_buf[ST_PAYLOAD_MAX] __attribute__((aligned(4)));
+
+UI_SMALL static int st_head(uint32_t obj, uint32_t copy, st_hdr_t *h)   /* commit record valid: 0 */
+{
+    if (obj >= OBJ_COUNT || copy > 1u)
+        return -1;
+    if (st_read(st_sector(obj, copy), h, sizeof *h))
+        return -1;
+    if (h->magic != ST_MAGIC || h->type != obj || h->slot != copy || h->len > ST_PAYLOAD_MAX ||   /* (slot: the copy
+                                                     * it was written to; after Felucca 1.0) */
+        h->hcrc != st_crc32(h, sizeof *h - 4u))
+        return -1;
+    return 0;
+}
+
+UI_SMALL static int st_body(uint32_t obj, uint32_t copy, const st_hdr_t *h)   /* payload -> st_buf, CRC ok: 0 */
+{
+    if (st_read(st_sector(obj, copy) + ST_PAYLOAD_OFF, st_buf, h->len) || st_crc32(st_buf, h->len) != h->crc)
+        return -1;
+    return 0;
+}
+
+/* the current copy: the valid one with the highest seq (A on a tie), -1 when
+ * neither is valid. Headers first, so only the winner's payload is read (it
+ * is left in st_buf); *h gets its header. */
+UI_SMALL static int st_current(uint32_t obj, st_hdr_t *h)
+{
+    st_hdr_t a, b;
+    int va = st_head(obj, 0, &a) == 0, vb = st_head(obj, 1, &b) == 0;
+    if (vb && (!va || b.seq > a.seq)) {
+        if (st_body(obj, 1, &b) == 0) {
+            *h = b;
+            return 1;
+        }
+        vb = 0;
+    }
+    if (va && st_body(obj, 0, &a) == 0) {
+        *h = a;
+        return 0;
+    }
+    if (vb && st_body(obj, 1, &b) == 0) {
+        *h = b;
+        return 1;
+    }
+    return -1;
+}
+
+/* load object into dst (up to max bytes); returns the length, or -1 */
+UI_SMALL static int st_load(uint32_t obj, void *dst, uint32_t max)
+{
+    uint32_t i;
+    st_hdr_t h;
+    if (st_current(obj, &h) < 0)
+        return -1;
+    if (h.len > max)
+        h.len = max;
+    for (i = 0; i < h.len; i++)
+        ((uint8_t *)dst)[i] = st_buf[i];
+    return (int)h.len;
+}
+
+/* 0.7 (SLOOP 2.7's layout): a side record in a copy's own sector, between the header (0..31) and the payload (256..):
+ * bytes ST_SIDE_OFF.. carry what an older version must never see in the payload (it checks the payload's exact length).
+ * st_save3 programs st_side there with the payload, before the header, so it is committed with its copy; an older save
+ * leaves the area erased (0xFF), and the record goes with that copy. The record checks itself (project.c: a magic and
+ * a CRC; SLOOP's has its own magic: each firmware reads only its own) */
+#define ST_SIDE_OFF 64u
+#define ST_SIDE_MAX (ST_PAYLOAD_OFF - ST_SIDE_OFF)
+static const void *st_side;                         /* the next save's side record (0: none), for one save */
+static uint32_t st_side_len;
+/* (Clipper 1.0) a tail: bytes right after the payload, in the rest of the copy's sector, outside the payload's length
+ * and CRC (an older version reads the payload as before and never sees them; its save erases them). The tail checks
+ * itself (upreset.c: a magic and a CRC) */
+static const void *st_tail;                         /* the next save's tail (0: none), for one save */
+static uint32_t st_tail_len;
+_Static_assert(sizeof(st_hdr_t) <= ST_SIDE_OFF, "the side record starts after the header");
+/* the current copy's side bytes (n <= ST_SIDE_MAX) into dst: 0, or -1 (no valid copy) */
+UI_SMALL static int st_side_load(uint32_t obj, void *dst, uint32_t n)
+{
+    st_hdr_t h;
+    int c = st_current(obj, &h);
+    if (c < 0 || n > ST_SIDE_MAX)
+        return -1;
+    return st_read(st_sector(obj, (uint32_t)c) + ST_SIDE_OFF, dst, n) ? -1 : 0;
+}
+/* (1.0) the current copy's tail (n bytes after its payload) into dst: 0, or -1 (no valid copy, no room) */
+UI_SMALL static int st_tail_load(uint32_t obj, void *dst, uint32_t n)
+{
+    st_hdr_t h;
+    int c = st_current(obj, &h);
+    if (c < 0 || h.len + n > ST_PAYLOAD_MAX)
+        return -1;
+    return st_read(st_sector(obj, (uint32_t)c) + ST_PAYLOAD_OFF + h.len, dst, n) ? -1 : 0;
+}
+
+/* an object in up to three parts, src then src2 then src3 (SLOOP 2.5: the settings and the SYN kits after them; SLOOP
+ * 2.6: then its MIDI settings, which Clipper keeps as they are: project.c set_tail) */
+/* (Stallion) ST_HOLD_MAGIC: no save reaches the flash (-9): a FACTORY RESET whose erase failed (project.c
+ * factory_reset), so the settings, the autosave, the sections or an update's flush never write what RAM still holds
+ * back over the sectors it erased. In .noinit, as the projects it guards against: a warm restart (the watchdog, a
+ * crash, an update, UPDATE MODE) keeps both, and the boot (persist_boot) finds the RAM projects valid and their
+ * sectors erased, so without it would write them back. Cleared by the next try; a power cycle clears it (the RAM's
+ * garbage is not the magic) and the .noinit projects with it. Its own section after the others (felucca.c
+ * ST_HOLD_SECTION, app.ld): nothing in .noinit moves. (A host test: a plain variable, the restart simulated) */
+#define ST_HOLD_MAGIC 0x484F4C44u                  /* "HOLD" */
+#ifndef ST_HOLD_SECTION
+#define ST_HOLD_SECTION
+#endif
+uint32_t st_hold_word ST_HOLD_SECTION;
+UI_SMALL static int st_held(void) { return st_hold_word == ST_HOLD_MAGIC; }
+UI_SMALL static void st_hold_set(int on) { st_hold_word = on ? ST_HOLD_MAGIC : 0u; }
+UI_SMALL static int st_save3(uint32_t obj, const void *src, uint32_t len, const void *src2, uint32_t len2, const void *src3,
+                    uint32_t len3)
+{
+    uint32_t seq, base, off;
+    int cur, rc;
+    st_hdr_t h;
+    if (st_held())
+        return -9;
+    if (obj >= OBJ_COUNT || len + len2 + len3 > ST_PAYLOAD_MAX)
+        return -1;
+    cur = st_current(obj, &h);
+    seq = cur < 0 ? 0u : h.seq;
+    base = st_sector(obj, cur == 0 ? 1u : 0u);       /* write the other copy */
+    for (off = 0; off < len; off++)
+        st_buf[off] = ((const uint8_t *)src)[off];    /* the driver wants RAM sources */
+    for (off = 0; off < len2; off++)
+        st_buf[len + off] = ((const uint8_t *)src2)[off];
+    len += len2;
+    for (off = 0; off < len3; off++)
+        st_buf[len + off] = ((const uint8_t *)src3)[off];
+    len += len3;
+    {   /* (1.0) the tail right after the payload, programmed with it (whole pages: none wraps) */
+        uint32_t tl = st_tail && st_tail_len && len + st_tail_len <= ST_PAYLOAD_MAX ? st_tail_len : 0u, all = len + tl;
+        for (off = 0; off < tl; off++)
+            st_buf[len + off] = ((const uint8_t *)st_tail)[off];
+        if ((rc = st_erase(base)) != 0)
+            return rc;
+        for (off = 0; off < all; off += 256u) {
+            uint32_t n = all - off > 256u ? 256u : all - off;
+            if ((rc = st_prog(base + ST_PAYLOAD_OFF + off, st_buf + off, n)) != 0)
+                return rc;
+        }
+    }
+    if (st_side && st_side_len && st_side_len <= ST_SIDE_MAX) {   /* (0.7) the side record, before the header */
+        uint8_t sb[ST_SIDE_MAX];
+        memcpy(sb, st_side, st_side_len);              /* (the driver wants RAM sources) */
+        if ((rc = st_prog(base + ST_SIDE_OFF, sb, st_side_len)) != 0)
+            return rc;
+    }
+    h.magic = ST_MAGIC;
+    h.type = (uint16_t)obj;
+    h.slot = (uint16_t)(cur == 0 ? 1 : 0);
+    h.seq = seq + 1u;
+    h.len = len;
+    h.crc = st_crc32(st_buf, len);
+    h.rsv[0] = h.rsv[1] = 0xFFFFFFFFu;
+    h.hcrc = st_crc32(&h, sizeof h - 4u);
+    if ((rc = st_prog(base, &h, sizeof h)) != 0)       /* the commit record, last */
+        return rc;
+    {   /* read back: a write-protected or failing part must not report SAVED */
+        st_hdr_t chk;
+        uint32_t c = cur == 0 ? 1u : 0u;
+        if (st_head(obj, c, &chk) || memcmp(&chk, &h, sizeof h) || st_body(obj, c, &chk))   /* the whole record */
+            return -7;
+    }
+    return 0;
+}
+UI_SMALL static int st_save2(uint32_t obj, const void *src, uint32_t len, const void *src2, uint32_t len2)
+{
+    return st_save3(obj, src, len, src2, len2, 0, 0);
+}
+UI_SMALL static int st_save(uint32_t obj, const void *src, uint32_t len) { return st_save2(obj, src, len, 0, 0); }
+
+/* (Stallion) MENU > SYS > FACTORY RESET (project.c factory_reset). An object wiped: its non-current copy erased first,
+ * then the current one, so a power cut between the two leaves it as it was (the current record) or empty, never its
+ * older record back in charge. Returns the sectors not erased */
+UI_SMALL static uint32_t st_wipe(uint32_t obj, void (*tick)(void))
+{
+    st_hdr_t h;
+    int cur = st_current(obj, &h);
+    uint32_t first = cur == 0 ? 1u : 0u, bad;        /* (neither valid: A then B) */
+    bad = st_erase(st_sector(obj, first)) != 0;
+    if (tick)
+        tick();
+    bad += st_erase(st_sector(obj, first ^ 1u)) != 0;
+    if (tick)
+        tick();
+    return bad;
+}
+/* every object but the settings wiped, as on a fresh install: the four projects, the user preset banks (their side
+ * records and tails with them), the working sound and project (autosave), the FM6 patch bank (SMK-37: the multi
+ * sounds too). The settings (with their
+ * side record and tail: the favourites, GLO > TOUCH and TOUCH CAL's ends, KEY / PAD AT, SLOOP's MIDI part, and the
+ * HARDWARE CALIBRATION panel table) are not erased here: project.c replaces them (st_replace) with a record that keeps
+ * the panel table only. Nothing else: the user samples, the update staging, the SMK store's owner tag, the app, the
+ * calibration (SMK: BTIF, USRTRIM) and key_mac are other sectors (tests/factory_reset_test.c checks every byte).
+ * Through st_erase (felucca.c: FL_STORE_OK, then the RAM driver's FL_GUARD). tick (0: none) runs after each sector (the
+ * watchdog). Returns the sectors not erased */
+UI_SMALL static uint32_t st_wipe_user(void (*tick)(void))
+{
+    uint32_t o, bad = 0;
+    for (o = 0; o < OBJ_COUNT; o++)
+        if (o != OBJ_SETTINGS)
+            bad += st_wipe(o, tick);
+    return bad;
+}
+/* obj replaced by src: saved (to the non-current copy, which becomes the current one), then the other copy (the old
+ * record) erased, so no older record is left to come back. A cut before the new header: the old record; after it: the
+ * new one. 0, or the error (a failed save leaves the old record current and erases nothing) */
+UI_SMALL static int st_replace(uint32_t obj, const void *src, uint32_t len)
+{
+    st_hdr_t h;
+    int rc = st_save(obj, src, len), cur;
+    if (rc)
+        return rc;
+    cur = st_current(obj, &h);
+    if (cur < 0)
+        return -7;
+    return st_erase(st_sector(obj, cur ? 0u : 1u));
+}
