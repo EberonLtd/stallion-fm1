@@ -1,0 +1,529 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Copyright (C) 2026 Eberon Limited (John Gorman)
+     Stallion's "What's new in 1.0" page (the site's whats-new.html, web/make_site.py): everything Stallion 1.0 adds to
+     Clipper, each item checked against the code (the list is the README's "New features in Stallion"). English only
+     for now: the French and Japanese pages are still to be translated. -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Everything Stallion 1.0 adds to Clipper: 117 new features and fixes for the M-VAVE FM-1 and SMK-37 Pro.">
+<link rel="icon" href="webapp/icon-192.png">
+<title>What's new in Stallion 1.0</title>
+<style>
+  @font-face { font-family: "Stallion Pixel"; src: url("webapp/stallion-pixel.ttf") format("truetype"); font-display: swap; }
+/* SPDX-License-Identifier: GPL-3.0-only
+   Copyright (C) 2026 Eberon Limited (John Gorman)
+   Stallion's site style, shared by the front page and both installers (web/make_site.py puts it in each page at its
+   SITE_CSS marker). The colours are the logo's (tools/gen_logo.py): deep-sea navy, sail white, Wicklow oak, rust, sea.
+   Each colour means one thing everywhere:
+     oak    what you do: install buttons, links that act, the step numbers
+     sea    information: notes, the browser rule, captions' headings
+     rust   a warning: do not unplug, no warranty, an error
+     sail   the text
+   Large type for weak eyes: body 20 px, nothing under 18 px; headings in the FM-1's own pixel font (Terminus, OFL)
+   at multiples of 16 px so its pixels stay sharp. No thin lines: rules and borders are 3 px or more. */
+:root {
+  --navy: #0b1e36; --deep: #06111f; --panel: #12294b; --edge: #2c4a78;
+  --sail: #f3eee2; --soft: #d9d3c4; --oak: #eaa54c; --oak-deep: #d98e2f; --rust: #ef7a5c; --rust-deep: #b8432a;
+  --sea: #6cc3dc; --sea-deep: #3b8fa8;
+  --body: "Avenir Next", "Segoe UI", "Helvetica Neue", Ubuntu, Roboto, "Noto Sans", Arial, sans-serif;
+  --pixel: "Stallion Pixel", "Courier New", monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--navy); color: var(--sail); font: 500 20px/1.6 var(--body); }
+img { max-width: 100%; height: auto; }
+a { color: var(--oak); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+a:hover { color: var(--sail); }
+:focus-visible { outline: 4px solid var(--sea); outline-offset: 4px; border-radius: 6px; }
+p { margin: 0 0 18px; }
+strong, b { font-weight: 700; color: var(--sail); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.narrow { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+@media (max-width: 600px) { .wrap, .narrow { padding: 0 16px; } body { font-size: 19px; } }
+
+/* the pixel font for headings: Terminus, drawn for 16 px; kept at 32, 48, 64 */
+.px, h1, h2, h3 { font-family: var(--pixel); font-weight: 400; letter-spacing: 0; text-transform: uppercase;
+                  -webkit-font-smoothing: none; font-smooth: never; }
+h1 { font-size: 64px; line-height: 1.05; margin: 0 0 24px; }
+h2 { font-size: 48px; line-height: 1.1; margin: 0 0 24px; }
+h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
+@media (max-width: 700px) { h1 { font-size: 48px; } h2 { font-size: 32px; } h3 { font-size: 32px; } }
+@media (max-width: 380px) { h1 { font-size: 32px; } }
+.kicker { font: 400 32px/1.1 var(--pixel); color: var(--sea); text-transform: uppercase; margin: 0 0 12px; display: block; }
+.lead { font-size: 24px; line-height: 1.5; max-width: 40em; }
+@media (max-width: 600px) { .lead { font-size: 21px; } }
+
+/* the header: the logo, the language buttons */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 20px; padding-bottom: 20px; flex-wrap: wrap; }
+.bar .logo { display: block; line-height: 0; }
+.bar .logo svg { display: block; width: 260px; height: auto; border-radius: 12px; }
+@media (max-width: 600px) { .bar .logo svg { width: 190px; } }
+.langs { display: flex; gap: 8px; flex-wrap: wrap; }
+.lang { font: 600 18px/1 var(--body); color: var(--sail); background: transparent; border: 3px solid var(--edge);
+        border-radius: 999px; padding: 10px 16px; cursor: pointer; min-height: 44px; }
+.lang:hover { border-color: var(--sail); }
+.lang[aria-current="true"] { background: var(--sail); color: var(--navy); border-color: var(--sail); }
+
+/* the sail: white and rust stripes, the logo's square sail, as a divider */
+.sail { height: 14px; background: repeating-linear-gradient(90deg, var(--sail) 0 56px, var(--rust-deep) 56px 112px); }
+.sea-line { height: 10px; background: radial-gradient(circle at 10px -4px, transparent 9px, var(--sea-deep) 10px 13px, transparent 14px) 0 0 / 40px 10px repeat-x; opacity: .9; }
+
+/* buttons: oak blocks, big */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 64px; padding: 14px 28px;
+       font: 400 32px/1 var(--pixel); text-transform: uppercase; text-decoration: none; color: var(--deep);
+       background: var(--oak); border: 4px solid var(--oak); border-radius: 14px; cursor: pointer; }
+.btn:hover { background: var(--sail); border-color: var(--sail); color: var(--deep); }
+.btn.ghost { background: transparent; color: var(--sail); border-color: var(--sail); }
+.btn.ghost:hover { background: var(--sail); color: var(--deep); }
+.btn small { font: 600 18px/1.2 var(--body); text-transform: none; display: block; }
+.btn.text { font: 700 22px/1.3 var(--body); text-transform: none; }
+.btn[disabled] { background: var(--panel); border-color: var(--edge); color: var(--soft); cursor: default; }
+@media (max-width: 600px) { .btn { font-size: 32px; padding: 12px 18px; } }
+
+/* notes: sea for information, rust for a warning */
+.note, .warn { border-left: 8px solid var(--sea); background: var(--panel); padding: 16px 20px; border-radius: 0 12px 12px 0;
+               margin: 0 0 20px; }
+.warn { border-left-color: var(--rust); }
+.note b, .warn b { display: block; font: 400 32px/1.1 var(--pixel); text-transform: uppercase; margin-bottom: 6px; }
+.note b { color: var(--sea); } .warn b { color: var(--rust); }
+.note p:last-child, .warn p:last-child { margin: 0; }
+
+/* the device: a drawn frame around a screen, so a screenshot reads as the product */
+.device { display: block; background: #04070d; border: 4px solid var(--edge); border-radius: 28px; padding: 16px;
+          box-shadow: 0 24px 48px rgba(0, 0, 0, .45), inset 0 0 0 4px #000; }
+.device img { display: block; width: 100%; height: auto; image-rendering: pixelated; border-radius: 6px; }
+.photo { display: block; width: 100%; height: auto; border-radius: 22px; }
+
+/* steps: big oak numbers */
+.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; gap: 18px; }
+.steps > li { counter-increment: s; position: relative; padding: 18px 20px 18px 92px; background: var(--panel);
+              border-radius: 16px; min-height: 84px; }
+.steps > li::before { content: counter(s); position: absolute; left: 20px; top: 14px; width: 56px; height: 56px;
+                      display: grid; place-items: center; font: 400 48px/1 var(--pixel); color: var(--deep);
+                      background: var(--oak); border-radius: 12px; }
+.steps > li b { display: block; font-size: 22px; }
+
+/* the footer */
+.foot { background: var(--deep); padding: 40px 0 48px; margin-top: 64px; }
+.foot p { color: var(--soft); font-size: 18px; }
+.foot .copy { color: var(--sail); font-weight: 700; font-size: 20px; }
+[hidden] { display: none !important; }
+
+  .top { padding-top: 32px; padding-bottom: 24px; }
+  .sum { list-style: none; padding: 0; margin: 24px 0 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .sum li { background: var(--panel); border-radius: 14px; padding: 14px 18px; border-left: 8px solid var(--oak); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+  .sum a { color: var(--sail); text-decoration: none; font-weight: 700; }
+  .sum a:hover { color: var(--oak); }
+  .n { display: inline-block; min-width: 2.2em; text-align: center; font: 400 32px/1 var(--pixel); color: var(--oak); }
+  .sum .n { flex: none; }
+  .total { font: 400 48px/1.1 var(--pixel); color: var(--oak); text-transform: uppercase; margin: 8px 0 0; }
+  .grp { padding: 40px 0 8px; border-top: 4px solid var(--edge); margin-top: 32px; }
+  .grp h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; font-size: 32px; }
+  .grp ul, .story ul { padding-left: 26px; margin: 0; }
+  .grp li, .story li { margin: 0 0 14px; }
+  .story { background: var(--panel); border-radius: 22px; padding: 28px; margin: 40px 0 0; }
+  .story h2 { color: var(--oak); font-size: 32px; }
+  code { font-size: 18px; background: var(--deep); padding: 2px 6px; border-radius: 6px; }
+  .base { font-size: 20px; }
+</style>
+</head>
+<body>
+<header class="wrap bar"><a class="logo" href="./" aria-label="Stallion"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 783.657 240" width="783.657" height="240" role="img" aria-label="Stallion">
+<!-- Stallion (EberonLtd), drawn by tools/gen_logo.py; GPL-3.0-only -->
+<rect width="783.657" height="240" rx="24" fill="#0B1E36"/>
+<polygon points="26.9,134.7 36.6,138.5 46.4,141.9 56.2,144.7 66.0,147.0 75.8,148.8 85.5,150.1 95.3,150.9 105.1,151.1 114.9,150.9 124.7,150.1 134.4,148.8 144.2,147.0 154.0,144.7 163.8,141.9 173.6,138.5 183.3,134.7 187.5,131.6 185.3,138.5 181.5,144.8 176.1,150.5 169.3,155.4 161.4,159.7 152.5,163.3 142.8,166.1 132.4,168.3 121.6,169.7 110.5,170.3 99.3,170.2 88.1,169.3 77.2,167.6 66.8,165.1 56.9,161.8 47.8,157.7 39.6,152.7 32.6,146.9 27.0,140.2 22.7,132.6" fill="#D98E2F"/>
+<polyline points="183.3,136.7 185.3,134.2 187.1,131.6 188.7,129.0 190.1,126.4 191.3,123.8 192.4,121.1 193.2,118.5 193.9,115.9 194.4,113.2 194.7,110.6 194.8,107.9 194.7,105.3 194.5,102.6 194.0,99.9 193.4,97.2 192.6,94.5" fill="none" stroke="#D98E2F" stroke-width="9.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="26.9,136.7 25.2,134.9 23.7,133.1 22.4,131.3 21.4,129.4 20.5,127.5 19.9,125.7 19.5,123.8 19.3,121.8 19.4,119.9 19.6,118.0 20.1,116.0 20.7,114.0 21.6,112.0 22.7,110.0 24.0,108.0 25.6,106.0 25.2,103.8 25.3,101.7 25.7,99.7 26.5,97.8 27.5,96.2 28.8,94.7 30.3,93.6 32.0,92.7 33.7,92.2 35.4,92.0 37.2,92.1 38.8,92.5 40.3,93.1 41.6,94.0 42.7,95.1 43.6,96.3 44.2,97.7 44.6,99.0 44.7,100.4 44.6,101.7 44.2,103.0 43.7,104.1 42.9,105.1 42.1,105.9 41.1,106.5 40.1,106.9 39.1,107.1 38.1,107.1 37.2,106.9" fill="none" stroke="#D98E2F" stroke-width="9.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="186.4,99.7 185.4,94.0 184.7,88.5 180.1,83.2 184.1,78.2 180.2,73.4 184.9,68.8 181.6,64.4 186.9,60.3 184.2,56.4 190.1,52.8 192.2,49.4 194.7,46.1 192.6,33.8 201.9,44.1 224.5,66.7 225.6,69.0 226.0,71.1 225.8,72.9 225.0,74.5 223.5,75.9 221.4,77.0 218.0,77.1 215.0,76.7 212.4,75.9 210.1,74.7 208.2,73.1 206.8,71.0 205.7,68.6 205.0,65.7 203.1,70.3 201.5,75.3 200.3,80.6 199.5,86.3 198.9,92.3 198.8,98.6" fill="#D98E2F"/>
+<circle cx="205.0" cy="53.4" r="2.68" fill="#0B1E36"/>
+<polyline points="105.1,149.1 105.1,25.6" fill="none" stroke="#F3EEE2" stroke-width="4.12" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="105.1,27.6 183.3,124.4" fill="none" stroke="#F3EEE2" stroke-width="2.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="105.1,27.6 33.0,122.3" fill="none" stroke="#F3EEE2" stroke-width="2.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="51.6,38.9 158.6,38.9" fill="none" stroke="#D98E2F" stroke-width="5.15" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="63.9,124.4 62.0,114.1 60.5,103.8 59.2,93.5 58.3,83.2 57.7,72.9 57.4,62.6 57.4,52.3 57.7,42.0 63.7,42.5 69.6,42.9 75.5,43.3 76.7,43.3 77.1,54.0 77.5,64.7 78.0,75.4 78.4,86.1 78.8,96.8 79.2,107.5 79.7,118.2 80.1,128.9 79.4,128.8 74.2,127.5 69.1,126.1" fill="#F3EEE2"/>
+<polygon points="80.1,128.9 79.7,118.2 79.2,107.5 78.8,96.8 78.4,86.1 78.0,75.4 77.5,64.7 77.1,54.0 76.7,43.3 81.4,43.6 87.3,43.8 93.3,44.0 95.6,44.0 95.8,54.9 95.9,65.8 96.0,76.7 96.2,87.6 96.3,98.5 96.4,109.4 96.6,120.4 96.7,131.3 94.8,131.1 89.7,130.6 84.5,129.8" fill="#B8432A"/>
+<polygon points="96.7,131.3 96.6,120.4 96.4,109.4 96.3,98.5 96.2,87.6 96.0,76.7 95.9,65.8 95.8,54.9 95.6,44.0 99.2,44.1 105.1,44.1 111.0,44.1 114.6,44.0 114.4,54.9 114.3,65.8 114.2,76.7 114.0,87.6 113.9,98.5 113.8,109.4 113.6,120.4 113.5,131.3 110.2,131.5 105.1,131.6 100.0,131.5" fill="#F3EEE2"/>
+<polygon points="113.5,131.3 113.6,120.4 113.8,109.4 113.9,98.5 114.0,87.6 114.2,76.7 114.3,65.8 114.4,54.9 114.6,44.0 116.9,44.0 122.9,43.8 128.8,43.6 133.5,43.3 133.1,54.0 132.7,64.7 132.3,75.4 131.8,86.1 131.4,96.8 131.0,107.5 130.5,118.2 130.1,128.9 125.7,129.8 120.5,130.6 115.4,131.1" fill="#B8432A"/>
+<polygon points="130.1,128.9 130.5,118.2 131.0,107.5 131.4,96.8 131.8,86.1 132.3,75.4 132.7,64.7 133.1,54.0 133.5,43.3 134.7,43.3 140.6,42.9 146.5,42.5 152.5,42.0 152.8,52.3 152.8,62.6 152.6,72.9 151.9,83.2 151.0,93.5 149.8,103.8 148.2,114.1 146.3,124.4 141.1,126.1 136.0,127.5 130.8,128.8" fill="#F3EEE2"/>
+<circle cx="51.1" cy="142.2" r="6.38" fill="#F3EEE2"/>
+<circle cx="51.1" cy="142.2" r="2.06" fill="#D98E2F"/>
+<circle cx="68.8" cy="146.5" r="6.38" fill="#B8432A"/>
+<circle cx="68.8" cy="146.5" r="2.06" fill="#D98E2F"/>
+<circle cx="86.8" cy="149.2" r="6.38" fill="#F3EEE2"/>
+<circle cx="86.8" cy="149.2" r="2.06" fill="#D98E2F"/>
+<circle cx="104.9" cy="150.1" r="6.38" fill="#B8432A"/>
+<circle cx="104.9" cy="150.1" r="2.06" fill="#D98E2F"/>
+<circle cx="123.1" cy="149.2" r="6.38" fill="#F3EEE2"/>
+<circle cx="123.1" cy="149.2" r="2.06" fill="#D98E2F"/>
+<circle cx="141.1" cy="146.6" r="6.38" fill="#B8432A"/>
+<circle cx="141.1" cy="146.6" r="2.06" fill="#D98E2F"/>
+<circle cx="158.8" cy="142.3" r="6.38" fill="#F3EEE2"/>
+<circle cx="158.8" cy="142.3" r="2.06" fill="#D98E2F"/>
+<polyline points="16.6,196.4 18.6,197.7 20.7,198.9 22.7,199.7 24.8,200.0 26.9,199.9 28.9,199.3 31.0,198.3 33.0,197.1 35.1,195.8 37.2,194.5 39.2,193.6 41.3,193.0 43.3,192.9 45.4,193.2 47.5,194.0 49.5,195.1 51.6,196.4 53.6,197.7 55.7,198.9 57.7,199.7 59.8,200.0 61.9,199.9 63.9,199.3 66.0,198.3 68.0,197.1 70.1,195.8 72.2,194.5 74.2,193.6 76.3,193.0 78.3,192.9 80.4,193.2 82.5,194.0 84.5,195.1 86.6,196.4 88.6,197.7 90.7,198.9 92.7,199.7 94.8,200.0 96.9,199.9 98.9,199.3 101.0,198.3 103.0,197.1 105.1,195.8 107.2,194.5 109.2,193.6 111.3,193.0 113.3,192.9 115.4,193.2 117.5,194.0 119.5,195.1 121.6,196.4 123.6,197.7 125.7,198.9 127.7,199.7 129.8,200.0 131.9,199.9 133.9,199.3 136.0,198.3 138.0,197.1 140.1,195.8 142.2,194.5 144.2,193.6 146.3,193.0 148.3,192.9 150.4,193.2 152.5,194.0 154.5,195.1 156.6,196.4 158.6,197.7 160.7,198.9 162.7,199.7 164.8,200.0 166.9,199.9 168.9,199.3 171.0,198.3 173.0,197.1 175.1,195.8 177.2,194.5 179.2,193.6 181.3,193.0 183.3,192.9 185.4,193.2 187.5,194.0 189.5,195.1 191.6,196.4 193.6,197.7" fill="none" stroke="#3B8FA8" stroke-width="5.15" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="45.4,210.9 47.5,212.2 49.5,213.3 51.6,214.1 53.6,214.4 55.7,214.3 57.7,213.7 59.8,212.7 61.9,211.5 63.9,210.2 66.0,209.0 68.0,208.0 70.1,207.4 72.2,207.3 74.2,207.6 76.3,208.4 78.3,209.6 80.4,210.9 82.5,212.2 84.5,213.3 86.6,214.1 88.6,214.4 90.7,214.3 92.7,213.7 94.8,212.7 96.9,211.5 98.9,210.2 101.0,209.0 103.0,208.0 105.1,207.4 107.2,207.3 109.2,207.6 111.3,208.4 113.3,209.6 115.4,210.9 117.5,212.2 119.5,213.3 121.6,214.1 123.6,214.4 125.7,214.3 127.7,213.7 129.8,212.7 131.9,211.5 133.9,210.2 136.0,209.0 138.0,208.0 140.1,207.4 142.2,207.3 144.2,207.6 146.3,208.4 148.3,209.6 150.4,210.9 152.5,212.2 154.5,213.3 156.6,214.1 158.6,214.4 160.7,214.3 162.7,213.7 164.8,212.7" fill="none" stroke="#3B8FA8" stroke-width="4.12" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="255.7,79.2 302.3,79.2 302.3,90.9 255.7,90.9" fill="#F3EEE2"/>
+<polygon points="255.7,79.2 244.0,90.9 255.7,90.9" fill="#F3EEE2"/>
+<polygon points="267.3,90.9 255.7,90.9 255.7,102.5" fill="#F3EEE2"/>
+<polygon points="313.9,79.2 372.2,79.2 372.2,90.9 313.9,90.9" fill="#F3EEE2"/>
+<polygon points="407.2,79.2 418.9,79.2 418.9,90.9 407.2,90.9" fill="#F3EEE2"/>
+<polygon points="407.2,79.2 395.5,90.9 407.2,90.9" fill="#F3EEE2"/>
+<polygon points="418.9,90.9 407.2,90.9 407.2,102.5" fill="#F3EEE2"/>
+<polygon points="418.9,79.2 430.5,90.9 418.9,90.9" fill="#F3EEE2"/>
+<polygon points="407.2,90.9 418.9,90.9 418.9,102.5" fill="#F3EEE2"/>
+<polygon points="453.8,79.2 465.5,79.2 465.5,90.9 453.8,90.9" fill="#F3EEE2"/>
+<polygon points="523.8,79.2 535.4,79.2 535.4,90.9 523.8,90.9" fill="#F3EEE2"/>
+<polygon points="593.7,79.2 605.4,79.2 605.4,90.9 593.7,90.9" fill="#F3EEE2"/>
+<polygon points="628.7,79.2 663.7,79.2 663.7,90.9 628.7,90.9" fill="#F3EEE2"/>
+<polygon points="628.7,79.2 617.0,90.9 628.7,90.9" fill="#F3EEE2"/>
+<polygon points="640.3,90.9 628.7,90.9 628.7,102.5" fill="#F3EEE2"/>
+<polygon points="663.7,79.2 675.3,90.9 663.7,90.9" fill="#F3EEE2"/>
+<polygon points="652.0,90.9 663.7,90.9 663.7,102.5" fill="#F3EEE2"/>
+<polygon points="687.0,79.2 698.6,79.2 698.6,90.9 687.0,90.9" fill="#F3EEE2"/>
+<polygon points="733.6,79.2 745.3,79.2 745.3,90.9 733.6,90.9" fill="#F3EEE2"/>
+<polygon points="244.0,90.9 255.7,90.9 255.7,102.5 244.0,102.5" fill="#F3EEE2"/>
+<polygon points="337.3,90.9 348.9,90.9 348.9,102.5 337.3,102.5" fill="#F3EEE2"/>
+<polygon points="395.5,90.9 407.2,90.9 407.2,102.5 395.5,102.5" fill="#F3EEE2"/>
+<polygon points="395.5,90.9 383.9,102.5 395.5,102.5" fill="#F3EEE2"/>
+<polygon points="407.2,102.5 395.5,102.5 395.5,114.2" fill="#F3EEE2"/>
+<polygon points="418.9,90.9 430.5,90.9 430.5,102.5 418.9,102.5" fill="#F3EEE2"/>
+<polygon points="430.5,90.9 442.2,102.5 430.5,102.5" fill="#F3EEE2"/>
+<polygon points="418.9,102.5 430.5,102.5 430.5,114.2" fill="#F3EEE2"/>
+<polygon points="453.8,90.9 465.5,90.9 465.5,102.5 453.8,102.5" fill="#F3EEE2"/>
+<polygon points="523.8,90.9 535.4,90.9 535.4,102.5 523.8,102.5" fill="#F3EEE2"/>
+<polygon points="593.7,90.9 605.4,90.9 605.4,102.5 593.7,102.5" fill="#F3EEE2"/>
+<polygon points="617.0,90.9 628.7,90.9 628.7,102.5 617.0,102.5" fill="#F3EEE2"/>
+<polygon points="663.7,90.9 675.3,90.9 675.3,102.5 663.7,102.5" fill="#F3EEE2"/>
+<polygon points="687.0,90.9 710.3,90.9 710.3,102.5 687.0,102.5" fill="#F3EEE2"/>
+<polygon points="733.6,90.9 745.3,90.9 745.3,102.5 733.6,102.5" fill="#F3EEE2"/>
+<polygon points="244.0,102.5 255.7,102.5 255.7,114.2 244.0,114.2" fill="#F3EEE2"/>
+<polygon points="255.7,102.5 267.3,114.2 255.7,114.2" fill="#F3EEE2"/>
+<polygon points="244.0,114.2 255.7,114.2 255.7,125.8" fill="#F3EEE2"/>
+<polygon points="337.3,102.5 348.9,102.5 348.9,114.2 337.3,114.2" fill="#F3EEE2"/>
+<polygon points="383.9,102.5 395.5,102.5 395.5,114.2 383.9,114.2" fill="#F3EEE2"/>
+<polygon points="430.5,102.5 442.2,102.5 442.2,114.2 430.5,114.2" fill="#F3EEE2"/>
+<polygon points="453.8,102.5 465.5,102.5 465.5,114.2 453.8,114.2" fill="#F3EEE2"/>
+<polygon points="523.8,102.5 535.4,102.5 535.4,114.2 523.8,114.2" fill="#F3EEE2"/>
+<polygon points="593.7,102.5 605.4,102.5 605.4,114.2 593.7,114.2" fill="#F3EEE2"/>
+<polygon points="617.0,102.5 628.7,102.5 628.7,114.2 617.0,114.2" fill="#F3EEE2"/>
+<polygon points="663.7,102.5 675.3,102.5 675.3,114.2 663.7,114.2" fill="#F3EEE2"/>
+<polygon points="687.0,102.5 710.3,102.5 710.3,114.2 687.0,114.2" fill="#F3EEE2"/>
+<polygon points="710.3,102.5 721.9,114.2 710.3,114.2" fill="#F3EEE2"/>
+<polygon points="698.6,114.2 710.3,114.2 710.3,125.8" fill="#F3EEE2"/>
+<polygon points="733.6,102.5 745.3,102.5 745.3,114.2 733.6,114.2" fill="#F3EEE2"/>
+<polygon points="255.7,114.2 290.6,114.2 290.6,125.8 255.7,125.8" fill="#F3EEE2"/>
+<polygon points="290.6,114.2 302.3,125.8 290.6,125.8" fill="#F3EEE2"/>
+<polygon points="279.0,125.8 290.6,125.8 290.6,137.5" fill="#F3EEE2"/>
+<polygon points="337.3,114.2 348.9,114.2 348.9,125.8 337.3,125.8" fill="#F3EEE2"/>
+<polygon points="383.9,114.2 395.5,114.2 395.5,125.8 383.9,125.8" fill="#F3EEE2"/>
+<polygon points="430.5,114.2 442.2,114.2 442.2,125.8 430.5,125.8" fill="#F3EEE2"/>
+<polygon points="453.8,114.2 465.5,114.2 465.5,125.8 453.8,125.8" fill="#F3EEE2"/>
+<polygon points="523.8,114.2 535.4,114.2 535.4,125.8 523.8,125.8" fill="#F3EEE2"/>
+<polygon points="593.7,114.2 605.4,114.2 605.4,125.8 593.7,125.8" fill="#F3EEE2"/>
+<polygon points="617.0,114.2 628.7,114.2 628.7,125.8 617.0,125.8" fill="#F3EEE2"/>
+<polygon points="663.7,114.2 675.3,114.2 675.3,125.8 663.7,125.8" fill="#F3EEE2"/>
+<polygon points="687.0,114.2 698.6,114.2 698.6,125.8 687.0,125.8" fill="#F3EEE2"/>
+<polygon points="710.3,114.2 721.9,114.2 721.9,125.8 710.3,125.8" fill="#F3EEE2"/>
+<polygon points="721.9,114.2 733.6,125.8 721.9,125.8" fill="#F3EEE2"/>
+<polygon points="710.3,125.8 721.9,125.8 721.9,137.5" fill="#F3EEE2"/>
+<polygon points="733.6,114.2 745.3,114.2 745.3,125.8 733.6,125.8" fill="#F3EEE2"/>
+<polygon points="290.6,125.8 302.3,125.8 302.3,137.5 290.6,137.5" fill="#F3EEE2"/>
+<polygon points="337.3,125.8 348.9,125.8 348.9,137.5 337.3,137.5" fill="#F3EEE2"/>
+<polygon points="383.9,125.8 442.2,125.8 442.2,137.5 383.9,137.5" fill="#F3EEE2"/>
+<polygon points="453.8,125.8 465.5,125.8 465.5,137.5 453.8,137.5" fill="#F3EEE2"/>
+<polygon points="523.8,125.8 535.4,125.8 535.4,137.5 523.8,137.5" fill="#F3EEE2"/>
+<polygon points="593.7,125.8 605.4,125.8 605.4,137.5 593.7,137.5" fill="#F3EEE2"/>
+<polygon points="617.0,125.8 628.7,125.8 628.7,137.5 617.0,137.5" fill="#F3EEE2"/>
+<polygon points="663.7,125.8 675.3,125.8 675.3,137.5 663.7,137.5" fill="#F3EEE2"/>
+<polygon points="687.0,125.8 698.6,125.8 698.6,137.5 687.0,137.5" fill="#F3EEE2"/>
+<polygon points="721.9,125.8 745.3,125.8 745.3,137.5 721.9,137.5" fill="#F3EEE2"/>
+<polygon points="290.6,137.5 302.3,137.5 302.3,149.1 290.6,149.1" fill="#F3EEE2"/>
+<polygon points="290.6,137.5 279.0,149.1 290.6,149.1" fill="#F3EEE2"/>
+<polygon points="302.3,149.1 290.6,149.1 290.6,160.8" fill="#F3EEE2"/>
+<polygon points="337.3,137.5 348.9,137.5 348.9,149.1 337.3,149.1" fill="#F3EEE2"/>
+<polygon points="383.9,137.5 395.5,137.5 395.5,149.1 383.9,149.1" fill="#F3EEE2"/>
+<polygon points="430.5,137.5 442.2,137.5 442.2,149.1 430.5,149.1" fill="#F3EEE2"/>
+<polygon points="453.8,137.5 465.5,137.5 465.5,149.1 453.8,149.1" fill="#F3EEE2"/>
+<polygon points="523.8,137.5 535.4,137.5 535.4,149.1 523.8,149.1" fill="#F3EEE2"/>
+<polygon points="593.7,137.5 605.4,137.5 605.4,149.1 593.7,149.1" fill="#F3EEE2"/>
+<polygon points="617.0,137.5 628.7,137.5 628.7,149.1 617.0,149.1" fill="#F3EEE2"/>
+<polygon points="628.7,137.5 640.3,149.1 628.7,149.1" fill="#F3EEE2"/>
+<polygon points="617.0,149.1 628.7,149.1 628.7,160.8" fill="#F3EEE2"/>
+<polygon points="663.7,137.5 675.3,137.5 675.3,149.1 663.7,149.1" fill="#F3EEE2"/>
+<polygon points="663.7,137.5 652.0,149.1 663.7,149.1" fill="#F3EEE2"/>
+<polygon points="675.3,149.1 663.7,149.1 663.7,160.8" fill="#F3EEE2"/>
+<polygon points="687.0,137.5 698.6,137.5 698.6,149.1 687.0,149.1" fill="#F3EEE2"/>
+<polygon points="721.9,137.5 745.3,137.5 745.3,149.1 721.9,149.1" fill="#F3EEE2"/>
+<polygon points="244.0,149.1 290.6,149.1 290.6,160.8 244.0,160.8" fill="#F3EEE2"/>
+<polygon points="337.3,149.1 348.9,149.1 348.9,160.8 337.3,160.8" fill="#F3EEE2"/>
+<polygon points="383.9,149.1 395.5,149.1 395.5,160.8 383.9,160.8" fill="#F3EEE2"/>
+<polygon points="430.5,149.1 442.2,149.1 442.2,160.8 430.5,160.8" fill="#F3EEE2"/>
+<polygon points="453.8,149.1 512.1,149.1 512.1,160.8 453.8,160.8" fill="#F3EEE2"/>
+<polygon points="523.8,149.1 582.1,149.1 582.1,160.8 523.8,160.8" fill="#F3EEE2"/>
+<polygon points="593.7,149.1 605.4,149.1 605.4,160.8 593.7,160.8" fill="#F3EEE2"/>
+<polygon points="628.7,149.1 663.7,149.1 663.7,160.8 628.7,160.8" fill="#F3EEE2"/>
+<polygon points="687.0,149.1 698.6,149.1 698.6,160.8 687.0,160.8" fill="#F3EEE2"/>
+<polygon points="733.6,149.1 745.3,149.1 745.3,160.8 733.6,160.8" fill="#F3EEE2"/>
+</svg>
+</a>
+  <nav><a class="btn ghost text" href="./">Home</a></nav></header>
+<div class="sail" role="presentation"></div>
+<main class="narrow top">
+  <span class="kicker">What's new in 1.0</span>
+  <h1>Everything Stallion 1.0 adds to Clipper</h1>
+  <p class="lead">Stallion is built on <a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> by 3dSam (isod89), and on Clipper Pro, its SMK-37 port (isod89 with M. Geisler). Clipper grew out of <a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a>, and all of them are based on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita (@kurogedelic), Hügelton Instruments. Stallion keeps everything they do. This page lists only what Stallion adds on top.</p>
+  <p class="total">132 new features and fixes</p>
+  <ul class="sum">
+      <li><a href="#sound-engines">Sound engines</a> <span class="n">24</span></li>
+      <li><a href="#filters">Filters</a> <span class="n">6</span></li>
+      <li><a href="#effects">Effects</a> <span class="n">2</span></li>
+      <li><a href="#modulation-and-the-matrix">Modulation and the matrix</a> <span class="n">12</span></li>
+      <li><a href="#playing-and-performance">Playing and performance</a> <span class="n">10</span></li>
+      <li><a href="#keys-pads-and-aftertouch">Keys, pads and aftertouch</a> <span class="n">11</span></li>
+      <li><a href="#sequencer-and-arpeggiator">Sequencer and arpeggiator</a> <span class="n">8</span></li>
+      <li><a href="#screen-and-controls">Screen and controls</a> <span class="n">9</span></li>
+      <li><a href="#web-editor">Web editor</a> <span class="n">14</span></li>
+      <li><a href="#saving-and-presets">Saving and presets</a> <span class="n">5</span></li>
+      <li><a href="#midi-and-usb">MIDI and USB</a> <span class="n">3</span></li>
+      <li><a href="#installing-and-updating">Installing and updating</a> <span class="n">2</span></li>
+      <li><a href="#fixes">Fixes</a> <span class="n">26</span></li>
+  </ul>
+  <p class="base">In short: 26 engines and 819 factory sounds, 4 of the engines new (PALOMINO, STAMPEDE, RODEO, MARE) and PONY rebuilt from the ground up (24 engine and sound features) · 6 filter features · 2 effect features · 12 modulation and matrix features · 10 playing features · 11 touch and aftertouch features · 8 sequencer and arpeggiator features · 9 screen and control features · 14 web editor features · 5 saving features · 3 MIDI features · 2 installing features · 26 fixes.</p>
+  <section class="story" id="sounds">
+    <h2>819 sounds on 26 engines</h2>
+    <p>Every engine now comes with a full bank of its classic sounds.</p>
+    <ul>
+        <li><b>A full bank for every engine</b>: 32 classic sounds on 23 engines, 28 on ACID and SAMPLE, 27 on WSEQ (819 in all), every bank starting with a plain INIT.</li>
+        <li><b>Centred and level-matched</b>: every factory sound has its left and right within 1 dB, and each is measured with a phrase that suits it and trimmed to the same loudness (within 1.5 dB; the sample-based SAMPLE and GRAIN sounds keep their own levels).</li>
+        <li><b>Sounds that move</b>: the PONY, PALOMINO, STAMPEDE, RODEO and MARE sounds are patched in the matrix, so LFOs, envelopes, velocity, pressure and the wheel move them as you play. A factory sound can use all 24 matrix slots.</li>
+        <li><b>MARE, from the instrument's patch books</b>: 32 sounds built from the patch books' routings and techniques, in balanced stereo, with SPACE working as the instrument's SPACING and P&gt;VCO as its PITCH MOD ASSIGN.</li>
+    </ul>
+  </section>
+  <section class="story" id="palomino">
+    <h2>PALOMINO, the whole story</h2>
+    <p>PALOMINO follows the later, smaller edition of its instrument, and Stallion carries over what that edition added.</p>
+    <ul>
+        <li><b>Six waves on both oscillators</b>: sine and noise on VCO 1, triangle and square on VCO 2.</li>
+        <li><b>VCO-2 LOW</b>: VCO 2 drops eight octaves to become a slow modulator.</li>
+        <li><b>A choice of where the modulation goes</b>: P&gt;VCO sends the LFO and envelope pitch modulation to both oscillators or just one.</li>
+        <li><b>Five new effects</b>: PITCH, PIT2, PHAS6, DELAY and LOCMP on every sound's INSERT.</li>
+        <li><b>Envelopes that follow the key</b>: ERATE, so high notes are shorter.</li>
+        <li><b>A second filter and steeper slopes</b>: FILTER 2 and SLOPE 12, 24 or 48 dB, on every sound.</li>
+        <li><b>32 sounds</b>: pads, strings, brass, leads, basses and keys.</li>
+        <li><b>Even unison</b>: fixed phase offsets, so a stack is as loud every time.</li>
+    </ul>
+  </section>
+    <section class="grp" id="sound-engines">
+      <h2>Sound engines <span class="n">24</span></h2>
+      <ul>
+        <li><b>PALOMINO</b>: a big early-1980s 8-voice poly. Two VCOs with six waves each, cross mod, hard sync, an OTA filter at 12 or 24 dB. 32 sounds: pads, strings, brass, leads, basses and keys.</li>
+        <li><b>STAMPEDE</b>: a late-1970s poly with two complete channels per voice. A wave morph through noise, saw, pulse, sine and ring; channel II's feet and detune; a resonant high-pass then low-pass with its own envelope. 32 sounds.</li>
+        <li><b>RODEO</b>: the punchy, brassy 8-voice polys of 1979-84, ported from zvenson's OberVave. Two oscillators with hard sync and X-MOD, and a filter in six modes (LP12, HP12, BP12, NOTCH, LP24, MORPH). 32 sounds.</li>
+        <li><b>MARE</b>: a semi-modular paraphonic voice with two VCOs and two ladder filters. The filters sit apart in stereo, side by side (high-pass and low-pass) or in series. 32 sounds: basses, leads, pads, sequences, drones, keys, bells, brass and percussion.</li>
+        <li><b>PALOMINO's extra waves</b>: sine and noise on VCO 1, triangle and square on VCO 2, as on the modern reissue of the instrument it follows.</li>
+        <li><b>PALOMINO VCO-2 LOW</b>: VCO 2 drops eight octaves to become a slow modulator for wobbles and slow vibrato.</li>
+        <li><b>P&gt;VCO</b> on PALOMINO and MARE (MOD page): send the LFO and envelope pitch modulation to both VCOs or just one, for sync sweeps and beating. On MARE it is the instrument's PITCH MOD ASSIGN.</li>
+        <li><b>MARE FILTER FM and RING</b> (EDIT 3): VCO 2 sweeps both filters at audio rate, or rings against VCO 1, for growls and bells.</li>
+        <li><b>MARE split modes</b> (MODE SPLT, SPL+N): VCO 1 alone goes to the left filter and VCO 2 alone to the right.</li>
+        <li><b>MARE's normals</b>: a cable into VCO 1's pitch moves VCO 2 too, and filter 2 follows filter 1's cutoff, until you give them cables of their own.</li>
+        <li><b>STALLION</b>: a new signature HYBRID sound.</li>
+        <li><b>Every factory sound level-matched and centred</b>: no sound jumps out louder or quieter than the next, and none sits in one ear (left and right within 1 dB). The test suite checks both.</li>
+        <li><b>PALOMINO VCO-2 fine tune</b> (EDIT &gt; VOICE 2 &gt; DTUNE): sets how far VCO 2 sits above VCO 1, from 0 to about 16 cents (the old fixed 5 cents is the default, 40), for thick brass, strings and pads.</li>
+        <li><b>Resonance that stops short of howling</b>: PALOMINO's filter now stops just below self-oscillation at full RES, and RODEO's up to RES 123, so a resonant bass or brass rings and decays instead of whistling. RODEO's top four steps sing on purpose, as its originals do.</li>
+        <li><b>PALOMINO pulse width one way</b>: SHAPE (and an LFO or envelope on it) sweeps the pulse from square towards narrow, once per cycle, instead of folding both ways.</li>
+        <li><b>An analog attack</b> on PALOMINO, STAMPEDE, RODEO and MARE: the attack charges quickly and then eases in, the same length as before, for swells and brass with more bite.</li>
+        <li><b>POLY2</b> (EDIT &gt; VOICE 2 &gt; ALLOC): a new note cuts the notes already let go, so only the last chord keeps its release. Good for sequences and arpeggios.</li>
+        <li><b>Free delay times</b> (FX &gt; DELAY &gt; TIME): 35, 50, 75, 100, 150, 200, 300, 400, 500, 600, 700 and 780 ms, besides the tempo values, on every sound.</li>
+        <li><b>MARE SPACE and DIST</b>: SPACE works as the instrument's SPACING: it moves VCF 1 alone (the left low-pass, or the high-pass in PARA and SERI), clockwise up, while VCF 2 stays at CUT. DIST drives the two ladder filters, so it thickens the sound before the filters instead of coming after them.</li>
+        <li><b>STAMPEDE plain SINE after the filters</b>: the SINE wave ignores the filters, as a plain sine channel should. IL can go below zero, so a note can start under the cutoffs as set.</li>
+        <li><b>819 factory sounds on 26 engines</b>: a full bank of classic sounds for every engine (32 on 23 engines, 28 on ACID and SAMPLE, 27 on WSEQ), each starting with a plain INIT.</li>
+        <li><b>Sounds that move</b>: the PONY, PALOMINO, STAMPEDE, RODEO and MARE sounds are patched in the matrix (154 of their 160 sounds, up to 7 cables each): pads breathe, brass swells with velocity and pressure, keys and plucks answer how hard you play. A factory sound can now use all 24 matrix slots, as a user preset does.</li>
+        <li><b>MARE's bank, from the instrument's patch books</b>: 32 sounds built from the routings and techniques of the patch books for the instrument MARE follows, INIT the instrument with nothing patched. MARE's sounds keep the delay and reverb their patches name; every other factory sound starts dry. The pads, pedals, strings, keys and swells, and PIPE BASS, SWEEP BASS and PARA BASS, let go over about 4.5 s, BERLIN SEQ over about 10 s; the other basses, the leads, sequences and riffs, the stab, the organ and the pluck keep a short release.</li>
+        <li><b>MARE in balanced stereo</b>: with the two filters apart, both sides stay equally loud while their timbres differ. Before, the darker side was up to 16 dB quieter (32 dB in PARA), so the sounds had to keep SPACE at 0.</li>
+      </ul>
+    </section>
+    <section class="grp" id="filters">
+      <h2>Filters <span class="n">6</span></h2>
+      <ul>
+        <li><b>FILTER 2</b>: a second filter on every sound, using any of the nine filter models. ROUTE: SER (an LP and an HP make a band-pass), PAR (two peaks) or SPLIT (filter 1 left, filter 2 right: each voice in stereo).</li>
+        <li><b>LINK</b>: FILTER 2 follows filter 1's cutoff at an offset, so one knob sweeps both. Turn LINK off to set it freely.</li>
+        <li><b>SLOPE</b>: the 4-pole filters at 12, 24 or 48 dB. 48 dB is steep but keeps its resonance and its bass.</li>
+        <li><b>OTA filter model</b>: the smooth resonant low-pass of the classic DCO and VCO polys, on ANALOG, WAVE, VECTOR and FILTER 2.</li>
+        <li><b>PONY on the OTA filter</b>: PONY now plays through it, with its thinner resonance. Its sub-oscillator is locked to the main oscillator.</li>
+        <li><b>PONY's CHAR</b> (EDIT 3): the original instrument's quirks, each a switch: CLEAN (none), CLASSIC (the default: the chorus's hiss, the high-pass after the voices with its bass boost, the wheel's vibrato from the LFO, a 1 ms GATE, darker noise), FULL (also the amp's fast tails, a free-running LFO with a waiting delay, coarser cutoff steps and a 4.2 ms processor tick). The web editor has a box for each.</li>
+        <li><b>PONY's chorus, measured from the original</b>: I 0.53 Hz, II 0.87 Hz, each side's delay its own, the delayed sound louder than the dry: wider, and about 4 dB louder with it on, as on the original. I+II is PONY's own (the original has no third mode).</li>
+        <li><b>WHISTLE</b>: a new PONY sound in CLAV's place, the filter whistling on its own.</li>
+        <li><b>CUT2 and RES2</b> in the matrix: modulate FILTER 2 on its own.</li>
+      </ul>
+    </section>
+    <section class="grp" id="effects">
+      <h2>Effects <span class="n">2</span></h2>
+      <ul>
+        <li><b>SHIM on any reverb</b> (FX &gt; REVERB 2): an octave-up shimmer on ROOM, PLATE or HALL, from a touch to full.</li>
+        <li><b>Five new INSERT types</b>: PITCH and PIT2 (pitch shifters, one or two voices), PHAS6 (a six-stage phaser), DELAY (a short delay for slapback, doubling and combs), LOCMP (a lo-fi compressor). Their code comes from TripDeck, from twochannels' phaser, and from the Airwindows Pop3 compressor law as Lunar Modulator ports it.</li>
+      </ul>
+    </section>
+    <section class="grp" id="modulation-and-the-matrix">
+      <h2>Modulation and the matrix <span class="n">12</span></h2>
+      <ul>
+        <li><b>Triggers and gates</b>: new GATE and E2END sources, and new TRIG1/TRIG2 and SYNC1/SYNC2 destinations, so one modulator can restart an envelope or an LFO. E2END into TRIG2 loops a whole envelope.</li>
+        <li><b>CC A and CC B</b>: any MIDI CC, or the pedal, as a matrix source (GLO &gt; MIDI 3).</li>
+        <li><b>New destinations</b>: the arpeggiator's rate, the delay, reverb and chorus sends, LFO 1's rate and ENV 1's amount.</li>
+        <li><b>S&amp;H, NOISE and +V</b> sources. +V is a constant, for a fixed offset.</li>
+        <li><b>Bend and pressure in the matrix</b>: BEND, poly pressure, channel pressure and RIBBON as sources; PIT1, PIT2, XMOD and HPF as destinations.</li>
+        <li><b>The MATRIX page</b>: the selected cable in large type (for example LFO1 &gt; CUT +62), coloured by signal type. Sources and destinations are in panel order, and MARE's normals are shown in words.</li>
+        <li><b>MATRIX 2 &gt; CLEAR</b>: take out all 24 cables at once. UNDO brings them back.</li>
+        <li><b>31 sources and 35 destinations</b> in total. User presets keep every one.</li>
+        <li><b>CHAO</b>: a chaotic LFO wave on LFO 1, 2 and 3, for movement that never repeats.</li>
+        <li><b>ERATE</b>: the envelopes follow the key, so high notes are shorter, as on an acoustic instrument. Velocity can speed up the attack too.</li>
+        <li><b>24 matrix slots</b> on every sound, twice as many as before. The MATRIX page, user presets, projects and the editor keep all 24.</li>
+        <li><b>Only destinations that work</b>: the MATRIX page offers only the destinations the sound's engine uses, and a cable into one it does not use is cleared when the sound loads.</li>
+      </ul>
+    </section>
+    <section class="grp" id="playing-and-performance">
+      <h2>Playing and performance <span class="n">10</span></h2>
+      <ul>
+        <li><b>LEVER</b> (FM-1): with a key held, OCT- and OCT+ bend the pitch like a lever. Choose SPRNG, HOLD or LATCH.</li>
+        <li><b>RIBBON</b> (FM-1): with a key held, SELECT bends like a ribbon. Choose HOLD, SPRNG or LATCH; the range is up to 24 semitones.</li>
+        <li><b>The BEND page</b> for each sound: up and down range, filter bend, all notes or just the newest note, and which VCOs bend.</li>
+        <li><b>PRESS BEND</b>: a STAMPEDE sound that bends up when you press harder.</li>
+        <li><b>Fuller unison</b>: every oscillator in a unison stack starts at its own phase, so stacks are wide with no hard edge. UNISON is capped at 8 voices.</li>
+        <li><b>Even unison on PALOMINO</b>: its unison stacks use fixed phase offsets, so a unison patch is as loud every time.</li>
+        <li><b>PARA ASSIGN</b> (MENU &gt; SEQ, for MARE in PARA and PARA+): PLAYED (the default) shares the VCOs by the order the keys went down; LOW and HIGH share them by pitch, so a chord voices the same way every time. <b>PARA ROUND ROBIN</b> ON moves the VCOs on by one with each new key (PLAYED only).</li>
+        <li><b>PARA NOTE-OFF</b> (MENU &gt; SEQ, for MARE in PARA and PARA+): KEEP (the default) leaves a key you let go on its VCOs, under the shared envelope, until the next key goes down, so a chord let go fades as a chord; HAND BACK gives its VCOs at once to the keys still held. The FM-1 always keeps.</li>
+        <li><b>SUSTAIN PATCH</b> (GLO &gt; MIDI 3 &gt; SUST): the pedal stops holding notes and only feeds the matrix.</li>
+        <li><b>Lighter on the processor</b>: the busiest audio code (the voices, the filters, a part's mix, PONY, STRINGS, ANALOG and STAMPEDE) now runs from RAM instead of from the flash.</li>
+      </ul>
+    </section>
+    <section class="grp" id="keys-pads-and-aftertouch">
+      <h2>Keys, pads and aftertouch <span class="n">11</span></h2>
+      <ul>
+        <li><b>KEY TOUCH</b> (FM-1, GLO &gt; TOUCH): velocity, velocity and pressure, or pressure alone from the FM-1's own keys, with no hardware change. From ESTAMPIE by Drew Robinson, after Charles Vestal's Velo and MONK-1.</li>
+        <li><b>AT mode</b>: pressure alone. Every note plays at once at velocity 100, and leaning on the key adds aftertouch.</li>
+        <li><b>TOUCH CAL</b>: calibrate your keys with a live meter. It names any key whose soft and hard presses read alike.</li>
+        <li><b>One pressure shaping for everything</b>: curve, offset, attack and release (GLO &gt; TOUCH 2), for the keys and for MIDI and MPE pressure.</li>
+        <li><b>SMK-37 Pro pad aftertouch</b> (GLO &gt; PAD AT): a light press plays the note and a harder squeeze is aftertouch. Set the dead zone, range and curve on a graph.</li>
+        <li><b>SMK-37 Pro key aftertouch</b> (GLO &gt; KEY AT): the keys have no pressure sensor, so pressure is made from velocity, hold time and a swell, with its own graph. A held key swells up to full pressure (CEIL 127).</li>
+        <li><b>SMK-37 Pro pad velocity and aftertouch curve</b> (GLO &gt; PAD VEL, AFTERTOUCH): five pad velocity responses and the pressure shaping.</li>
+        <li><b>Pressure bar</b>: a thin bar shows how hard you are pressing: your touch itself, before the AT curve and offset shape the sound's response.</li>
+        <li><b>KEY AT on and off</b> (GLO + the lowest key): turns the keys' aftertouch on or off without opening a page. K-AT shows in the top line, bright while it is on. The SMK-37 Pro's pads always have their aftertouch.</li>
+        <li><b>Pressure that glides</b>: the keys' and the pads' own pressure moves to each new value over at least 10 ms, so aftertouch on a resonant filter no longer zips. A longer AT attack or release works as set; pressure from MIDI and MPE is unchanged.</li>
+        <li><b>SOUNDS from all banks or one</b> (SMK-37 Pro): KNOB BANK + the top key (C6) switches the pads' SOUNDS between <b>B</b>, every engine's sounds and your user presets, and <b>A</b>, the current engine's sounds only. The top line shows B or A; kept with the settings.</li>
+      </ul>
+    </section>
+    <section class="grp" id="sequencer-and-arpeggiator">
+      <h2>Sequencer and arpeggiator <span class="n">8</span></h2>
+      <ul>
+        <li><b>Ratchet up to x8</b>: a step's notes play up to 8 times in their step (it was up to 4), evenly at any swing or nudge. Hold the step and turn <kbd>KNOB 3</kbd>; the step shows its count, for example C4 x8. The editor's ratchet goes to x8 too.</li>
+        <li><b>FOLLOW</b>: the step pages turn with the playhead, so patterns longer than 16 steps stay in view.</li>
+        <li><b>MOTION lanes</b>: the sequencer records the bend, the ribbon and the pressure along with the notes, and plays them back.</li>
+        <li><b>NOTE PRESS</b>: each recorded note keeps its own pressure curve, so a recorded pressure bend moves only its own note.</li>
+        <li><b>The arpeggio in one move</b>: on the FM-1, <kbd>ARP</kbd> + F3 starts the arpeggiator in UP (again: stops it) and <kbd>ARP</kbd> + F#3 turns HOLD on or off; <kbd>ARP</kbd> held for 1 to 3 seconds and let go, touching nothing, does what F3 does. On both instruments, with <kbd>ARP</kbd> held, KNOB 2 sets the MODE, KNOB 3 HOLD and KNOB 4 the RATE. An arpeggio started this way keeps running when you change sound.</li>
+        <li><b>The SMK-37 Pro's printed arpeggio row</b>: <kbd>ARP</kbd> + C3 to D#4 does what is printed above the keys: UP, DOWN, INCL, EXCL, RAND, ORDER, REPEAT (each starts the arpeggiator in that mode, or stops it if it is the mode playing), OCT+, LATCH, GATE+ and GATE-, TAP, SWING+ and SWING-, TEMPO+ and TEMPO-. The keys from E4 up still repeat notes.</li>
+        <li><b>INCL</b>: a new arpeggiator mode, up and down with the top and bottom notes played twice (UPDN, the printed EXCL, plays them once).</li>
+        <li><b>The sustain pedal holds the arpeggio</b>: keys let go while the pedal is down stay in the arpeggio until the pedal comes up.</li>
+      </ul>
+    </section>
+    <section class="grp" id="screen-and-controls">
+      <h2>Screen and controls <span class="n">9</span></h2>
+      <ul>
+        <li><b>MENU &gt; LIGHTS 1 to 8</b>: the button lights now go much brighter, for players who find the labels hard to read.</li>
+        <li><b>MENU &gt; SCREEN &gt; BROWSE</b>: the ALGORITHM knob jumps engine to engine, and the PRESETS knob steps through that engine's sounds only.</li>
+        <li><b>Large, coloured MATRIX header</b>: the selected cable fills the top line in large type, in its signal's colour.</li>
+        <li><b>Clear touched value</b>: with MENU &gt; ZOOM on, the touched value is drawn above the envelope graph, never over it.</li>
+        <li><b>Lever and ribbon bar</b>: a bar over the header shows how far you are bending.</li>
+        <li><b>Large prompts in TOUCH CAL</b> (GENTLY, FIRMLY), with a live meter.</li>
+        <li><b>Stallion's own look</b>: a boot screen showing the version, voices and cores (for example 1.0 8V 2 CORES), and a new icon set.</li>
+        <li><b>VOLUME bar</b>: turn the volume (MASTER on the FM-1, K1 on the SMK-37 Pro) and the thin bar under the four boxes shows the volume in white for 2 seconds.</li>
+        <li><b>A clearer top line</b>: <b>ARP</b>, <b>ARPH</b> (with HOLD) or <b>HOLD</b>, <b>K-AT</b> (the keys' aftertouch, bright while on), USB and the battery stand apart. On the SMK-37 Pro the SOUNDS' B or A sits there too, and the metronome icon before the tempo is gone.</li>
+      </ul>
+    </section>
+    <section class="grp" id="web-editor">
+      <h2>Web editor <span class="n">14</span></h2>
+      <ul>
+        <li><b>Every parameter</b>: the editor now reaches every parameter, including FILTER 2, SLOPE, the BEND page and the FM-1's own settings (tuning, MIDI, TOUCH, LIGHTS, BROWSE).</li>
+        <li><b>Live controls</b>: values are sent while a control moves, not only when you let go.</li>
+        <li><b>Envelope grab points</b>: drag the envelope picture's attack, decay, sustain and release points with a mouse, finger or pen.</li>
+        <li><b>The patch bay</b>, on every engine: drag cables between 64 jacks to patch the matrix, coloured as on the device, in large, bright type. Switch to the MATRIX tab to see the same cables as a table; up to 24 cables per sound, and only the inputs the engine uses. The matrix is shown once: the old card of MATRIX knobs is gone. FILTER FM, RING, SPLT/SPL+N and the VCO1-&gt;VCO2 pitch normal are MARE's own.</li>
+        <li><b>MIDI 3 settings</b> (CC A, CC B, SUST) and the new INSERT types are named in the editor.</li>
+        <li><b>Tuning card</b>: checked against the device, and it says what the FM-1 tunes to.</li>
+        <li><b>Device banner</b>: the top of every page names the instrument the editor is talking to (FM-1 or SMK-37 Pro), its firmware and the sound playing: its name, engine and voice mode, or a multi sound's name, mode and parts A and B. Without an instrument it says that none is connected.</li>
+        <li><b>Folding sections</b>: click a heading to fold its card to the heading (Enter or Space too); Shift+click opens one and folds the rest of the tab; Fold all and Open all on the Sound tab. The browser remembers what is folded, across sounds and engines.</li>
+        <li><b>Envelope and LFO pictures that move</b>: ENV and ENV 2 show where the newest note played on the instrument is. LFO, LFO 2 and LFO 3 are drawn as the firmware makes them, with RATE (and on LFO, PHASE and FADE) to drag, a button for each of the six waves, and the same playhead.</li>
+        <li><b>Settings as the device's pages</b>: the Settings tab shows each of the instrument's pages as its own block, with its place on the instrument, for example TOUCH 2 · GLO 9/13.</li>
+        <li><b>The sound at the top of the Sound tab</b>: its <b>NAME</b>, its <b>MODE</b> (OFF, LAYER, SPLIT, MULTI) and, with two parts, the sounds of part A and part B side by side. Every save of the sound, to a file, in the browser or on the instrument, takes the NAME you typed.</li>
+        <li><b>Multi sounds</b>: a multi sound is a name, a mode, links to two single sounds (A and B) and part B's settings: split point, MIDI channel, octave, level, pan and filter. Pick A's and B's sounds from the lists; open a part's sound on its own to change the sound itself. Keep multi sounds in the browser, in files and, on the SMK-37 Pro, in its 16 slots.</li>
+        <li><b>A two-column sound browser</b>: MULTI, USER and the engines on the left, that entry's sounds on the right (INIT first; NEW MULTI first under MULTI). The arrow keys move within a column and between the two.</li>
+        <li><b>Work offline</b>: with no instrument connected, edit a sound (part A, part B and the mode) against the editor's own copy of the firmware, save it to a file and load it into the instrument later.</li>
+      </ul>
+    </section>
+    <section class="grp" id="saving-and-presets">
+      <h2>Saving and presets <span class="n">5</span></h2>
+      <ul>
+        <li><b>Everything new is saved</b>: user presets and projects keep all 24 matrix slots, FILTER 2, SLOPE, the BEND page, SHIM, CHAO, P&gt;VCO, the new matrix codes and MARE's FILTER FM and RING.</li>
+        <li><b>Backups include your touch settings</b>: editor backups keep GLO &gt; TOUCH and the key calibration.</li>
+        <li><b>Older saves load safely</b>: a sound saved before a feature existed loads with that feature off.</li>
+        <li><b>FACTORY RESET</b> (MENU &gt; SYS): erases your settings, projects, user presets and the autosave, after asking twice. It keeps your samples, wavetables and the calibration.</li>
+        <li><b>Multi sounds on the SMK-37 Pro</b> (SAVE &gt; USER, M01 to M16 after U01 to U32): SAVE keeps the links to the sounds parts A and B play, the mode and part B's settings, as MULTI 01 to MULTI 16 (the editor stores your own name). LOAD finds both sounds by name and loads them, or shows MISSING and changes nothing. A multi sound never holds a copy of a sound.</li>
+      </ul>
+    </section>
+    <section class="grp" id="midi-and-usb">
+      <h2>MIDI and USB <span class="n">3</span></h2>
+      <ul>
+        <li><b>Aftertouch out</b> (GLO &gt; TOUCH &gt; ATOUT): the keys' pressure (FM-1 and SMK-37 Pro) goes out as channel or poly aftertouch, with each note's own velocity.</li>
+        <li><b>Lever and ribbon out</b>: the lever goes out as pitch bend and the ribbon as CC 16. MOTION lanes play out with the sequencer.</li>
+        <li><b>CC A, CC B and SUSTAIN PATCH</b>: any incoming CC can modulate the sound.</li>
+      </ul>
+    </section>
+    <section class="grp" id="installing-and-updating">
+      <h2>Installing and updating <span class="n">2</span></h2>
+      <ul>
+        <li><b>Stallion's own identity</b>: the 1.0 release build answers as <b>FM-1_104210</b> on the FM-1 and <b>SMK-37 Pro_104210</b> on the SMK-37 Pro, its update loader as ota- and the same, and its USB maker name is Eberon Limited. The web installers and the terminal installer know it, and still finish a write cut off in an earlier Stallion build's loader.</li>
+        <li><b>One package per device</b>: stallion-&lt;version&gt;.fwsc for the FM-1 and stallion-smk37-&lt;version&gt;.fwsc for the SMK-37 Pro.</li>
+      </ul>
+    </section>
+    <section class="grp" id="fixes">
+      <h2>Fixes <span class="n">26</span></h2>
+      <ul>
+        <li><b>Reverb chop</b>: PLATE, HALL and SHIMMER no longer chop in the left channel.</li>
+        <li><b>Reverb pulse and flutter</b>: PLATE and HALL no longer pulse, and SHIMMER no longer flutters.</li>
+        <li><b>Reverb at rest</b>: the reverb now rests when nothing is sent to it, saving about a voice's worth of processing.</li>
+        <li><b>Chorus RATE</b>: turning RATE glides instead of ticking.</li>
+        <li><b>Clicks at note start and end</b>: gone. The amplitude envelope now takes at least 3 ms to rise and 37 ms to fall.</li>
+        <li><b>Random note levels</b>: a note played over a quiet tail no longer starts at a random level (ANALOG, PALOMINO, STAMPEDE, RODEO, MARE).</li>
+        <li><b>Thin single notes</b>: STAMPEDE and RODEO notes no longer come out thin at random, so single notes and unison stay within 8 dB.</li>
+        <li><b>VECTOR overshoot</b>: changing the filter model under a held chord no longer overshoots.</li>
+        <li><b>FMX names</b>: the PTCH and ALG names no longer show garbage.</li>
+        <li><b>macOS 15 audio</b>: the FM-1 now shows up as an audio input on macOS 15.</li>
+        <li><b>Official package rejected</b>: the installer no longer calls the official V16 package damaged.</li>
+        <li><b>KEY TOUCH notes</b>: a key no longer plays another key's press, and a slow key plays its own velocity.</li>
+        <li><b>Calibration kept</b>: TOUCH CAL's result is kept exactly as measured.</li>
+        <li><b>Pitch bend after a project load</b>: a project load now sends pitch bend back to centre on MIDI out.</li>
+        <li><b>Restored backups</b>: after a damaged or cut-off backup, a load no longer leaves stray data in empty steps.</li>
+        <li><b>Envelope covered</b>: the ZOOM value no longer covers the envelope's attack.</li>
+        <li><b>HOLD ends with the sound</b>: loading another sound, a factory sound or a user preset, turns KBD HOLD off and lets go of the notes it held. Before, HOLD stayed on, so a new sound could come up holding every key played. An arpeggio you started yourself still carries over.</li>
+        <li><b>Mono sounds keep their attack</b>: a factory sound marked mono now loads as MONO, not LEGATO, so a key played over a held one starts its envelopes again instead of sliding in without its attack (on a one-voice engine such as ACID, every overlapping key lost it). LEGATO is one VOICE setting away.</li>
+        <li><b>Quiet at power-on</b>: the SMK-37 Pro starts at a low volume (about 10 dB under before), and the FM-1 plays at that level until you move MASTER (a knob set lower plays as set). Headphones are never blasted.</li>
+        <li><b>Nothing in one ear</b>: SPREAD now places the voices around the middle. A single note sits in the centre, and chords and unison stacks spread evenly. Before, a lone note could sit hard to one side.</li>
+        <li><b>Note repeat and the reverb</b>: turning the note repeat's rate no longer moves the reverb's PRE.</li>
+        <li><b>CC 120, all sound off</b>: now silences the sound at once, whatever its release (CC 123 still lets the notes release).</li>
+        <li><b>A click after the last note</b>: FX &gt; FILTER at a low setting no longer clicks when the last note's release ends.</li>
+        <li><b>DIGITAL in UNISON</b>: a DIGITAL sound in UNISON is no longer louder than in POLY.</li>
+        <li><b>Chords when the processor is busy</b>: when a new chord would overload the processor, Stallion first gives up the quietest fading notes and fades them over about 6 ms instead of cutting them: no crackle and no ticks between chords.</li>
+        <li><b>MARE ticks</b>: the balance between MARE's two sides now slides instead of stepping, and SPACE swept through 0 waits for the two filters to meet before it joins them: no rattle or tick in one side (PEDAL SEQ, FIFTH PEDAL, SPACE DRIFT and others).</li>
+      </ul>
+    </section>
+  <p style="margin-top:40px"><a class="btn" href="./">Back to the home page</a></p>
+</main>
+<footer class="foot">
+  <div class="narrow">
+    <p>Stallion is free, open-source firmware under the GPL-3.0-only licence. Everyone whose work it uses is named in <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/CREDITS.md" target="_blank" rel="noopener">CREDITS.md</a> and <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/LICENSING.md" target="_blank" rel="noopener">LICENSING.md</a>. M-VAVE, FM-1 and SMK-37 are trademarks of their owners; Stallion is not affiliated with or endorsed by them.</p>
+    <p class="copy">Copyright (C) 2026 Eberon Limited (John Gorman)</p>
+  </div>
+</footer>
+</body>
+</html>

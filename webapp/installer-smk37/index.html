@@ -1,0 +1,1555 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+     Changes: Copyright (C) 2026 Eberon Limited (John Gorman)
+     Stallion's SMK-37 Pro installer (webapp/installer-smk37/). After the Clipper Pro installer (web/index_pro.html, isod89,
+     its install logic kept as it is); web/make_site.py (with --smk37) inlines smkpkg.js, smkota.js, the package's
+     metadata and web/site.css, and puts the FM-1 / SMK-37 Pro chooser at the BOARDS marker. Stallion supports the
+     SMK-37 Pro only: choose() refuses the other models before anything is sent -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Install Stallion, the synthesizer firmware, on the M-VAVE SMK-37 Pro keyboard from your browser.">
+<link rel="manifest" href="../stallion.webmanifest"><meta name="theme-color" content="#0B1E36"><link rel="icon" href="../icon-192.png">
+<title>Stallion installer for the SMK-37 Pro</title>
+<style>
+  @font-face { font-family: "Stallion Pixel"; src: url("../stallion-pixel.ttf") format("truetype"); font-display: swap; }
+/* SPDX-License-Identifier: GPL-3.0-only
+   Copyright (C) 2026 Eberon Limited (John Gorman)
+   Stallion's site style, shared by the front page and both installers (web/make_site.py puts it in each page at its
+   SITE_CSS marker). The colours are the logo's (tools/gen_logo.py): deep-sea navy, sail white, Wicklow oak, rust, sea.
+   Each colour means one thing everywhere:
+     oak    what you do: install buttons, links that act, the step numbers
+     sea    information: notes, the browser rule, captions' headings
+     rust   a warning: do not unplug, no warranty, an error
+     sail   the text
+   Large type for weak eyes: body 20 px, nothing under 18 px; headings in the FM-1's own pixel font (Terminus, OFL)
+   at multiples of 16 px so its pixels stay sharp. No thin lines: rules and borders are 3 px or more. */
+:root {
+  --navy: #0b1e36; --deep: #06111f; --panel: #12294b; --edge: #2c4a78;
+  --sail: #f3eee2; --soft: #d9d3c4; --oak: #eaa54c; --oak-deep: #d98e2f; --rust: #ef7a5c; --rust-deep: #b8432a;
+  --sea: #6cc3dc; --sea-deep: #3b8fa8;
+  --body: "Avenir Next", "Segoe UI", "Helvetica Neue", Ubuntu, Roboto, "Noto Sans", Arial, sans-serif;
+  --pixel: "Stallion Pixel", "Courier New", monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--navy); color: var(--sail); font: 500 20px/1.6 var(--body); }
+img { max-width: 100%; height: auto; }
+a { color: var(--oak); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+a:hover { color: var(--sail); }
+:focus-visible { outline: 4px solid var(--sea); outline-offset: 4px; border-radius: 6px; }
+p { margin: 0 0 18px; }
+strong, b { font-weight: 700; color: var(--sail); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.narrow { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+@media (max-width: 600px) { .wrap, .narrow { padding: 0 16px; } body { font-size: 19px; } }
+
+/* the pixel font for headings: Terminus, drawn for 16 px; kept at 32, 48, 64 */
+.px, h1, h2, h3 { font-family: var(--pixel); font-weight: 400; letter-spacing: 0; text-transform: uppercase;
+                  -webkit-font-smoothing: none; font-smooth: never; }
+h1 { font-size: 64px; line-height: 1.05; margin: 0 0 24px; }
+h2 { font-size: 48px; line-height: 1.1; margin: 0 0 24px; }
+h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
+@media (max-width: 700px) { h1 { font-size: 48px; } h2 { font-size: 32px; } h3 { font-size: 32px; } }
+@media (max-width: 380px) { h1 { font-size: 32px; } }
+.kicker { font: 400 32px/1.1 var(--pixel); color: var(--sea); text-transform: uppercase; margin: 0 0 12px; display: block; }
+.lead { font-size: 24px; line-height: 1.5; max-width: 40em; }
+@media (max-width: 600px) { .lead { font-size: 21px; } }
+
+/* the header: the logo, the language buttons */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 20px; padding-bottom: 20px; flex-wrap: wrap; }
+.bar .logo { display: block; line-height: 0; }
+.bar .logo svg { display: block; width: 260px; height: auto; border-radius: 12px; }
+@media (max-width: 600px) { .bar .logo svg { width: 190px; } }
+.langs { display: flex; gap: 8px; flex-wrap: wrap; }
+.lang { font: 600 18px/1 var(--body); color: var(--sail); background: transparent; border: 3px solid var(--edge);
+        border-radius: 999px; padding: 10px 16px; cursor: pointer; min-height: 44px; }
+.lang:hover { border-color: var(--sail); }
+.lang[aria-current="true"] { background: var(--sail); color: var(--navy); border-color: var(--sail); }
+
+/* the sail: white and rust stripes, the logo's square sail, as a divider */
+.sail { height: 14px; background: repeating-linear-gradient(90deg, var(--sail) 0 56px, var(--rust-deep) 56px 112px); }
+.sea-line { height: 10px; background: radial-gradient(circle at 10px -4px, transparent 9px, var(--sea-deep) 10px 13px, transparent 14px) 0 0 / 40px 10px repeat-x; opacity: .9; }
+
+/* buttons: oak blocks, big */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 64px; padding: 14px 28px;
+       font: 400 32px/1 var(--pixel); text-transform: uppercase; text-decoration: none; color: var(--deep);
+       background: var(--oak); border: 4px solid var(--oak); border-radius: 14px; cursor: pointer; }
+.btn:hover { background: var(--sail); border-color: var(--sail); color: var(--deep); }
+.btn.ghost { background: transparent; color: var(--sail); border-color: var(--sail); }
+.btn.ghost:hover { background: var(--sail); color: var(--deep); }
+.btn small { font: 600 18px/1.2 var(--body); text-transform: none; display: block; }
+.btn.text { font: 700 22px/1.3 var(--body); text-transform: none; }
+.btn[disabled] { background: var(--panel); border-color: var(--edge); color: var(--soft); cursor: default; }
+@media (max-width: 600px) { .btn { font-size: 32px; padding: 12px 18px; } }
+
+/* notes: sea for information, rust for a warning */
+.note, .warn { border-left: 8px solid var(--sea); background: var(--panel); padding: 16px 20px; border-radius: 0 12px 12px 0;
+               margin: 0 0 20px; }
+.warn { border-left-color: var(--rust); }
+.note b, .warn b { display: block; font: 400 32px/1.1 var(--pixel); text-transform: uppercase; margin-bottom: 6px; }
+.note b { color: var(--sea); } .warn b { color: var(--rust); }
+.note p:last-child, .warn p:last-child { margin: 0; }
+
+/* the device: a drawn frame around a screen, so a screenshot reads as the product */
+.device { display: block; background: #04070d; border: 4px solid var(--edge); border-radius: 28px; padding: 16px;
+          box-shadow: 0 24px 48px rgba(0, 0, 0, .45), inset 0 0 0 4px #000; }
+.device img { display: block; width: 100%; height: auto; image-rendering: pixelated; border-radius: 6px; }
+.photo { display: block; width: 100%; height: auto; border-radius: 22px; }
+
+/* steps: big oak numbers */
+.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; gap: 18px; }
+.steps > li { counter-increment: s; position: relative; padding: 18px 20px 18px 92px; background: var(--panel);
+              border-radius: 16px; min-height: 84px; }
+.steps > li::before { content: counter(s); position: absolute; left: 20px; top: 14px; width: 56px; height: 56px;
+                      display: grid; place-items: center; font: 400 48px/1 var(--pixel); color: var(--deep);
+                      background: var(--oak); border-radius: 12px; }
+.steps > li b { display: block; font-size: 22px; }
+
+/* the footer */
+.foot { background: var(--deep); padding: 40px 0 48px; margin-top: 64px; }
+.foot p { color: var(--soft); font-size: 18px; }
+.foot .copy { color: var(--sail); font-weight: 700; font-size: 20px; }
+[hidden] { display: none !important; }
+
+
+  /* the installer's own parts */
+  .boards { margin: 8px 0 32px; }
+  .boards p { font-size: 20px; margin: 0 0 10px; color: var(--soft); }
+  .boards div { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .boards a { display: block; text-align: center; font: 400 32px/1.1 var(--pixel); text-transform: uppercase; padding: 18px 8px;
+              border: 4px solid var(--edge); color: var(--sail); text-decoration: none; border-radius: 14px; }
+  .boards a:hover { border-color: var(--sail); }
+  .boards a[aria-current="page"] { background: var(--sail); color: var(--navy); border-color: var(--sail); }
+  .hero-i { padding: 24px 0 8px; }
+  .panel { background: var(--panel); border-radius: 20px; padding: 28px; margin: 0 0 28px; }
+  @media (max-width: 600px) { .panel { padding: 20px 16px; } }
+  button#go { width: 100%; min-height: 84px; font-size: 48px; }
+  #status { margin: 18px 0 0; min-height: 1.6em; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #status.bad { color: var(--rust); } #status.good { color: var(--sea); }
+  #device { color: var(--soft); font-size: 18px; min-height: 1.4em; margin: 12px 0 0; }
+  progress { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 18px; border: 0;
+             border-radius: 9px; background: var(--deep); overflow: hidden; margin-top: 20px; }
+  progress::-webkit-progress-bar { background: var(--deep); }
+  progress::-webkit-progress-value { background: var(--oak); }
+  progress::-moz-progress-bar { background: var(--oak); }
+  details.log { margin: 16px 0 0; } details.log summary { cursor: pointer; font-size: 18px; color: var(--soft); }
+  pre { color: var(--soft); font-size: 16px; white-space: pre-wrap; margin: 8px 0 0; max-height: 220px; overflow: auto;
+        background: var(--deep); padding: 12px; border-radius: 10px; }
+  label.ck { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 20px; cursor: pointer; font-size: 20px; }
+  input[type="checkbox"] { width: 28px; height: 28px; flex: none; margin-top: 2px; accent-color: var(--oak); }
+  .after { display: grid; gap: 14px; }
+  .after .btn { justify-content: flex-start; text-align: left; }
+  h2.sec { font-size: 32px; margin: 40px 0 16px; color: var(--sail); }
+  .trouble p { font-size: 20px; }
+  details.stock { background: var(--panel); border-radius: 16px; padding: 18px 22px; margin: 28px 0 0; }
+  details.stock summary { cursor: pointer; font: 400 32px/1.2 var(--pixel); text-transform: uppercase; color: var(--sail); }
+  details.stock[open] summary { margin-bottom: 14px; }
+  input[type="file"] { font: inherit; font-size: 18px; color: var(--sail); margin-top: 8px; }
+  button#stock-go { font: 400 32px/1 var(--pixel); text-transform: uppercase; background: transparent; color: var(--sail);
+                    border: 4px solid var(--sail); border-radius: 14px; padding: 14px 22px; cursor: pointer; }
+  button#stock-go:disabled { color: var(--soft); border-color: var(--edge); cursor: default; }
+  .back-home { font-size: 20px; }
+
+  #status.bad { color: var(--rust); }
+</style>
+</head>
+<body>
+<header class="wrap bar"><a class="logo" href="../../" aria-label="Stallion home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 783.657 240" width="783.657" height="240" role="img" aria-label="Stallion">
+<!-- Stallion (EberonLtd), drawn by tools/gen_logo.py; GPL-3.0-only -->
+<rect width="783.657" height="240" rx="24" fill="#0B1E36"/>
+<polygon points="26.9,134.7 36.6,138.5 46.4,141.9 56.2,144.7 66.0,147.0 75.8,148.8 85.5,150.1 95.3,150.9 105.1,151.1 114.9,150.9 124.7,150.1 134.4,148.8 144.2,147.0 154.0,144.7 163.8,141.9 173.6,138.5 183.3,134.7 187.5,131.6 185.3,138.5 181.5,144.8 176.1,150.5 169.3,155.4 161.4,159.7 152.5,163.3 142.8,166.1 132.4,168.3 121.6,169.7 110.5,170.3 99.3,170.2 88.1,169.3 77.2,167.6 66.8,165.1 56.9,161.8 47.8,157.7 39.6,152.7 32.6,146.9 27.0,140.2 22.7,132.6" fill="#D98E2F"/>
+<polyline points="183.3,136.7 185.3,134.2 187.1,131.6 188.7,129.0 190.1,126.4 191.3,123.8 192.4,121.1 193.2,118.5 193.9,115.9 194.4,113.2 194.7,110.6 194.8,107.9 194.7,105.3 194.5,102.6 194.0,99.9 193.4,97.2 192.6,94.5" fill="none" stroke="#D98E2F" stroke-width="9.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="26.9,136.7 25.2,134.9 23.7,133.1 22.4,131.3 21.4,129.4 20.5,127.5 19.9,125.7 19.5,123.8 19.3,121.8 19.4,119.9 19.6,118.0 20.1,116.0 20.7,114.0 21.6,112.0 22.7,110.0 24.0,108.0 25.6,106.0 25.2,103.8 25.3,101.7 25.7,99.7 26.5,97.8 27.5,96.2 28.8,94.7 30.3,93.6 32.0,92.7 33.7,92.2 35.4,92.0 37.2,92.1 38.8,92.5 40.3,93.1 41.6,94.0 42.7,95.1 43.6,96.3 44.2,97.7 44.6,99.0 44.7,100.4 44.6,101.7 44.2,103.0 43.7,104.1 42.9,105.1 42.1,105.9 41.1,106.5 40.1,106.9 39.1,107.1 38.1,107.1 37.2,106.9" fill="none" stroke="#D98E2F" stroke-width="9.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="186.4,99.7 185.4,94.0 184.7,88.5 180.1,83.2 184.1,78.2 180.2,73.4 184.9,68.8 181.6,64.4 186.9,60.3 184.2,56.4 190.1,52.8 192.2,49.4 194.7,46.1 192.6,33.8 201.9,44.1 224.5,66.7 225.6,69.0 226.0,71.1 225.8,72.9 225.0,74.5 223.5,75.9 221.4,77.0 218.0,77.1 215.0,76.7 212.4,75.9 210.1,74.7 208.2,73.1 206.8,71.0 205.7,68.6 205.0,65.7 203.1,70.3 201.5,75.3 200.3,80.6 199.5,86.3 198.9,92.3 198.8,98.6" fill="#D98E2F"/>
+<circle cx="205.0" cy="53.4" r="2.68" fill="#0B1E36"/>
+<polyline points="105.1,149.1 105.1,25.6" fill="none" stroke="#F3EEE2" stroke-width="4.12" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="105.1,27.6 183.3,124.4" fill="none" stroke="#F3EEE2" stroke-width="2.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="105.1,27.6 33.0,122.3" fill="none" stroke="#F3EEE2" stroke-width="2.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="51.6,38.9 158.6,38.9" fill="none" stroke="#D98E2F" stroke-width="5.15" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="63.9,124.4 62.0,114.1 60.5,103.8 59.2,93.5 58.3,83.2 57.7,72.9 57.4,62.6 57.4,52.3 57.7,42.0 63.7,42.5 69.6,42.9 75.5,43.3 76.7,43.3 77.1,54.0 77.5,64.7 78.0,75.4 78.4,86.1 78.8,96.8 79.2,107.5 79.7,118.2 80.1,128.9 79.4,128.8 74.2,127.5 69.1,126.1" fill="#F3EEE2"/>
+<polygon points="80.1,128.9 79.7,118.2 79.2,107.5 78.8,96.8 78.4,86.1 78.0,75.4 77.5,64.7 77.1,54.0 76.7,43.3 81.4,43.6 87.3,43.8 93.3,44.0 95.6,44.0 95.8,54.9 95.9,65.8 96.0,76.7 96.2,87.6 96.3,98.5 96.4,109.4 96.6,120.4 96.7,131.3 94.8,131.1 89.7,130.6 84.5,129.8" fill="#B8432A"/>
+<polygon points="96.7,131.3 96.6,120.4 96.4,109.4 96.3,98.5 96.2,87.6 96.0,76.7 95.9,65.8 95.8,54.9 95.6,44.0 99.2,44.1 105.1,44.1 111.0,44.1 114.6,44.0 114.4,54.9 114.3,65.8 114.2,76.7 114.0,87.6 113.9,98.5 113.8,109.4 113.6,120.4 113.5,131.3 110.2,131.5 105.1,131.6 100.0,131.5" fill="#F3EEE2"/>
+<polygon points="113.5,131.3 113.6,120.4 113.8,109.4 113.9,98.5 114.0,87.6 114.2,76.7 114.3,65.8 114.4,54.9 114.6,44.0 116.9,44.0 122.9,43.8 128.8,43.6 133.5,43.3 133.1,54.0 132.7,64.7 132.3,75.4 131.8,86.1 131.4,96.8 131.0,107.5 130.5,118.2 130.1,128.9 125.7,129.8 120.5,130.6 115.4,131.1" fill="#B8432A"/>
+<polygon points="130.1,128.9 130.5,118.2 131.0,107.5 131.4,96.8 131.8,86.1 132.3,75.4 132.7,64.7 133.1,54.0 133.5,43.3 134.7,43.3 140.6,42.9 146.5,42.5 152.5,42.0 152.8,52.3 152.8,62.6 152.6,72.9 151.9,83.2 151.0,93.5 149.8,103.8 148.2,114.1 146.3,124.4 141.1,126.1 136.0,127.5 130.8,128.8" fill="#F3EEE2"/>
+<circle cx="51.1" cy="142.2" r="6.38" fill="#F3EEE2"/>
+<circle cx="51.1" cy="142.2" r="2.06" fill="#D98E2F"/>
+<circle cx="68.8" cy="146.5" r="6.38" fill="#B8432A"/>
+<circle cx="68.8" cy="146.5" r="2.06" fill="#D98E2F"/>
+<circle cx="86.8" cy="149.2" r="6.38" fill="#F3EEE2"/>
+<circle cx="86.8" cy="149.2" r="2.06" fill="#D98E2F"/>
+<circle cx="104.9" cy="150.1" r="6.38" fill="#B8432A"/>
+<circle cx="104.9" cy="150.1" r="2.06" fill="#D98E2F"/>
+<circle cx="123.1" cy="149.2" r="6.38" fill="#F3EEE2"/>
+<circle cx="123.1" cy="149.2" r="2.06" fill="#D98E2F"/>
+<circle cx="141.1" cy="146.6" r="6.38" fill="#B8432A"/>
+<circle cx="141.1" cy="146.6" r="2.06" fill="#D98E2F"/>
+<circle cx="158.8" cy="142.3" r="6.38" fill="#F3EEE2"/>
+<circle cx="158.8" cy="142.3" r="2.06" fill="#D98E2F"/>
+<polyline points="16.6,196.4 18.6,197.7 20.7,198.9 22.7,199.7 24.8,200.0 26.9,199.9 28.9,199.3 31.0,198.3 33.0,197.1 35.1,195.8 37.2,194.5 39.2,193.6 41.3,193.0 43.3,192.9 45.4,193.2 47.5,194.0 49.5,195.1 51.6,196.4 53.6,197.7 55.7,198.9 57.7,199.7 59.8,200.0 61.9,199.9 63.9,199.3 66.0,198.3 68.0,197.1 70.1,195.8 72.2,194.5 74.2,193.6 76.3,193.0 78.3,192.9 80.4,193.2 82.5,194.0 84.5,195.1 86.6,196.4 88.6,197.7 90.7,198.9 92.7,199.7 94.8,200.0 96.9,199.9 98.9,199.3 101.0,198.3 103.0,197.1 105.1,195.8 107.2,194.5 109.2,193.6 111.3,193.0 113.3,192.9 115.4,193.2 117.5,194.0 119.5,195.1 121.6,196.4 123.6,197.7 125.7,198.9 127.7,199.7 129.8,200.0 131.9,199.9 133.9,199.3 136.0,198.3 138.0,197.1 140.1,195.8 142.2,194.5 144.2,193.6 146.3,193.0 148.3,192.9 150.4,193.2 152.5,194.0 154.5,195.1 156.6,196.4 158.6,197.7 160.7,198.9 162.7,199.7 164.8,200.0 166.9,199.9 168.9,199.3 171.0,198.3 173.0,197.1 175.1,195.8 177.2,194.5 179.2,193.6 181.3,193.0 183.3,192.9 185.4,193.2 187.5,194.0 189.5,195.1 191.6,196.4 193.6,197.7" fill="none" stroke="#3B8FA8" stroke-width="5.15" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="45.4,210.9 47.5,212.2 49.5,213.3 51.6,214.1 53.6,214.4 55.7,214.3 57.7,213.7 59.8,212.7 61.9,211.5 63.9,210.2 66.0,209.0 68.0,208.0 70.1,207.4 72.2,207.3 74.2,207.6 76.3,208.4 78.3,209.6 80.4,210.9 82.5,212.2 84.5,213.3 86.6,214.1 88.6,214.4 90.7,214.3 92.7,213.7 94.8,212.7 96.9,211.5 98.9,210.2 101.0,209.0 103.0,208.0 105.1,207.4 107.2,207.3 109.2,207.6 111.3,208.4 113.3,209.6 115.4,210.9 117.5,212.2 119.5,213.3 121.6,214.1 123.6,214.4 125.7,214.3 127.7,213.7 129.8,212.7 131.9,211.5 133.9,210.2 136.0,209.0 138.0,208.0 140.1,207.4 142.2,207.3 144.2,207.6 146.3,208.4 148.3,209.6 150.4,210.9 152.5,212.2 154.5,213.3 156.6,214.1 158.6,214.4 160.7,214.3 162.7,213.7 164.8,212.7" fill="none" stroke="#3B8FA8" stroke-width="4.12" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="255.7,79.2 302.3,79.2 302.3,90.9 255.7,90.9" fill="#F3EEE2"/>
+<polygon points="255.7,79.2 244.0,90.9 255.7,90.9" fill="#F3EEE2"/>
+<polygon points="267.3,90.9 255.7,90.9 255.7,102.5" fill="#F3EEE2"/>
+<polygon points="313.9,79.2 372.2,79.2 372.2,90.9 313.9,90.9" fill="#F3EEE2"/>
+<polygon points="407.2,79.2 418.9,79.2 418.9,90.9 407.2,90.9" fill="#F3EEE2"/>
+<polygon points="407.2,79.2 395.5,90.9 407.2,90.9" fill="#F3EEE2"/>
+<polygon points="418.9,90.9 407.2,90.9 407.2,102.5" fill="#F3EEE2"/>
+<polygon points="418.9,79.2 430.5,90.9 418.9,90.9" fill="#F3EEE2"/>
+<polygon points="407.2,90.9 418.9,90.9 418.9,102.5" fill="#F3EEE2"/>
+<polygon points="453.8,79.2 465.5,79.2 465.5,90.9 453.8,90.9" fill="#F3EEE2"/>
+<polygon points="523.8,79.2 535.4,79.2 535.4,90.9 523.8,90.9" fill="#F3EEE2"/>
+<polygon points="593.7,79.2 605.4,79.2 605.4,90.9 593.7,90.9" fill="#F3EEE2"/>
+<polygon points="628.7,79.2 663.7,79.2 663.7,90.9 628.7,90.9" fill="#F3EEE2"/>
+<polygon points="628.7,79.2 617.0,90.9 628.7,90.9" fill="#F3EEE2"/>
+<polygon points="640.3,90.9 628.7,90.9 628.7,102.5" fill="#F3EEE2"/>
+<polygon points="663.7,79.2 675.3,90.9 663.7,90.9" fill="#F3EEE2"/>
+<polygon points="652.0,90.9 663.7,90.9 663.7,102.5" fill="#F3EEE2"/>
+<polygon points="687.0,79.2 698.6,79.2 698.6,90.9 687.0,90.9" fill="#F3EEE2"/>
+<polygon points="733.6,79.2 745.3,79.2 745.3,90.9 733.6,90.9" fill="#F3EEE2"/>
+<polygon points="244.0,90.9 255.7,90.9 255.7,102.5 244.0,102.5" fill="#F3EEE2"/>
+<polygon points="337.3,90.9 348.9,90.9 348.9,102.5 337.3,102.5" fill="#F3EEE2"/>
+<polygon points="395.5,90.9 407.2,90.9 407.2,102.5 395.5,102.5" fill="#F3EEE2"/>
+<polygon points="395.5,90.9 383.9,102.5 395.5,102.5" fill="#F3EEE2"/>
+<polygon points="407.2,102.5 395.5,102.5 395.5,114.2" fill="#F3EEE2"/>
+<polygon points="418.9,90.9 430.5,90.9 430.5,102.5 418.9,102.5" fill="#F3EEE2"/>
+<polygon points="430.5,90.9 442.2,102.5 430.5,102.5" fill="#F3EEE2"/>
+<polygon points="418.9,102.5 430.5,102.5 430.5,114.2" fill="#F3EEE2"/>
+<polygon points="453.8,90.9 465.5,90.9 465.5,102.5 453.8,102.5" fill="#F3EEE2"/>
+<polygon points="523.8,90.9 535.4,90.9 535.4,102.5 523.8,102.5" fill="#F3EEE2"/>
+<polygon points="593.7,90.9 605.4,90.9 605.4,102.5 593.7,102.5" fill="#F3EEE2"/>
+<polygon points="617.0,90.9 628.7,90.9 628.7,102.5 617.0,102.5" fill="#F3EEE2"/>
+<polygon points="663.7,90.9 675.3,90.9 675.3,102.5 663.7,102.5" fill="#F3EEE2"/>
+<polygon points="687.0,90.9 710.3,90.9 710.3,102.5 687.0,102.5" fill="#F3EEE2"/>
+<polygon points="733.6,90.9 745.3,90.9 745.3,102.5 733.6,102.5" fill="#F3EEE2"/>
+<polygon points="244.0,102.5 255.7,102.5 255.7,114.2 244.0,114.2" fill="#F3EEE2"/>
+<polygon points="255.7,102.5 267.3,114.2 255.7,114.2" fill="#F3EEE2"/>
+<polygon points="244.0,114.2 255.7,114.2 255.7,125.8" fill="#F3EEE2"/>
+<polygon points="337.3,102.5 348.9,102.5 348.9,114.2 337.3,114.2" fill="#F3EEE2"/>
+<polygon points="383.9,102.5 395.5,102.5 395.5,114.2 383.9,114.2" fill="#F3EEE2"/>
+<polygon points="430.5,102.5 442.2,102.5 442.2,114.2 430.5,114.2" fill="#F3EEE2"/>
+<polygon points="453.8,102.5 465.5,102.5 465.5,114.2 453.8,114.2" fill="#F3EEE2"/>
+<polygon points="523.8,102.5 535.4,102.5 535.4,114.2 523.8,114.2" fill="#F3EEE2"/>
+<polygon points="593.7,102.5 605.4,102.5 605.4,114.2 593.7,114.2" fill="#F3EEE2"/>
+<polygon points="617.0,102.5 628.7,102.5 628.7,114.2 617.0,114.2" fill="#F3EEE2"/>
+<polygon points="663.7,102.5 675.3,102.5 675.3,114.2 663.7,114.2" fill="#F3EEE2"/>
+<polygon points="687.0,102.5 710.3,102.5 710.3,114.2 687.0,114.2" fill="#F3EEE2"/>
+<polygon points="710.3,102.5 721.9,114.2 710.3,114.2" fill="#F3EEE2"/>
+<polygon points="698.6,114.2 710.3,114.2 710.3,125.8" fill="#F3EEE2"/>
+<polygon points="733.6,102.5 745.3,102.5 745.3,114.2 733.6,114.2" fill="#F3EEE2"/>
+<polygon points="255.7,114.2 290.6,114.2 290.6,125.8 255.7,125.8" fill="#F3EEE2"/>
+<polygon points="290.6,114.2 302.3,125.8 290.6,125.8" fill="#F3EEE2"/>
+<polygon points="279.0,125.8 290.6,125.8 290.6,137.5" fill="#F3EEE2"/>
+<polygon points="337.3,114.2 348.9,114.2 348.9,125.8 337.3,125.8" fill="#F3EEE2"/>
+<polygon points="383.9,114.2 395.5,114.2 395.5,125.8 383.9,125.8" fill="#F3EEE2"/>
+<polygon points="430.5,114.2 442.2,114.2 442.2,125.8 430.5,125.8" fill="#F3EEE2"/>
+<polygon points="453.8,114.2 465.5,114.2 465.5,125.8 453.8,125.8" fill="#F3EEE2"/>
+<polygon points="523.8,114.2 535.4,114.2 535.4,125.8 523.8,125.8" fill="#F3EEE2"/>
+<polygon points="593.7,114.2 605.4,114.2 605.4,125.8 593.7,125.8" fill="#F3EEE2"/>
+<polygon points="617.0,114.2 628.7,114.2 628.7,125.8 617.0,125.8" fill="#F3EEE2"/>
+<polygon points="663.7,114.2 675.3,114.2 675.3,125.8 663.7,125.8" fill="#F3EEE2"/>
+<polygon points="687.0,114.2 698.6,114.2 698.6,125.8 687.0,125.8" fill="#F3EEE2"/>
+<polygon points="710.3,114.2 721.9,114.2 721.9,125.8 710.3,125.8" fill="#F3EEE2"/>
+<polygon points="721.9,114.2 733.6,125.8 721.9,125.8" fill="#F3EEE2"/>
+<polygon points="710.3,125.8 721.9,125.8 721.9,137.5" fill="#F3EEE2"/>
+<polygon points="733.6,114.2 745.3,114.2 745.3,125.8 733.6,125.8" fill="#F3EEE2"/>
+<polygon points="290.6,125.8 302.3,125.8 302.3,137.5 290.6,137.5" fill="#F3EEE2"/>
+<polygon points="337.3,125.8 348.9,125.8 348.9,137.5 337.3,137.5" fill="#F3EEE2"/>
+<polygon points="383.9,125.8 442.2,125.8 442.2,137.5 383.9,137.5" fill="#F3EEE2"/>
+<polygon points="453.8,125.8 465.5,125.8 465.5,137.5 453.8,137.5" fill="#F3EEE2"/>
+<polygon points="523.8,125.8 535.4,125.8 535.4,137.5 523.8,137.5" fill="#F3EEE2"/>
+<polygon points="593.7,125.8 605.4,125.8 605.4,137.5 593.7,137.5" fill="#F3EEE2"/>
+<polygon points="617.0,125.8 628.7,125.8 628.7,137.5 617.0,137.5" fill="#F3EEE2"/>
+<polygon points="663.7,125.8 675.3,125.8 675.3,137.5 663.7,137.5" fill="#F3EEE2"/>
+<polygon points="687.0,125.8 698.6,125.8 698.6,137.5 687.0,137.5" fill="#F3EEE2"/>
+<polygon points="721.9,125.8 745.3,125.8 745.3,137.5 721.9,137.5" fill="#F3EEE2"/>
+<polygon points="290.6,137.5 302.3,137.5 302.3,149.1 290.6,149.1" fill="#F3EEE2"/>
+<polygon points="290.6,137.5 279.0,149.1 290.6,149.1" fill="#F3EEE2"/>
+<polygon points="302.3,149.1 290.6,149.1 290.6,160.8" fill="#F3EEE2"/>
+<polygon points="337.3,137.5 348.9,137.5 348.9,149.1 337.3,149.1" fill="#F3EEE2"/>
+<polygon points="383.9,137.5 395.5,137.5 395.5,149.1 383.9,149.1" fill="#F3EEE2"/>
+<polygon points="430.5,137.5 442.2,137.5 442.2,149.1 430.5,149.1" fill="#F3EEE2"/>
+<polygon points="453.8,137.5 465.5,137.5 465.5,149.1 453.8,149.1" fill="#F3EEE2"/>
+<polygon points="523.8,137.5 535.4,137.5 535.4,149.1 523.8,149.1" fill="#F3EEE2"/>
+<polygon points="593.7,137.5 605.4,137.5 605.4,149.1 593.7,149.1" fill="#F3EEE2"/>
+<polygon points="617.0,137.5 628.7,137.5 628.7,149.1 617.0,149.1" fill="#F3EEE2"/>
+<polygon points="628.7,137.5 640.3,149.1 628.7,149.1" fill="#F3EEE2"/>
+<polygon points="617.0,149.1 628.7,149.1 628.7,160.8" fill="#F3EEE2"/>
+<polygon points="663.7,137.5 675.3,137.5 675.3,149.1 663.7,149.1" fill="#F3EEE2"/>
+<polygon points="663.7,137.5 652.0,149.1 663.7,149.1" fill="#F3EEE2"/>
+<polygon points="675.3,149.1 663.7,149.1 663.7,160.8" fill="#F3EEE2"/>
+<polygon points="687.0,137.5 698.6,137.5 698.6,149.1 687.0,149.1" fill="#F3EEE2"/>
+<polygon points="721.9,137.5 745.3,137.5 745.3,149.1 721.9,149.1" fill="#F3EEE2"/>
+<polygon points="244.0,149.1 290.6,149.1 290.6,160.8 244.0,160.8" fill="#F3EEE2"/>
+<polygon points="337.3,149.1 348.9,149.1 348.9,160.8 337.3,160.8" fill="#F3EEE2"/>
+<polygon points="383.9,149.1 395.5,149.1 395.5,160.8 383.9,160.8" fill="#F3EEE2"/>
+<polygon points="430.5,149.1 442.2,149.1 442.2,160.8 430.5,160.8" fill="#F3EEE2"/>
+<polygon points="453.8,149.1 512.1,149.1 512.1,160.8 453.8,160.8" fill="#F3EEE2"/>
+<polygon points="523.8,149.1 582.1,149.1 582.1,160.8 523.8,160.8" fill="#F3EEE2"/>
+<polygon points="593.7,149.1 605.4,149.1 605.4,160.8 593.7,160.8" fill="#F3EEE2"/>
+<polygon points="628.7,149.1 663.7,149.1 663.7,160.8 628.7,160.8" fill="#F3EEE2"/>
+<polygon points="687.0,149.1 698.6,149.1 698.6,160.8 687.0,160.8" fill="#F3EEE2"/>
+<polygon points="733.6,149.1 745.3,149.1 745.3,160.8 733.6,160.8" fill="#F3EEE2"/>
+</svg>
+</a>
+  <div class="langs" role="group" aria-label="Language / Langue / 言語"><button class="lang" data-l="en">English</button><button class="lang" data-l="fr">Français</button><button class="lang" data-l="ja">日本語</button></div></header>
+<div class="sail" role="presentation"></div>
+<main class="narrow hero-i">
+  <nav class="boards"><p data-t="boardPick"></p><div><a href="../installer/">FM-1</a><a href="../installer-smk37/" aria-current="page">SMK-37 Pro</a></div></nav>
+  
+  <h1 data-t="h1"></h1>
+  <p class="lead" data-t="lead"></p>
+  <p class="back-home"><a href="../../" data-t="homeLink"></a></p>
+  <div class="note"><b data-t="proOnlyT"></b><p data-t="proOnly"></p></div>
+  <h2 class="sec" data-t="stepsT"></h2>
+  <ol class="steps">
+    <li><b data-t="s1T"></b><span data-t="s1"></span></li>
+    <li><b data-t="s2T"></b><span data-t="s2"></span></li>
+    <li><b data-t="s3T"></b><span data-t="s3"></span></li>
+  </ol>
+  <div class="note" style="margin-top:24px"><b data-t="backupT"></b><p data-t="backup"></p></div>
+  <div class="panel">
+    <label class="ck"><input type="checkbox" id="risk"> <span data-t="risk"></span></label>
+    <p><button id="go" class="btn" disabled data-t="install"></button></p>
+    <p id="device"></p>
+    <progress id="bar" max="100" value="0"></progress>
+    <p id="status" role="status" aria-live="polite"></p>
+    <p id="next" hidden><a class="btn text" href="../installer/" data-t="toFm1"></a></p>
+    <details class="log"><summary data-t="logT"></summary><pre id="log"></pre></details>
+  </div>
+  <h2 class="sec" data-t="afterT"></h2>
+  <div class="after"><a class="btn text" href="../editor/" data-t="editor"></a></div>
+  <section class="trouble">
+    <h2 class="sec" data-t="rescueT"></h2>
+    <p data-t="rescue"></p>
+    <p data-t="other2"></p>
+    <h2 class="sec" data-t="backT"></h2>
+    <p data-t="back"></p>
+    <p><a href="https://www.m-vave.com/download" target="_blank" rel="noopener">www.m-vave.com/download</a></p>
+  </section>
+</main>
+<footer class="foot">
+  <div class="narrow">
+    <p lang="en"><b>Stallion</b> is free, open-source firmware (GPL-3.0-only) by Eberon Limited (John Gorman):
+      <a href="https://github.com/EberonLtd/stallion-fm1" target="_blank" rel="noopener">github.com/EberonLtd/stallion-fm1</a>.
+      It grew out of <a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> and Clipper Pro by 3dSam (isod89), which grew out of
+      <a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a>; all are based on
+      <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita (@kurogedelic), Hügelton Instruments.
+      Everyone else whose work it uses is named in
+      <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/CREDITS.md" target="_blank" rel="noopener">CREDITS.md</a> and
+      <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/LICENSING.md" target="_blank" rel="noopener">LICENSING.md</a>.</p>
+    <p lang="en">M-VAVE, FM-1 and SMK-37 are trademarks of their owners. Stallion is not affiliated with or endorsed by them. No warranty: you install it at your own risk.</p>
+    <p class="copy">Copyright (C) 2026 Eberon Limited (John Gorman)</p>
+  </div>
+</footer>
+<script type="module">
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+//
+// FM-1 (and M-Vave SMK-37 Pro) .fwsc packages in the browser: the package identity and the image the
+// device reads during an update.
+
+const BLOCKS = 20, BLK = 0x30, KEEP = 0x2F, MAX_BLOCKS = 64;
+
+const printable = (m, i) => { const c = (m - i - 1) & 0xFF; return c >= 0x20 && c < 0x7F; };
+
+// the identity blocks: 20, or more when the identity is longer (the Starrykey 37 Play V016's "STARRYKEY-37 PLAY_016"
+// takes 21): further identity markers count only when unused 0x7D markers follow them (the 36-block layout)
+function identityBlocks(fwsc) {
+  let n = BLOCKS;
+  while (n < MAX_BLOCKS && (n + 1) * BLK <= fwsc.length && fwsc[n * BLK + KEEP] !== 0x7D && printable(fwsc[n * BLK + KEEP], n)) n++;
+  return n > BLOCKS && (n + 1) * BLK <= fwsc.length && fwsc[n * BLK + KEEP] === 0x7D ? n : BLOCKS;
+}
+
+// interleave blocks: the identity blocks, then more while the marker is the unused 0x7D (the stock SMK-37 Pro,
+// MKE-P37 and Starrykey 37 Play V016 have 36)
+function blockCount(fwsc) {
+  let n = identityBlocks(fwsc);
+  while (n < MAX_BLOCKS && (n + 1) * BLK <= fwsc.length && fwsc[n * BLK + KEEP] === 0x7D) n++;
+  return n;
+}
+
+// the package identity ("FM-1_904", "SMK-37 Pro_016"): one marker byte after each identity block (0x7D: none);
+// past the first 20 only when the package really has those blocks (logicalImage's count)
+function productOf(fwsc) {
+  if (fwsc.length < BLOCKS * BLK) throw new Error("not an FM-1 package (too short)");
+  const ib = identityBlocks(fwsc), n = ib === BLOCKS ? BLOCKS : Math.min(ib, layout(fwsc).blocks);
+  let s = "";
+  for (let i = 0; i < n; i++) {
+    const m = fwsc[i * BLK + KEEP];
+    if (m !== 0x7D) s += String.fromCharCode((m - i - 1) & 0xFF);
+  }
+  return s;
+}
+
+function deinterleave(fwsc, blocks) {
+  const out = new Uint8Array(fwsc.length - blocks);
+  for (let i = 0; i < blocks; i++) out.set(fwsc.subarray(i * BLK, i * BLK + KEEP), i * KEEP);
+  out.set(fwsc.subarray(blocks * BLK), blocks * KEEP);
+  return out;
+}
+
+function crc16(d, c = 0) {                 // CRC-16/XMODEM, as the package and the device use
+  for (const b of d) {
+    c ^= b << 8;
+    for (let k = 0; k < 8; k++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF;
+  }
+  return c;
+}
+
+function jlDec(b) {                        // JieLi ENC stream cipher (its own inverse)
+  const out = Uint8Array.from(b);
+  let key = 0xFFFF;
+  for (let i = 0; i < out.length; i++) {
+    out[i] ^= key & 0xFF;
+    key = ((key << 1) ^ (key & 0x8000 ? 0x1021 : 0)) & 0xFFFF;
+  }
+  return out;
+}
+
+// the logical image's flash.bin (type 0) and ota.bin (type 100) match their CRCs (as fm1_install.py)
+function filesOk(img) {
+  if (img.length < 0x40) return false;
+  const h = jlDec(img.subarray(0, 0x40)), rd = (a, o, n) => a.slice(o, o + n).reduce((v, x, i) => v + x * 2 ** (8 * i), 0);
+  if (crc16(h.subarray(2, 0x40)) !== rd(h, 0, 2)) return false;
+  const count = rd(h, 8, 2);
+  if (count < 1 || count > 8 || img.length < 0x40 + 0x50 * count) return false;
+  for (let i = 0; i < count; i++) {
+    const e = jlDec(img.subarray(0x40 + i * 0x50, 0x90 + i * 0x50));
+    const typ = rd(e, 0, 2), off = rd(e, 8, 4), size = rd(e, 12, 4);
+    if (off + size > img.length) return false;
+    if ((typ === 0 || typ === 100) && crc16(img.subarray(off, off + size)) !== rd(e, 4, 2)) return false;
+  }
+  return true;
+}
+
+// the image the device addresses during an update: the .fwsc without the marker bytes (20 blocks, or the
+// detected count when the files' CRCs agree: a 20-block package can have 0x7D after block 20 by chance)
+function layout(fwsc) {
+  const n = blockCount(fwsc);
+  if (n !== BLOCKS) {
+    const img = deinterleave(fwsc, n);
+    if (filesOk(img) || !filesOk(deinterleave(fwsc, BLOCKS))) return { blocks: n, image: img };
+  }
+  return { blocks: BLOCKS, image: deinterleave(fwsc, BLOCKS) };
+}
+function logicalImage(fwsc) { return layout(fwsc).image; }
+
+// The official FM-1 V15 (M-VAVE Downloads -> PC Firmware -> FM-1 V15, FM-1.fwsc), for the return to the
+// official firmware: only that exact file is accepted (its SHA-256 pins every byte: the loader, the app, the
+// layout; the name of the file proves nothing). The digest is the one Felucca 1.0 pins.
+const STOCK_V15_SHA256 = "db1642b2b6fa5c2cccb11ffd13878068bb28601678d3644049f99dc40e7edb8a";
+const STOCK_V15_SIZE = 699956;
+const STOCK_V15_PRODUCT = "FM-1_015";
+// The official SMK-37 Pro V016 (SMK-37_Pro_016.fwsc, 36 interleave blocks), for the return of an SMK-37 Pro.
+const STOCK_SMK016_SHA256 = "2d98ce72530e71d617384963423820536f094501299e2cfec0a8d3c3fb6bcfb0";
+const STOCK_SMK016_SIZE = 705252;
+const STOCK_SMK016_PRODUCT = "SMK-37 Pro_016";
+
+// The official FM-1 V16: the same checks (after Clipper Pro 1.2:
+// only V15 was accepted, so the way back failed with the file M-VAVE now gives; sloop-fm1 #8). The firmware's own
+// update entry (ota.c) still checks the package's loader (the official one's CRCs) and that its head equals the FM-1's
+const STOCK_V16_SHA256 = "d017fb65e70aca97ee29d944470c3515a74581df5c0576bf70de917c7b2b61d5";
+const STOCK_V16_SIZE = 718196;
+const STOCK_V16_PRODUCT = "FM-1_016";
+// the official FM-1 packages accepted for the way back (the file M-VAVE offers, or the one before)
+const STOCK_FM1 = [
+  { version: "V16", size: STOCK_V16_SIZE, sha256: STOCK_V16_SHA256, product: STOCK_V16_PRODUCT },
+  { version: "V15", size: STOCK_V15_SIZE, sha256: STOCK_V15_SHA256, product: STOCK_V15_PRODUCT },
+];
+// -> the FM-1 package it is (STOCK_FM1), or null
+async function knownStockFm1(bytes) {
+  const c = STOCK_FM1.filter((k) => k.size === bytes.length);
+  if (!c.length) return null;
+  const sha = await sha256hex(bytes);
+  return c.find((k) => k.sha256 === sha && productOf(bytes) === k.product) || null;
+}
+
+async function sha256hex(bytes) {
+  const d = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+// The official SMK-37 range packages known here (M-Vave Downloads -> PC Firmware): informational only (the page
+// tags them "known"); M-Vave's next release is accepted by its structure (identifyStockPackage). The files
+// themselves are never shipped, the user downloads them from M-Vave. product: the identity the keyboard reports
+// once it runs the package (the Starrykey's 21 characters do not fit the 20 identity blocks of its V015 package:
+// that one carries "STARRYKEY-37 PLAY_01", so it is accepted only as this known file).
+const STOCK_SMK = [
+  { name: "SMK-37 Pro", version: "016", product: "SMK-37 Pro_016", size: 705252, sha256: STOCK_SMK016_SHA256 },
+  { name: "SMK-37 Pro", version: "015", product: "SMK-37 Pro_015", size: 701140, sha256: "f7f1831cd7c9ad8b4831b6e71ea0bdbcdff9ae4c4077276b3c965511bf4d4fff" },
+  { name: "SMK-37 Elite", version: "016", product: "SMK-37 Elite_016", size: 705236, sha256: "b2ee38abfef3ae922e4eecdb8a551e14345300ae6f270265feacd33b6ef99cb6" },
+  { name: "SMK-37 Elite", version: "015", product: "SMK-37 Elite_015", size: 701140, sha256: "6cb061bda6fc4a285a1a1014e4fc30782278fa62bdc3add75d14b29d4d76253e" },
+  { name: "MKE-P37", version: "016", product: "MKE-P37_016", size: 705252, sha256: "4306ae5b765ab9afb790edf6d02fa75e872897dbd319049e3956ddd283a51429" },
+  { name: "MKE-P37", version: "015", product: "MKE-P37_015", size: 701140, sha256: "280ee7aae59a17c38bc2e854802c7d08f076e51afff13eb5315ad3748476491f" },
+  { name: "Starrykey 37 Play", version: "016", product: "STARRYKEY-37 PLAY_016", size: 705252, sha256: "3cd57cdd90ee60501c549b9dde53503ef468122e2f34dc110876eefdaf9be3b3" },
+  { name: "Starrykey 37 Play", version: "015", product: "STARRYKEY-37 PLAY_015", size: 701140, sha256: "3ef5d835e88324a925593e1e6959106e16abeabbabf824263803bb236b09224b" },
+];
+
+// the SMK-37 range's model names in a stock identity, and the names the page shows
+const STOCK_MODELS = { "SMK-37 PRO": "SMK-37 Pro", "SMK-37 ELITE": "SMK-37 Elite", "MKE-P37": "MKE-P37", "STARRYKEY-37 PLAY": "Starrykey 37 Play" };
+
+function badPackage(code, msg) { const e = new Error(msg); e.code = code; return e; }
+
+// an M-Vave stock package for the SMK-37 range -> { name, version, product, model, image, known } (image: the
+// logical image the loader writes, as fm1_install.py --force: the detected block count). Accepted by structure, so
+// M-Vave's next release works too: the package parses, its files' CRCs agree, its identity is an SMK-37 range model
+// with a stock version (_000.._099); known: the SHA-256 is one of STOCK_SMK (informational). Refused (code):
+// "fm1" (an FM-1 package, another device), "ours" (one of our firmwares, _7xx/_8xx/_9xx, Stallion's _1042XY:
+// installed above),
+// "damaged" (the files' CRCs disagree), "unknown" (anything else)
+async function identifyStockPackage(bytes) {
+  const sha = await sha256hex(bytes);
+  if (STOCK_FM1.some((k) => k.size === bytes.length && k.sha256 === sha))
+    throw badPackage("fm1", "this is the official FM-1 firmware: it is for the FM-1, not for an SMK-37 keyboard");
+  let product, image;
+  try { product = productOf(bytes); image = logicalImage(bytes); }
+  catch (_) { throw badPackage("unknown", "not an M-Vave firmware package for the SMK-37 range"); }
+  const k = STOCK_SMK.find((x) => x.size === bytes.length && x.sha256 === sha);
+  const m = /^(.+)_(\d{3})$/.exec(product);
+  if (/^FM-1(_|$)/i.test(product))
+    throw badPackage("fm1", "this is an FM-1 firmware: it is for the FM-1, not for an SMK-37 keyboard");
+  if ((m && /^[789]\d\d$/.test(m[2]) && (STOCK_MODELS[m[1].toUpperCase()] || /^SMK-37/i.test(m[1])))
+      || /^(SMK-37|MKE-P37).*_1042\d\d$/i.test(product))   // (Stallion's own number, smkota.js STALLION_NUM)
+    throw badPackage("ours", "this is one of our firmwares (" + product + "): install it above, not here");
+  const known = k && k.product.startsWith(product), name = m && STOCK_MODELS[m[1].toUpperCase()];
+  if (!known && (!name || Number(m[2]) > 99)) throw badPackage("unknown", "not an M-Vave firmware package for the SMK-37 range");
+  if (!filesOk(image)) throw badPackage("damaged", "the package is damaged (its CRCs do not match)");
+  if (known) return { ...k, model: k.product.split("_")[0], image, known: true };
+  return { name, version: m[2], product, model: m[1], image, known: false };
+}
+
+async function validateStockPackage(bytes) {
+  const f = await knownStockFm1(bytes);
+  if (f)
+    return { product: f.product, version: f.version, image: logicalImage(bytes) };
+  try { const k = await identifyStockPackage(bytes); return { product: k.product, image: k.image }; } catch (_) { /* below */ }
+  throw new Error("select the unmodified official FM-1 file (FM-1.fwsc, V16 or V15) or an official SMK-37 firmware (.fwsc) from M-Vave");
+}
+
+// SLOOP Pro's update library: the installer of genkigenki's SMK-37 site (genkigenki/smk37, from Felucca / SLOOP,
+// GPL-3.0; the version that installs the SMK-37 ports from Chrome on Windows: ports closed before the keyboard leaves
+// the USB, nothing probed until it is gone, a deadline on every port open and every wait, UPGRADE sent again to a
+// silent loader), with SLOOP's additions: find(filter, deep) for a generically named loader, the package's board
+// checked in install() and resume() (boardRefusal), resume(..., { verify }), pickPackage for the three models, and
+// MidiSession: Chrome's MIDI let go while the keyboard restarts (ChanceTheMaker's disposable MIDI session, sloop-pro #3).
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+// SMK-37 installer (Windows-safe WebMIDI): Copyright (C) 2026 M. Geisler (genkigenki/makkuro)
+// SLOOP Pro additions: Copyright (C) 2026 isod89
+// The MIDI session in a disposable document: after ChanceTheMaker's sloop-smk (web/midi-session.js, GPL-3.0)
+//
+// The FM-1 USB-MIDI update protocol (M-UPGRADE compatible) over WebMIDI.
+// Step 1: the running firmware reads parts of the package and stages the update
+// loader. Step 2: the loader reads the whole image and writes it. In both steps
+// the device sends cmd 0x30 read requests on the logical image and we answer.
+
+const HS_QUERY = [0xF0, 0x00, 0x32, 0x45, 0x00, 0x00, 0x00, 0x40, 0x7F, 0xF7];
+const UPGRADE = [0xF0, 0x22, 0x24, 0x35, 0x7F, 0xF7];
+const MAXDATA = 512;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const IS_OTA = (id) => /^ota-/i.test(id.model);
+// Stallion's identity number (tools/fm1pkg_make.py STALLION_NUM): its packages are FM-1_1042XY, SMK-37 Pro_1042XY
+const STALLION_NUM = "1042";
+// the update loader of Stallion's packages ("ota-SMK-37 Pro_1042XY", "ota-FM-1_1042XY") and of SLOOP / Felucca ones
+// ("ota-FM-1_9XX", "ota-SMK-37 Pro_9XX": also Stallion's before it had its own number, SMK-37 Pro_900, which the
+// owners' units still run, so an update from them that was cut off is finished; the SMK ports also under the
+// Elite's and the MKE-P37's model name, Makkuro37 _7XX). A device left in the update mode of another firmware (the
+// stock updater's loader) is never written: its loader may lay the image out differently. The bare "SMK-37" name
+// ("ota-SMK-37_931") is ChanceTheMaker's SMK firmwares' RAM updater: another package format, so not ours.
+const OUR_LOADER_RE = new RegExp(`^ota-(FM-1|SMK-37 Pro|SMK-37 Elite|MKE-P37)_([3-9]\\d\\d|${STALLION_NUM}\\d\\d)$`, "i");
+const OUR_LOADER = (id) => OUR_LOADER_RE.test(id.text);   // (also Polly _3XX, Speak37 _5XX, Gen37 _6XX, DUB-1 _8XX)
+// ChanceTheMaker's SMK firmwares (Felucca SMK, Sloop SMK, Melodee SMK, Doom): "SMK-37_9NN", their own updater
+const OTHER_SMK = (id) => /^(ota-)?SMK-37_9\d\d$/i.test(id.text);
+// the SMK-37 Pro, SMK-37 Elite, MKE-P37, Starrykey 37 Play and the SMK-37+VA mod: one keyboard under several model
+// names, so a package for one runs on all of them (also "SMK-37", the name other firmwares report); an FM-1 is
+// another device
+const SMK_FAMILY = /^(ota-)?(SMK-37([ +].*)?|MKE-P37|STARRYKEY-37.*)$/i;
+const sameKeyboard = (a, b) => a === b || (SMK_FAMILY.test(a) && SMK_FAMILY.test(b));   // two models
+// an official package on the connected keyboard (the return to the M-Vave firmware): "same" (its model), "other"
+// (another model of the same keyboard: allowed, the page warns), "unknown" (the keyboard does not name its model,
+// as "SMK-37" or "SMK-37+VA": allowed, the page warns), "refuse" (another device: FM-1 and SMK never mix)
+const NAMED = /^(SMK-37 Pro|SMK-37 Elite|MKE-P37|STARRYKEY-37 PLAY)$/i;
+function stockFit(deviceModel, product) {
+  const dm = deviceModel.replace(/^ota-/i, ""), pm = product.split("_")[0];
+  if (!sameKeyboard(dm, pm)) return "refuse";
+  if (dm.toLowerCase() === pm.toLowerCase()) return "same";
+  return NAMED.test(dm) ? "other" : "unknown";
+}
+// the MIDI ports find() probes: the FM-1 / SMK models' and the firmwares' names; other gear is never sent anything.
+// (Stallion) "stallion": the port of a keyboard that runs Stallion (usb.c STR2), so an update over it is found
+const PORT_RE = /fm-1|smk|speak|dub|elite|mke-p37|starry|felucca|sloop|clipper|stallion|melodee|fomni|x0x|makkuro|maku|rainbow|amb-1|choral|orbit|snoop|vector|vox|gen37|ota|composite|sinco|usb-midi/i;
+// a port name without its in / out part (Windows names a device's second port pair "MIDIIN2 (X)" / "MIDIOUT2 (X)")
+const portBase = (n) => n.replace(/^MIDI(?:IN|OUT)(\d*) \((.*)\)$/i, "$2 $1").replace(/[ -](?:in|out|input|output)$/i, "").trim().toLowerCase();
+
+// errors carry a code the pages translate: notfound, model, stopped, noloader, lost, noreturn,
+// mismatch (detail: the identity the device reports), badreq, foreign (detail: the loader's identity),
+// norequest (the loader never asked for data), toomany (more requests than any write needs), timeout (step 1 took
+// too long), oldstock (detail: the stock identity: an M-Vave firmware before V016, refused before anything is sent)
+function fail(code, msg, detail = "") { const e = new Error(msg); e.code = code; e.detail = detail; return e; }
+// a serve() result in words (the log)
+const outcome = (r) => r.finished ? "finished" : r.lost ? "port gone" : r.timeout ? "deadline" : r.norequest ? "no request"
+  : r.toomany ? "too many requests" : "idle";
+
+// every wait has an end (ms): a port open (Windows can leave one pending forever), step 1 in all, the wait for the
+// loader, the loader's first request (our loader gets UPGRADE again at resend), the idle time once writing has
+// started, the wait for the new firmware. Updater's opts.timing overrides single values (the tests)
+// away: with a MidiSession, the time a restarting device gets to leave the USB and come back before a new session
+// looks at it (no MIDI is held meanwhile, so nothing can tell when it has left)
+const TIMING = { open: 3000, step1Idle: 8000, step1Total: 60000, loader: 30000, jumped: 15000, firstReq: 30000,
+  resend: [5000, 15000], idle: 180000, back: 40000, settle: 2000, reboot: 3000, away: 5000, session: 60000 };
+const QMAX = 256;                                      // SysEx messages queued per link: the oldest go first
+// the M-Vave firmwares of the SMK-37 range before V016: their update mode was not built for this installer
+const OLD_STOCK = (id) => SMK_FAMILY.test(id.model) && !/^ota-/i.test(id.model) && !OTHER_SMK(id) && id.version < 16;
+
+// a promise that gives up after ms (the value is then `fallback`); the timer never outlives it
+function within(p, ms, fallback) {
+  let tm;
+  return Promise.race([p, new Promise((r) => { tm = setTimeout(() => r(fallback), ms); })]).finally(() => clearTimeout(tm));
+}
+// the ports this page opened: closed again once the last user lets go (a short delay lets the last answer leave;
+// a find() that opens the port again in the meantime keeps it open)
+const portUsers = new WeakMap();
+async function openPort(port, ms) {
+  portUsers.set(port, (portUsers.get(port) || 0) + 1);
+  const r = await within(Promise.resolve().then(() => port.open()).then(() => true, () => false), ms, "timeout");
+  if (r !== true) releasePort(port, 0);
+  return r;
+}
+function releasePort(port, delay = 300) {
+  setTimeout(() => {
+    const n = (portUsers.get(port) || 1) - 1;
+    portUsers.set(port, n);
+    if (n <= 0 && port.close && port.state !== "disconnected") Promise.resolve().then(() => port.close()).catch(() => {});
+  }, delay);
+}
+
+function pack7(data) {
+  const out = []; let acc = 0, nb = 0;
+  for (const b of data) {
+    acc |= b << nb; nb += 8;
+    while (nb >= 7) { out.push(acc & 0x7F); acc >>>= 7; nb -= 7; }
+  }
+  if (nb) out.push(acc & 0x7F);
+  return out;
+}
+
+function unpack7(s) {
+  const out = []; let acc = 0, nb = 0;
+  for (const b of s) {
+    acc |= (b & 0x7F) << nb; nb += 7;
+    while (nb >= 8) { out.push(acc & 0xFF); acc >>>= 8; nb -= 8; }
+  }
+  return out;
+}
+
+function response(addr, data, fl = 0) {
+  const len = data.length;
+  const body = [0x00, 0x59, 0x30, (len + 8) & 0xFF, ((len + 8) >> 8) & 0xFF, 0, fl,
+    addr & 0xFF, (addr >>> 8) & 0xFF, (addr >>> 16) & 0xFF, (addr >>> 24) & 0xFF,
+    len & 0xFF, (len >> 8) & 0xFF, 0, ...data];
+  let s = 0;
+  for (let i = 6; i < body.length; i++) s += body[i];
+  body.push(~s & 0xFF);
+  return [0xF0, ...pack7(body), 0xF7];
+}
+
+function parseRequest(pkt) {
+  if (pkt[0] !== 0xF0 || pkt[pkt.length - 1] !== 0xF7) return null;
+  const u = unpack7(pkt.slice(1, -1));
+  if (u.length !== 15 || u[0] !== 0 || u[1] !== 0x59 || u[2] !== 0x30) return null;
+  let s = 0;
+  for (let i = 6; i < 14; i++) s += u[i];
+  if ((~s & 0xFF) !== u[14]) return null;
+  return { fl: u[6], addr: (u[7] | (u[8] << 8) | (u[9] << 16) | (u[10] << 24)) >>> 0, len: u[11] | (u[12] << 8) | (u[13] << 16) };
+}
+
+function parseIdentity(pkt) {
+  const d = unpack7(pkt.slice(1, -1));
+  if (d.length !== 34 || d[0] !== 0 || d[1] !== 0x59 || d[2] !== 0x11) return null;
+  const txt = String.fromCharCode(...d.slice(6, 33)).split("\0")[0];   // (some firmwares end the text early)
+  const m = /^([^_]+)_(\d+)$/.exec(txt);
+  return m ? { text: txt, model: m[1], version: parseInt(m[2], 10) } : null;
+}
+
+// one MIDI in/out pair with a SysEx queue
+class Link {
+  constructor(input, output) {
+    this.input = input; this.output = output; this.q = []; this.waiter = null; this.dropped = 0; this.closed = false;
+    input.onmidimessage = (ev) => {
+      if (ev.data[0] !== 0xF0) return;
+      if (this.q.length >= QMAX) { this.q.shift(); this.dropped++; }   // a device that floods: never unbounded
+      this.q.push(Array.from(ev.data));
+      if (this.waiter) { const w = this.waiter; this.waiter = null; w(); }
+    };
+  }
+  get lost() { return this.input.state === "disconnected" || this.output.state === "disconnected"; }
+  // false when the port is gone (unplugged), and then nothing is sent: Chrome does not throw on a disconnected output,
+  // it queues the message until the port opens again (Blink MIDIOutput), so a port the browser reports gone is
+  // never sent anything
+  send(bytes) {
+    if (this.closed || this.lost) return false;
+    try { this.output.send(bytes); return true; } catch (_) { return false; }
+  }
+  drain() { this.q.length = 0; }
+  async read(ms) {
+    if (!this.q.length) {
+      let tm;
+      await Promise.race([new Promise((r) => { this.waiter = r; }), new Promise((r) => { tm = setTimeout(r, ms); })]);
+      clearTimeout(tm);
+      this.waiter = null;
+    }
+    return this.q.shift() || null;
+  }
+  // done with a device that restarts now (after step 1, after step 2): no more messages, but the ports are not
+  // closed (closing a port while its device leaves the USB has hung Chrome's MIDI on Windows). Such a port stays
+  // "pending" and Chrome reopens it when that port comes back; a port's open / close are bookkeeping in Chrome
+  // anyway (Blink MIDIPort): the browser holds the device for as long as the MIDIAccess lives. With a MidiSession,
+  // Updater lets that go at each restart (restart())
+  detach() {
+    if (this.closed) return;
+    this.closed = true;
+    this.input.onmidimessage = null;
+    for (const port of [this.input, this.output]) portUsers.set(port, Math.max(0, (portUsers.get(port) || 1) - 1));
+  }
+  // done with a device that restarts in a moment: the ports are closed now, while it is still there
+  closeNow() {
+    if (this.closed) return;
+    this.closed = true;
+    this.input.onmidimessage = null;
+    for (const port of [this.input, this.output]) {
+      const n = Math.max(0, (portUsers.get(port) || 1) - 1);
+      portUsers.set(port, n);
+      if (n <= 0 && port.close && port.state !== "disconnected") Promise.resolve().then(() => port.close()).catch(() => {});
+    }
+  }
+  // done with this pair: no more messages, and the ports are closed (after the last answer left)
+  close() {
+    if (this.closed) return;
+    this.closed = true;
+    this.input.onmidimessage = null;
+    releasePort(this.input); releasePort(this.output);
+  }
+}
+
+// a device that restarts: wait (at most ms, polling with awaits) until the browser reports its ports as gone. Opening a
+// port whose device is leaving the USB has hung Chrome's MIDI on Windows (the whole browser), so nothing is probed
+// before that (without a MidiSession; with one, no MIDI is held while it restarts)
+async function gone(link, ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end && !link.lost) await sleep(100);
+  return link.lost;
+}
+
+async function handshake(link, tries = 3) {
+  link.drain();
+  for (let t = 0; t < tries; t++) {
+    if (!link.send(HS_QUERY)) return null;
+    const end = Date.now() + 1000;
+    while (Date.now() < end) {
+      const p = await link.read(end - Date.now());
+      if (!p) break;
+      const id = parseIdentity(p);
+      if (id) return id;
+    }
+  }
+  return null;
+}
+
+// ---- the MIDI session: Chrome's MIDI let go while the keyboard restarts (sloop-pro #3) ----
+// "The installer freezes my Chrome browser when installing via usb" (ChanceTheMaker, sloop-pro #3: "MIDI is not
+// released when the device reboots into flashing mode"). Chrome opens every MIDI device in the browser process (on
+// Windows its WinMM handles, every port of every device) while any document holds a MIDIAccess, and lets them go only
+// when the last such session ends (Chromium media/midi/midi_manager_win.cc: "open each device on connected";
+// midi_service.cc: the manager is destroyed with its last session). A page's port.open() / close() never reach it
+// (Blink's MIDIPort: "TODO: Add blink API to perform a real open and close operation"). So the ports Updater closed
+// before a restart released nothing: the page's one MIDIAccess, kept for the page's whole life, kept the keyboard open
+// in Chrome while it left the USB and came back as its loader, and again into the new firmware; on Windows that hung
+// Chrome's MIDI thread, and the browser with it. A page cannot end its own document's session (only the garbage
+// collector does), so, as ChanceTheMaker's sloop-smk does (web/midi-session.js), the MIDIAccess is made in a hidden
+// iframe: removing the iframe ends its session at once. Updater({ session }) lets it go before each restart and takes a
+// new one once the device is back. (Another tab that uses MIDI, the editor too, keeps Chrome's MIDI open: the page
+// asks to close them.) Without a document (a test, a worker) or when the iframe is refused, the page's own navigator
+// gives the access, one for the page's whole life as before (a new one per click left the old one's ports to the
+// garbage collector): release() then only closes the ports, and Updater watches a restarting device as before.
+class MidiSession {
+  constructor(doc = globalThis.document, nav = globalThis.navigator) {
+    this.doc = doc; this.nav = nav; this.frame = null; this.access = null; this.ends = 0; this.isolated = false;
+    this.own = null;                                   // (the page's own MIDIAccess, when there is no iframe)
+  }
+  // a new MIDIAccess (SysEx) in a new document; ms: its deadline (a permission prompt waits for the user)
+  async open(ms = TIMING.session) {
+    await this.release();
+    let frame = null, nav = null;
+    try {
+      if (this.doc && this.doc.createElement && this.doc.body) {
+        frame = this.doc.createElement("iframe");
+        frame.hidden = true;
+        if (frame.setAttribute) { frame.setAttribute("allow", "midi"); frame.setAttribute("aria-hidden", "true"); }
+        this.doc.body.appendChild(frame);
+        const n = frame.contentWindow && frame.contentWindow.navigator;
+        if (n && n.requestMIDIAccess) nav = n;
+      }
+    } catch (_) { nav = null; }
+    if (frame && !nav) { try { frame.remove(); } catch (_) {} frame = null; }
+    const ask = async (n) => {
+      const a = await within(Promise.resolve().then(() => n.requestMIDIAccess({ sysex: true })), ms, null);
+      if (!a) throw fail("denied", `no MIDI access within ${Math.round(ms / 1000)} s (the permission prompt?)`);
+      return a;
+    };
+    if (frame) {
+      this.frame = frame;
+      try {
+        const a = await ask(nav);
+        if (this.frame !== frame) throw fail("denied", "the MIDI session was closed");
+        this.access = a; this.isolated = true;
+        return a;
+      } catch (_) { try { frame.remove(); } catch (_) {} this.frame = null; }   // (then the page's own, as before)
+    }
+    if (!this.nav || !this.nav.requestMIDIAccess) throw fail("denied", "this browser has no Web MIDI");
+    this.own = this.own || await ask(this.nav);
+    this.access = this.own; this.isolated = false;
+    return this.access;
+  }
+  // no more messages, no state events; the iframe removed: Chrome's MIDI session ends (its ports, its devices).
+  // Without an iframe the ports are closed (with a deadline), which is all a page can do
+  async release() {
+    const access = this.access, frame = this.frame;
+    this.access = null; this.frame = null;
+    if (access) {
+      try { access.onstatechange = null; } catch (_) {}
+      const ports = [...access.inputs.values(), ...access.outputs.values()];
+      for (const p of ports) {
+        try { if ("onmidimessage" in p) p.onmidimessage = null; } catch (_) {}
+        try { if ("onstatechange" in p) p.onstatechange = null; } catch (_) {}
+      }
+      if (!frame)
+        await Promise.all(ports.filter((p) => p.close && p.state !== "disconnected")
+          .map((p) => within(Promise.resolve().then(() => p.close()).catch(() => {}), 1000)));
+    }
+    if (frame) { try { frame.remove(); } catch (_) {} this.ends++; }
+  }
+}
+const NO_MIDI = Object.freeze({ inputs: new Map(), outputs: new Map() });   // (no session at this moment)
+
+class Updater {
+  // opts.all: probe every MIDI port, not only PORT_RE's (the handshake query is harmless to other gear)
+  // opts.session: the MidiSession that gave access; it is let go while a device restarts, and taken again after
+  constructor(access, log, opts = {}) {
+    this.access = access;
+    this.log = log || (() => {});
+    this.all = !!opts.all;
+    this.said = new Set();
+    this.t = { ...TIMING, ...(opts.timing || {}) };
+    this.session = opts.session || null;
+  }
+
+  // the MIDI inputs there are, for the "not found" message: " (MIDI: a, b)"
+  seen() {
+    const names = [...this.access.inputs.values()].filter((p) => p.state !== "disconnected").map((p) => p.name || "?");
+    return names.length ? ` (MIDI: ${names.join(", ")})` : " (MIDI: none)";
+  }
+
+  // a device restarts now: with a session, Chrome's MIDI is let go (the device is not held while it leaves the USB and
+  // comes back), and a new session taken after t.away; without one, its ports are watched until the browser reports
+  // them gone. -> the ms it waited after the device left (for the page's seconds)
+  async restart(link) {
+    if (this.session && this.session.isolated && this.session.access) {
+      this.access = NO_MIDI;
+      await this.session.release();
+      this.log(`MIDI let go while the device restarts (${this.t.away / 1000} s)`);
+      await sleep(this.t.away);
+      await this.takeBack(this.t.session);
+      return this.t.away;
+    }
+    await gone(link, 15000);                           // never probe a port while its device is still leaving the USB
+    await sleep(this.t.reboot);
+    return this.t.reboot;
+  }
+  // a new session after restart() (none yet: waitFor tries again)
+  async takeBack(ms) {
+    if (!this.session || this.access !== NO_MIDI) return;
+    try { this.access = await this.session.open(ms); } catch (e) { this.log(`no MIDI access yet: ${e.message}`); }
+  }
+
+  say(t) { if (!this.said.has(t)) { this.said.add(t); this.log(t); } }   // each port line once
+
+  // every in/out pair with the same port name that answers the handshake
+  // SLOOP Pro: deep (the update loader only, after its device left the USB): when no named port answered, the other
+  // ports too, taken only when they answer the handshake (Windows may name the loader generically, "USB MIDI Device")
+  async find(filter, deep = false) {
+    const dev = await this.find1(filter, false);
+    return dev || !deep || this.all ? dev : this.find1(filter, true);
+  }
+  async find1(filter, others) {
+    const outs = [...this.access.outputs.values()];
+    for (const input of this.access.inputs.values()) {
+      if (input.state !== "connected") continue;
+      const name = input.name || "";
+      if (/^MIDI(IN|OUT)\d+ \(/i.test(name)) { this.say(`port "${name}": a device's extra port, not probed`); continue; }
+      if (others ? PORT_RE.test(name) : (!this.all && !PORT_RE.test(name))) {
+        if (!others) this.say(`port "${name}": not probed`);
+        continue;
+      }
+      const output = outs.find((o) => o.name === input.name) ||
+        outs.find((o) => portBase(o.name || "") === portBase(name)) || (outs.length === 1 ? outs[0] : null);
+      if (!output) { this.say(`port "${name}": no output of that name`); continue; }
+      const oi = await openPort(input, this.t.open);
+      const oo = oi === true ? await openPort(output, this.t.open) : oi;
+      if (oo !== true) {
+        if (oi === true) releasePort(input, 0);
+        this.say(`port "${name}": ${oo === "timeout" ? `did not open within ${this.t.open / 1000} s (replug the cable, close other MIDI apps)` : "cannot open (in use?)"}`);
+        continue;
+      }
+      const link = new Link(input, output);
+      const id = await handshake(link, 2);
+      this.say(`port "${name}" / "${output.name}": ${id ? id.text : "no answer"}`);
+      if (id && (!filter || filter(id))) return { link, id, name: input.name };
+      link.close();
+    }
+    return null;
+  }
+
+  // onTick(seconds waited): about once a second, for a live status; the deadline counts the probing too (a find()
+  // still running at the end is left to finish on its own; what it opens it closes again)
+  // deep: true, or after that many ms of waiting: the ports of other names too (find(filter, true))
+  async waitFor(filter, ms, onTick, deep = false) {
+    const t0 = Date.now(), end = t0 + ms;
+    const timer = onTick ? setInterval(() => onTick(Math.round((Date.now() - t0) / 1000)), 1000) : null;
+    try {
+      while (Date.now() < end) {
+        if (this.access === NO_MIDI) await this.takeBack(Math.max(1, end - Date.now()));
+        const run = { gaveUp: false, got: null };
+        const dev = await within(this.find(filter, deep === true || (typeof deep === "number" && Date.now() - t0 >= deep)).then((d) => { if (run.gaveUp && d) d.link.close(); else run.got = d; return d; }),
+          Math.max(0, end - Date.now()), null);
+        if (dev) return dev;
+        run.gaveUp = true;
+        if (run.got) run.got.link.close();             // (it came in just as the time ran out)
+        if (Date.now() < end) await sleep(Math.min(1000, end - Date.now()));
+      }
+      return null;
+    } finally { if (timer) clearInterval(timer); }
+  }
+
+  // serve read requests until the device asks for one of the finish addresses; stops early
+  // when the port disappears (lost: true) instead of waiting out idleMs. o: firstMs (no valid request at all by then:
+  // norequest; idleMs counts only from the first one), totalMs (a hard end: timeout), maxReq (more data requests:
+  // toomany, a device that loops), onWait(s) (no request yet, about once a second), resend (ms after the start with no
+  // request yet: UPGRADE again)
+  async serve(link, image, finishAddr, idleMs, onProgress, o = {}) {
+    const t0 = Date.now(), resend = [...(o.resend || [])];
+    let served = 0, seen = 0, last = t0, said = 0;
+    const out = (r) => {
+      if (link.dropped) this.log(`(${link.dropped} messages dropped: the device sent faster than they were read)`);
+      return { served, ...r };
+    };
+    for (;;) {
+      const now = Date.now();
+      if (o.totalMs && now - t0 > o.totalMs) return out({ finished: false, timeout: true });
+      if (!seen) {
+        if (o.firstMs && now - t0 > o.firstMs) return out({ finished: false, norequest: true });
+        const s = Math.floor((now - t0) / 1000);
+        if (o.onWait && s > said) { said = s; o.onWait(s); }
+        if (resend.length && now - t0 >= resend[0]) { resend.shift(); this.log("no request yet: UPGRADE again"); link.send(UPGRADE); }
+      }
+      const pkt = await link.read(seen ? 1000 : 250);
+      if (!pkt) {
+        if (link.lost) return out({ finished: false, lost: true });
+        if ((seen || !o.firstMs) && Date.now() - last > idleMs) return out({ finished: false });
+        continue;
+      }
+      const r = parseRequest(pkt);
+      if (!r) continue;
+      seen++; last = Date.now();
+      if (r.addr === 0xE0000000 || r.addr === 0xF0000000) {
+        link.send(response(r.addr, [...new TextEncoder().encode("success"), 0]));
+        if (r.addr === finishAddr) return out({ finished: true });
+        continue;
+      }
+      if (r.len > MAXDATA || r.addr + r.len > image.length) throw fail("badreq", `bad request ${r.addr.toString(16)}+${r.len}`);
+      if (o.maxReq && served >= o.maxReq) return out({ finished: false, toomany: true });
+      await sleep(10);
+      if (!link.send(response(r.addr, Array.from(image.subarray(r.addr, r.addr + r.len)), r.fl))) {
+        return out({ finished: false, lost: true });
+      }
+      served++;
+      if (onProgress) onProgress(served, r.addr);
+    }
+  }
+
+  // full install: running firmware -> loader -> new firmware. anyModel: the package may be for another model of the
+  // same keyboard (an SMK-37 Elite package on a unit that reports SMK-37 Pro); never an FM-1 one on an SMK, nor back
+  // opts.refuseOldStock: an M-Vave SMK firmware before V016 is refused before anything is sent (for our packages, not
+  // the return to the official firmware), also when the page did not identify the keyboard first
+  async install(image, product, onStep, anyModel = false, opts = {}) {
+    const step = onStep || (() => {}), t = this.t;
+    const dev = await this.find((id) => !IS_OTA(id));
+    if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)");
+    if (OTHER_SMK(dev.id)) { dev.link.close(); throw fail("other", `the keyboard runs a firmware with its own updater (${dev.id.text}): nothing was sent`, dev.id.text); }
+    if (opts.refuseOldStock && OLD_STOCK(dev.id)) {
+      dev.link.close();
+      throw fail("oldstock", `the keyboard runs M-Vave's firmware ${dev.id.text}: update it to V016 with M-Vave's updater first. Nothing was sent.`, dev.id.text);
+    }
+    const refusal = boardRefusal(dev.id.model, image, opts.fm1Confirmed);   // (the package's board, before anything)
+    if (refusal) { dev.link.close(); throw refusal; }
+    const [model] = product.split("_");
+    if (dev.id.model !== model && !(anyModel && sameKeyboard(dev.id.model, model))) { dev.link.close(); throw fail("model", `the device is ${dev.id.text}, the package is for ${product}`); }
+    step("start", dev.id.text);
+    dev.link.send(UPGRADE);
+    const t1 = Date.now();
+    await sleep(t.settle);
+    const s1 = await this.serve(dev.link, image, 0xE0000000, t.step1Idle, (n) => step("verify", n), { totalMs: t.step1Total });
+    if (s1.finished) { await sleep(40); dev.link.closeNow(); }              // (it restarts into its loader now: close
+    else if (s1.lost) dev.link.detach(); else dev.link.close();             //  before it leaves the USB)
+    this.log(`step 1: ${s1.served} requests in ${Math.round((Date.now() - t1) / 1000)} s: ${outcome(s1)}`);
+    if (s1.timeout) throw fail("timeout", `the keyboard's check of the package did not finish within ${t.step1Total / 1000} s (${s1.served} requests): nothing was written. Switch it off and on.`);
+    // some firmwares restart into their loader at once, without step 1: such a loader (ours, of this keyboard) goes on
+    const jumped = !s1.finished && s1.lost && s1.served === 0;
+    if (!s1.finished && !jumped) throw fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
+    step("loader");
+    const waited = await this.restart(dev.link);      // (Chrome's MIDI let go, or the ports watched until gone)
+    const wait = jumped ? t.jumped : t.loader;
+    // (named ports first, as the reference installer; after 10 s the other ports too: Windows can name the loader
+    // generically, "USB MIDI Device")
+    const ota = await this.waitFor(IS_OTA, wait, (s) => step("wait", s + Math.round(waited / 1000)), 10000);
+    if (jumped && !(ota && OUR_LOADER(ota.id) && sameKeyboard(ota.id.model.replace(/^ota-/i, ""), dev.id.model))) {
+      if (ota) ota.link.close();
+      throw fail(ota ? "foreign" : "lost", ota ? `the device restarted into the update mode of another firmware (${ota.id.text}): nothing was written`
+        : "the device was disconnected after 0 requests: nothing was written", ota ? ota.id.text : "");
+    }
+    if (!ota) throw fail("noloader", `the update loader did not appear within ${Math.round((wait + waited) / 1000)} s. Close Chrome, open this page again, press Connect and the Install or Repair button again: it goes on where it stopped.`);
+    // one of our packages goes only to our loader, of this keyboard: never into another firmware's (the official one
+    // lays the image out its own way). An official package (identity _0NN, the way back) keeps the path it had.
+    const official = /_0\d\d$/.test(product);
+    if (!official && !(OUR_LOADER(ota.id) && sameKeyboard(ota.id.model.replace(/^ota-/i, ""), dev.id.model))) {
+      ota.link.close();
+      throw fail("foreign", `the device started the update mode of another firmware (${ota.id.text}): nothing was written. Switch it off and on.`, ota.id.text);
+    }
+    const s2 = await this.write(ota, image, step);
+    if (!s2.finished) throw this.writeFail(s2);
+    step("written");
+    step("reboot");
+    await this.restart(ota.link);
+    const back = await this.waitFor((id) => !IS_OTA(id), t.back, (s) => step("back", s));
+    if (!back) throw fail("noreturn", "the device did not come back: power-cycle it");
+    back.link.close();
+    if (back.id.text !== product) throw fail("mismatch", `installed, but the device reports ${back.id.text}`, back.id.text);
+    step("done", back.id.text);
+    return back.id.text;
+  }
+
+  // step 2 with the loader found by find()/waitFor(): the loader must ask within firstReq (our loader gets UPGRADE
+  // again meanwhile); the long idle timeout only once it writes; never more requests than three passes of the image
+  async write(ota, image, step) {
+    const t = this.t;
+    step = step || (() => {});
+    this.log(`loader ${ota.id.text} on "${ota.name}"`);
+    ota.link.send(UPGRADE);
+    const t2 = Date.now();
+    const s2 = await this.serve(ota.link, image, 0xF0000000, t.idle, (n) => step("write", n), {
+      firstMs: t.firstReq, maxReq: 3 * Math.ceil(image.length / MAXDATA) + 64,
+      resend: OUR_LOADER(ota.id) ? t.resend : [], onWait: (s) => { if (s >= 3) step("noreq", s); } });
+    const isolated = this.session && this.session.isolated;   // (finished: it restarts into the new firmware; with a
+    if (s2.finished && isolated) { await sleep(40); ota.link.closeNow(); }           //  MidiSession restart() lets MIDI go)
+    else if (s2.finished || s2.lost) ota.link.detach(); else ota.link.close();
+    this.log(`step 2: ${s2.served} requests in ${Math.round((Date.now() - t2) / 1000)} s: ${outcome(s2)}`);
+    return s2;
+  }
+
+  // the error for a write that did not finish
+  writeFail(s2) {
+    if (s2.norequest) return fail("norequest", `the update loader appeared but did not ask for data within ${this.t.firstReq / 1000} s: nothing was written. Replug the USB cable and press Install again.`);
+    if (s2.toomany) return fail("toomany", `the loader kept asking (${s2.served} requests, more than a write needs): stopped. Replug and press Install again.`);
+    return fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Replug and press Install again to resume.`);
+  }
+
+  // resume: the device is already in update mode (loader) -> true when the write finished. Only SLOOP's
+  // own loader is resumed, except for the return to the official firmware (opts.product: the official
+  // package, its identity checked once the FM-1 is back, after Felucca 1.0): that one is the official
+  // loader's own image, as M-UPGRADE would write it. opts.package: the identity of the package being
+  // written; the loader's model must match it (or opts.product's) by install()'s rule (the same model, or with
+  // opts.anyModel another model of the same keyboard), and without either identity nothing is written
+  // SLOOP Pro: opts.verify (with opts.package): after the write, the keyboard is waited for and its identity checked,
+  // as install() does (resolves to the identity)
+  async resume(image, onStep, opts = {}) {
+    const ota = await this.find(IS_OTA, true);
+    if (!ota) return false;
+    if (!OUR_LOADER(ota.id) && !opts.product) {
+      ota.link.close();
+      throw fail("foreign", `the FM-1 is in the update mode of another firmware (${ota.id.text}): finish that update with its own updater`, ota.id.text);
+    }
+    const want = opts.product || opts.package || "";
+    const refusal = boardRefusal(ota.id.model, image, opts.fm1Confirmed);
+    if (refusal) { ota.link.close(); throw refusal; }
+    const [lm, pm] = [ota.id.model.replace(/^ota-/i, ""), want.split("_")[0]];
+    if (!want || (lm !== pm && !(opts.anyModel && sameKeyboard(lm, pm)))) {
+      ota.link.close();
+      throw fail("model", `the device is in the update mode of ${ota.id.text}, the package is for ${want || "an unknown model"}`, ota.id.text);
+    }
+    const step = onStep || (() => {});
+    const s2 = await this.write(ota, image, step);
+    if (!s2.finished) { if (s2.norequest || s2.toomany) throw this.writeFail(s2); return false; }
+    step("written");
+    if (opts.verify && !opts.product) {
+      step("reboot");
+      await this.restart(ota.link);
+      const back = await this.waitFor((id) => !IS_OTA(id), this.t.back, (s) => step("back", s));
+      if (!back) throw fail("noreturn", "the keyboard did not come back after the write: switch it off and on");
+      back.link.close();
+      if (back.id.text !== want) throw fail("mismatch", `written, but the keyboard reports ${back.id.text}`, back.id.text);
+      step("done", back.id.text);
+      return back.id.text;
+    }
+    if (opts.product) {
+      step("reboot");
+      await this.restart(ota.link);
+      const back = await this.waitFor((id) => !IS_OTA(id), this.t.back, (s) => step("back", s));
+      if (!back) throw fail("noreturn", "the FM-1 did not come back after the write: power-cycle it");
+      back.link.close();
+      if (back.id.text !== opts.product) throw fail("mismatch", `written, but the FM-1 reports ${back.id.text}`, back.id.text);
+      step("done", back.id.text);
+    }
+    return true;
+  }
+}
+
+const FM1_PORT = PORT_RE;   // (the older name, for the pages and tests that import it)
+
+// SLOOP Pro: one package per model (SMK-37 Pro, SMK-37 Elite, MKE-P37). The one for the connected keyboard, from its
+// identity (running, or its update loader's): the same model by name -> { product, anyModel: false }; a Starrykey 37
+// Play or an SMK-37 that does not name its model ("SMK-37+VA") -> the SMK-37 Pro one, { anyModel: true }; an FM-1,
+// another device or ChanceTheMaker's SMK firmwares ("SMK-37_9NN", their own updater) -> null (as fm1_install.py
+// pick_package)
+function pickPackage(deviceText, products) {
+  if (OTHER_SMK({ text: deviceText })) return null;
+  const dm = deviceText.split("_")[0].replace(/^ota-/i, "").toLowerCase();
+  const same = products.find((p) => p.split("_")[0].toLowerCase() === dm);
+  if (same) return { product: same, anyModel: false };
+  const kin = products.filter((p) => sameKeyboard(dm.toUpperCase(), p.split("_")[0]));
+  const pro = kin.find((p) => /^SMK-37 Pro_/i.test(p));
+  if (pro) return { product: pro, anyModel: true };
+  return kin.length === 1 ? { product: kin[0], anyModel: true } : null;
+}
+
+// ---- the package's board: read from the package itself, never from an identity ----
+// The FM-1's and the SMK-37's official packages share the head (0x0-0x3FFF) and the update loader, and a third-party
+// FM-1 firmware running on an SMK-37 reports an FM-1 identity: no identity tells the board. Installed on an SMK-37,
+// the FM-1's stock package erases the factory calibration (BTIF / USRTRIM 0xC0000-0xC1FFF) and writes the FM-1's
+// USR image over the SMK's (0xF4000). So the board comes from the package: flash.bin's length (SMK-37 0x9D000,
+// FM-1 0x93000), its region table (app offset 0x60 = flash 0x4060-0x411F, SFC-enciphered with the chip key 0x980F:
+// BTIF and USR at 0xC0000 / 0xF4000 on the SMK-37, 0xE9000 / 0xEA000 on the FM-1) and a USR image's place (UFW
+// entry 50).
+const FM1_STOCK_MSG = "This is the FM-1 firmware. Your keyboard is an SMK-37? Don't install it.";
+const FM1_CONFIRM_MSG = FM1_STOCK_MSG + " On an SMK-37 it erases the keyboard's calibration. Install it only on an FM-1." +
+  " SMK-37 owners whose keyboard runs an FM-1 firmware (it then reports an FM-1): use the SMK-37 package from M-Vave, never this one.";
+const LAYOUT = { smk: { len: 0x9D000, btif: 0xC0000, usr: [0xF4000, 0xA000] }, fm1: { len: 0x93000, btif: 0xE9000, usr: [0xEA000, 0x12000] } };
+const LOADER_MARK = [..."FELUCCA-LOADER-1"].map((c) => c.charCodeAt(0));   // our update loaders (crt0_ldr.S)
+const SMK_MODEL = /^(ota-)?(SMK-37([ +].*)?|MKE-P37|STARRYKEY-37.*)$/i;      // an identity of the SMK-37 keyboard
+const le = (a, o, n) => { let v = 0; for (let i = n - 1; i >= 0; i--) v = v * 256 + a[o + i]; return v; };
+function ufwCipher(b) {                    // the UFW header cipher (key 0xFFFF, its own inverse)
+  const out = Uint8Array.from(b);
+  for (let i = 0, k = 0xFFFF; i < out.length; i++) { out[i] ^= k & 0xFF; k = ((k << 1) ^ (k & 0x8000 ? 0x1021 : 0)) & 0xFFFF; }
+  return out;
+}
+function sfcCipher(b, base, key = 0x980F) {   // the JieLi SFC cipher of the app area (32-byte blocks, its own inverse)
+  const out = Uint8Array.from(b);
+  for (let i = 0; i < out.length; i += 32) {
+    let k = (key ^ ((base + i) >>> 2)) & 0xFFFF;
+    for (let j = i; j < i + 32 && j < out.length; j++) { out[j] ^= k & 0xFF; k = ((k << 1) ^ (k & 0x8000 ? 0x1021 : 0)) & 0xFFFF; }
+  }
+  return out;
+}
+// the package's files: { type, off, size, at, len } (at / len: where a USR image goes)
+function packageFiles(image) {
+  if (image.length < 0x40) return [];
+  const h = ufwCipher(image.subarray(0, 0x40)), n = le(h, 8, 2), out = [];
+  for (let i = 0; i < n && i < 11 && 0x90 + i * 0x50 <= image.length; i++) {
+    const e = ufwCipher(image.subarray(0x40 + i * 0x50, 0x90 + i * 0x50));
+    out.push({ type: le(e, 0, 2), off: le(e, 8, 4), size: le(e, 12, 4), at: le(e, 0x1C, 4), len: le(e, 0x20, 4) });
+  }
+  return out;
+}
+// flash.bin's region table: { VM: [address, size], PRCT, BTIF, USR, ... }
+function regionTable(flash) {
+  const t = {};
+  if (flash.length < 0x4120) return t;
+  const d = sfcCipher(flash.subarray(0x4060, 0x4120), 0x60);
+  for (let r = 0; r < 0xC0; r += 32) {
+    let name = "";
+    for (let i = 16; i < 32 && d[r + i] > 0x20 && d[r + i] < 0x7F; i++) name += String.fromCharCode(d[r + i]);
+    if (name) t[name] = [le(d, r + 4, 4), le(d, r + 8, 4)];
+  }
+  return t;
+}
+// "smk", "fm1" (any sign of the FM-1's layout) or null (not a package, or another layout)
+function packageBoard(image) {
+  const files = packageFiles(image), fl = files.find((f) => f.type === 0);
+  if (!fl || fl.off + fl.size > image.length) return null;
+  const rt = regionTable(image.subarray(fl.off, fl.off + fl.size)), usr = files.filter((f) => f.type === 50);
+  const S = LAYOUT.smk, F = LAYOUT.fm1;
+  if (fl.size === S.len && rt.BTIF && rt.BTIF[0] === S.btif && rt.USR && rt.USR[0] === S.usr[0] && rt.USR[1] === S.usr[1] &&
+      usr.every((u) => u.at === S.usr[0] && u.len === S.usr[1])) return "smk";
+  if (fl.size === F.len || (rt.BTIF && rt.BTIF[0] === F.btif) || (rt.USR && rt.USR[0] === F.usr[0]) || usr.some((u) => u.at === F.usr[0])) return "fm1";
+  return null;
+}
+function hasOurLoader(image) {
+  const m = LOADER_MARK;
+  for (let i = image.indexOf(m[0]); i >= 0 && i + m.length <= image.length; i = image.indexOf(m[0], i + 1)) {
+    let j = 1;
+    while (j < m.length && image[i + j] === m[j]) j++;
+    if (j === m.length) return true;
+  }
+  return false;
+}
+// a stock package (M-Vave's, or any without our update loader): one with flash.bin whose loader is not ours
+const isStockPackage = (image) => packageFiles(image).some((f) => f.type === 0) && !hasOurLoader(image);
+// null, or why image must not be written to a device that reports model (an Error with a code, nothing sent yet):
+// "fm1pkg" an FM-1 layout for an SMK-37; "board" a stock package not laid out for the SMK-37 on one; "fm1confirm" a
+// stock package not laid out for the SMK-37 on a device that reports another model (an FM-1, or an SMK-37 under an
+// FM-1 firmware): only when the user confirmed the device is an FM-1 (fm1Confirmed)
+function boardRefusal(model, image, fm1Confirmed = false) {
+  const board = packageBoard(image), smk = SMK_MODEL.test(model);
+  if (smk && board === "fm1") return fail("fm1pkg", `${FM1_STOCK_MSG} (The device reports ${model}.) Nothing was sent.`);
+  if (!isStockPackage(image) || board === "smk") return null;
+  if (smk) return fail("board", `this package is not laid out for the SMK-37 (flash.bin, region table): nothing was sent`);
+  return fm1Confirmed ? null : fail("fm1confirm", FM1_CONFIRM_MSG);
+}
+
+const $ = (id) => document.getElementById(id);
+const TEXT = {
+  fr: {
+    boardPick: "Ton instrument :",
+    risk: "J'ai compris : firmware non officiel, sans garantie, installé à mes risques. Je ne débranche pas le câble pendant l'écriture.",
+    install: "Installer Stallion",
+    editor: "Ouvrir l'éditeur : édite chaque son depuis ton ordinateur",
+    backT: "Revenir au firmware M-VAVE",
+    back: "Sauvegardez d'abord vos sons avec l'éditeur (onglet Backup). Puis installez le firmware officiel de votre modèle avec M-UPGRADE, l'outil officiel de M-VAVE. Stallion ne touche pas à l'étalonnage : le clavier revient comme avant.",
+    rescueT: "Si quelque chose tourne mal",
+    rescue: "Si l'écriture s'arrête, rebranche le câble et appuie de nouveau sur Installer : le clavier reste en mode mise à jour et l'écriture reprend. Si Stallion ne démarre pas, maintiens OCTAVE− en allumant le clavier (STALLION USB RESCUE), puis installe de nouveau. Sous Windows, si ça reste sur « Passage en mode mise à jour », ferme complètement le navigateur (toutes les fenêtres), rebranche le clavier, rouvre cette page et appuie sur Installer.",
+    other2: "Clavier sous le firmware « Sloop SMK » de ChanceTheMaker (identité SMK-37_9xx) ? Il n'accepte que ses propres paquets : revenez d'abord au firmware M-VAVE (sa page de restauration ou M-UPGRADE), puis installez Stallion.",
+    nomidi: "Ce navigateur n'a pas le Web MIDI. Ouvrez la page dans Chrome ou Edge sur un ordinateur (Safari, iPhone et iPad ne peuvent pas).",
+    loadfail: "Chargement impossible : ",
+    ready: "Prêt : Stallion ",
+    start: "Démarrage",
+    verify: "Vérification",
+    loader: "Passage en mode mise à jour",
+    write: "Écriture",
+    waitota: "Le clavier redémarre en mode mise à jour (ne rien débrancher)… s : ",
+    noreq: "Le mode mise à jour ne demande rien encore… s : ",
+    backwait: "Redémarrage… s : ",
+    reboot: "Redémarrage",
+    done: "Terminé : le clavier tourne ",
+    stopped: "Arrêté. Rebranchez le câble USB et appuyez de nouveau sur Installer.",
+    error: "Erreur : ",
+    needRisk: "Cochez d'abord la case ci-dessus.",
+    denied: "L'accès MIDI (SysEx) a été refusé. Autorisez le MIDI dans les paramètres du site (barre d'adresse) et réessayez.",
+    notfound: "Clavier introuvable. Vérifiez le câble USB (un câble de données), fermez les autres applications MIDI, et réessayez.",
+    other: "Ce clavier tourne sous un firmware SMK de ChanceTheMaker (Felucca SMK, Sloop SMK, Melodee SMK, Doom), qui n'accepte que ses propres paquets. Rien n'a été écrit. Revenez d'abord au firmware M-VAVE, puis installez Stallion.",
+    fm1: "L'appareil branché est une FM-1. Rien n'a été écrit. Installez Stallion dessus avec l'installateur FM-1 :",
+    toFm1: "Installer sur FM-1",
+    nopkg: "Aucun paquet Stallion pour cet appareil : ",
+    model: "Le modèle ne correspond pas : ",
+    lost: "La connexion USB a été perdue. Rebranchez et réessayez.",
+    noloader: "Le clavier en mode mise à jour est introuvable par Chrome. N'éteignez pas le clavier : fermez Chrome complètement (toutes les fenêtres), rouvrez cette page et appuyez de nouveau sur Installer : ça reprend où ça s'est arrêté.",
+    noreturn: "Le clavier n'est pas revenu. Éteignez-le et rallumez-le.",
+    mismatch: "Écrit, mais le clavier annonce une autre version : ",
+    foreign: "Le clavier est en mode mise à jour d'un autre firmware. Terminez cette mise à jour avec son propre outil (M-UPGRADE), puis réessayez : ",
+    oldstock: "Ce clavier a un firmware M-VAVE plus ancien que V016 : mettez-le d'abord à jour en V016 avec M-UPGRADE. Rien n'a été envoyé : ",
+    timeout: "La vérification du paquet par le clavier n'a pas fini à temps : rien n'a été écrit. Éteignez-le et rallumez-le, puis réessayez.",
+    norequest: "Le mode mise à jour est apparu mais n'a rien demandé : rien n'a été écrit. Rebranchez le câble et réessayez.",
+    toomany: "Le clavier redemandait sans fin : arrêté. Rebranchez le câble et réessayez.",
+    badreq: "Le clavier a demandé des données hors du paquet : arrêté. Rechargez la page et réessayez : ",
+    fm1confirm: "Ce paquet est pour la FM-1 : rien n'a été écrit.",
+    fm1pkg: "Ce paquet est pour la FM-1 : rien n'a été écrit.",
+    board: "Ce paquet n'est pas pour cette carte : rien n'a été écrit.",
+    badpkg: "Le fichier à installer est endommagé. Rechargez la page.",
+    leave: "Écriture en cours. Ne fermez pas la page.",
+    device: "Appareil : ",
+    pkgFor: " → paquet ",
+    license: "GPL-3.0, sans garantie. Source :",
+    h1: "Installer Stallion sur le SMK-37 Pro",
+    lead: "Stallion fait du M-VAVE SMK-37 Pro un vrai synthétiseur polyphonique, joué avec ses 37 touches, 16 pads, 4 faders, les molettes et une pédale de sustain. L'installation se fait dans cette page : rien à télécharger.",
+    proOnly: "Stallion fonctionne sur le SMK-37 Pro uniquement. Cette page refuse les autres modèles (SMK-37 Elite, MKE-P37, Starrykey 37 Play) avant d'envoyer quoi que ce soit.",
+    proOnlyT: "SMK-37 Pro uniquement",
+    stepsT: "Avant de commencer",
+    s1T: "Utilise Chrome ou Edge sur un ordinateur, ou Chrome sur Android",
+    s1: "Safari, et tous les navigateurs sur iPhone et iPad, ne peuvent pas installer Stallion : ils n'ont pas le Web MIDI.",
+    s2T: "Branche le clavier directement sur l'ordinateur",
+    s2: "Utilise un câble USB qui transmet les données, sans hub. Ferme les autres applis et onglets qui utilisent le MIDI (logiciels de musique, éditeurs, M-UPGRADE).",
+    s3T: "Coche la case, appuie sur Installer et attends « Terminé »",
+    s3: "Le clavier redémarre en mode mise à jour, Stallion est écrit, puis le clavier redémarre. Stallion n'écrit jamais l'étalonnage d'usine du clavier.",
+    backupT: "Tu utilises déjà Stallion ?",
+    backup: "Fais d'abord une sauvegarde de tes sons avec l'éditeur (onglet Backup).",
+    afterT: "Après l'installation",
+    logT: "Journal technique (pour signaler un bug)",
+    homeLink: "Ce que fait Stallion : les moteurs, la matrice, l'éditeur",
+    notpro: "Stallion fonctionne sur le SMK-37 Pro uniquement. Rien n'a été écrit. Ce clavier s'annonce comme : ",
+  },
+  en: {
+    boardPick: "Your instrument:",
+    risk: "I understand: unofficial firmware, no warranty, installed at my own risk. I will not unplug the cable while it writes.",
+    install: "Install Stallion",
+    editor: "Open the editor: edit every sound from your computer",
+    backT: "Back to the M-VAVE firmware",
+    back: "First back up your sounds with the editor (Backup tab). Then install your model's official firmware with M-UPGRADE, M-VAVE's own updater. Stallion never touches the calibration: the keyboard comes back as it was.",
+    rescueT: "If something goes wrong",
+    rescue: "If the write stops, replug the cable and press Install again: the keyboard stays in update mode and the write carries on. If Stallion does not start, hold OCTAVE− while you switch the keyboard on (STALLION USB RESCUE), then install again. On Windows, if it stays at “Switching to update mode”, close the browser completely (every window), replug the keyboard, open this page again and press Install.",
+    other2: "Keyboard running ChanceTheMaker's “Sloop SMK” (identity SMK-37_9xx)? It takes only its own packages: go back to the M-VAVE firmware first (its restore page or M-UPGRADE), then install Stallion.",
+    nomidi: "This browser has no Web MIDI. Open the page in Chrome or Edge on a computer (Safari, iPhone and iPad cannot do it).",
+    loadfail: "Could not load: ",
+    ready: "Ready: Stallion ",
+    start: "Starting",
+    verify: "Verifying",
+    loader: "Switching to update mode",
+    write: "Writing",
+    waitota: "The keyboard restarts into update mode (unplug nothing)… s: ",
+    noreq: "The update mode has not asked for anything yet… s: ",
+    backwait: "Restarting… s: ",
+    reboot: "Restarting",
+    done: "Done: the keyboard runs ",
+    stopped: "Stopped. Replug the USB cable and press Install again.",
+    error: "Error: ",
+    needRisk: "Tick the box above first.",
+    denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and try again.",
+    notfound: "Keyboard not found. Check the USB cable (a data cable), close other apps that use MIDI, and try again.",
+    other: "This keyboard runs one of ChanceTheMaker's SMK firmwares (Felucca SMK, Sloop SMK, Melodee SMK, Doom), which take only their own packages. Nothing was written. Go back to the M-VAVE firmware first, then install Stallion.",
+    fm1: "The connected device is an FM-1. Nothing was written. Install Stallion on it with the FM-1 installer:",
+    toFm1: "Install on FM-1",
+    nopkg: "No Stallion package for this device: ",
+    model: "The model does not match: ",
+    lost: "The USB connection was lost. Replug it and try again.",
+    noloader: "Chrome does not see the keyboard in update mode. Do not switch the keyboard off: close Chrome completely (every window), open this page again and press Install again: it goes on where it stopped.",
+    noreturn: "The keyboard did not come back. Switch it off and on.",
+    mismatch: "Written, but the keyboard reports another version: ",
+    foreign: "The keyboard is in the update mode of another firmware. Finish that update with its own updater (M-UPGRADE), then try again: ",
+    oldstock: "This keyboard runs an M-VAVE firmware older than V016: update it to V016 with M-UPGRADE first. Nothing was sent: ",
+    timeout: "The keyboard's check of the package did not finish in time: nothing was written. Switch it off and on, then try again.",
+    norequest: "The update mode appeared but asked for nothing: nothing was written. Replug the cable and try again.",
+    toomany: "The keyboard kept asking: stopped. Replug the cable and try again.",
+    badreq: "The keyboard asked for data outside the package: stopped. Reload the page and try again: ",
+    fm1confirm: "This package is for the FM-1: nothing was written.",
+    fm1pkg: "This package is for the FM-1: nothing was written.",
+    board: "This package is not for this board: nothing was written.",
+    badpkg: "The file to install is damaged. Reload the page.",
+    leave: "Writing. Do not close the page.",
+    device: "Device: ",
+    pkgFor: " → package ",
+    license: "GPL-3.0, no warranty. Source:",
+    h1: "Install Stallion on the SMK-37 Pro",
+    lead: "Stallion turns the M-VAVE SMK-37 Pro into a deep polyphonic synthesizer, played from its 37 keys, 16 pads, 4 faders, the wheels and a sustain pedal. Installing takes place in this page: there is nothing to download.",
+    proOnly: "Stallion runs on the SMK-37 Pro only. This page refuses the other models (SMK-37 Elite, MKE-P37, Starrykey 37 Play) before it sends anything.",
+    proOnlyT: "SMK-37 Pro only",
+    stepsT: "Before you start",
+    s1T: "Use Chrome or Edge on a computer, or Chrome on Android",
+    s1: "Safari, and every browser on iPhone and iPad, cannot install Stallion: they have no Web MIDI.",
+    s2T: "Connect the keyboard straight to the computer",
+    s2: "Use a USB cable that carries data, and no hub. Close other apps and browser tabs that use MIDI (recording software, editors, M-UPGRADE).",
+    s3T: "Tick the box, press Install and wait for Done",
+    s3: "The keyboard restarts into update mode, Stallion is written, and the keyboard restarts again. Stallion never writes the keyboard's factory calibration.",
+    backupT: "Already using Stallion?",
+    backup: "Save a backup of your sounds with the editor first (the Backup tab).",
+    afterT: "After installing",
+    logT: "Technical log (for bug reports)",
+    homeLink: "What Stallion does: the engines, the matrix, the editor",
+    notpro: "Stallion runs on the SMK-37 Pro only. Nothing was written. This keyboard reports itself as: ",
+  },
+  ja: {
+    boardPick: "お使いの楽器：",
+    risk: "非公式・無保証のファームウェアを自己責任で入れることを理解しました。書き込み中はケーブルを抜きません。",
+    install: "Stallion をインストール",
+    editor: "エディタを開く：パソコンからすべての音色を編集",
+    backT: "M-VAVE のファームウェアに戻す",
+    back: "まずエディタで音色をバックアップ（Backup タブ）。そのあと M-VAVE 公式のアップデーター M-UPGRADE でモデルの公式ファームウェアを入れてください。キャリブレーションはそのままです。",
+    rescueT: "うまくいかないとき",
+    rescue: "書き込みが止まったら、ケーブルを挿し直してもう一度「インストール」を押してください（書き込みモードのまま続きから再開します）。Stallion が起動しないときは、OCTAVE− を押しながら電源を入れ（STALLION USB RESCUE）、もう一度インストールしてください。Windows で「書き込みモードに切り替え中」のまま進まないときは、ブラウザを完全に閉じ（すべてのウィンドウ）、キーボードを挿し直し、このページを開き直して「インストール」を押してください。",
+    other2: "ChanceTheMaker の「Sloop SMK」（SMK-37_9xx）が入っている場合：その専用パッケージしか受け付けません。先に M-VAVE のファームウェアに戻してから Stallion を入れてください。",
+    nomidi: "このブラウザには Web MIDI がありません。パソコンの Chrome か Edge で開いてください（Safari と iPhone・iPad では使えません）。",
+    loadfail: "読み込めませんでした: ",
+    ready: "準備完了：Stallion ",
+    start: "開始します",
+    verify: "確認中",
+    loader: "書き込みモードに切り替え中",
+    write: "書き込み中",
+    waitota: "書き込みモードで再起動中（抜かないで）… 秒: ",
+    noreq: "書き込みモードからの要求待ち… 秒: ",
+    backwait: "再起動中… 秒: ",
+    reboot: "再起動中",
+    done: "完了：",
+    stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    error: "エラー: ",
+    needRisk: "先に上のチェックを入れてください。",
+    denied: "MIDI（SysEx）の使用が許可されませんでした。サイト設定で MIDI を許可して、もう一度押してください。",
+    notfound: "キーボードが見つかりません。USB ケーブルを確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
+    other: "このキーボードは ChanceTheMaker の SMK ファームウェアで動いています。専用パッケージしか受け付けないため、何も書き込んでいません。先に M-VAVE のファームウェアに戻してください。",
+    fm1: "接続されているのは FM-1 です。何も書き込んでいません。FM-1 のインストーラーでインストールしてください：",
+    toFm1: "FM-1 にインストール",
+    nopkg: "この機器用の Stallion パッケージがありません: ",
+    model: "モデルが合いません: ",
+    lost: "USB の接続が切れました。挿し直してもう一度押してください。",
+    noloader: "Chrome から書き込みモードのキーボードが見えません。電源は切らずに、Chrome を完全に閉じてこのページを開き直し、もう一度押してください（続きから再開します）。",
+    noreturn: "キーボードが戻ってきません。電源を入れ直してください。",
+    mismatch: "書き込みは終わりましたが、別のバージョンを報告しています: ",
+    foreign: "キーボードは別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で終えてから、もう一度: ",
+    oldstock: "このキーボードの M-VAVE ファームウェアは V016 より古いです。先に M-UPGRADE で V016 に更新してください。何も送っていません: ",
+    timeout: "キーボードのパッケージ確認が時間内に終わりませんでした。何も書き込んでいません。電源を入れ直してもう一度。",
+    norequest: "書き込みモードになりましたが要求がありません。何も書き込んでいません。挿し直してもう一度。",
+    toomany: "キーボードが要求を繰り返しました。止めました。挿し直してもう一度。",
+    badreq: "キーボードがパッケージ外のデータを要求しました。止めました。再読み込みしてもう一度: ",
+    fm1confirm: "これは FM-1 用のパッケージです。何も書き込んでいません。",
+    fm1pkg: "これは FM-1 用のパッケージです。何も書き込んでいません。",
+    board: "このボード用のパッケージではありません。何も書き込んでいません。",
+    badpkg: "インストールするファイルが壊れています。ページを再読み込みしてください。",
+    leave: "書き込み中です。ページを閉じないでください。",
+    device: "機器: ",
+    pkgFor: " → パッケージ ",
+    license: "GPL-3.0、無保証。ソース:",
+    h1: "SMK-37 Pro に Stallion をインストール",
+    lead: "Stallion は M-VAVE SMK-37 Pro を本格的なポリフォニック・シンセサイザーに変えます。37 鍵、16 パッド、4 フェーダー、ホイール、サスティンペダルで演奏できます。インストールはこのページで完了します。ダウンロードは不要です。",
+    proOnly: "Stallion が動くのは SMK-37 Pro だけです。このページは他のモデル（SMK-37 Elite、MKE-P37、Starrykey 37 Play）を、何も送る前に断ります。",
+    proOnlyT: "SMK-37 Pro 専用",
+    stepsT: "はじめる前に",
+    s1T: "パソコンの Chrome か Edge、または Android の Chrome を使う",
+    s1: "Safari と、iPhone・iPad のすべてのブラウザは Web MIDI がないため、インストールできません。",
+    s2T: "キーボードをパソコンに直接つなぐ",
+    s2: "データ通信できる USB ケーブルを使い、ハブは通さないでください。MIDI を使う他のアプリやタブ（音楽ソフト、エディタ、M-UPGRADE）は閉じてください。",
+    s3T: "チェックを入れ、「インストール」を押して「完了」まで待つ",
+    s3: "キーボードが書き込みモードで再起動し、Stallion が書き込まれ、もう一度再起動します。工場のキャリブレーションは書き換えません。",
+    backupT: "すでに Stallion を使っていますか？",
+    backup: "先にエディタで音色のバックアップを保存してください（Backup タブ）。",
+    afterT: "インストールのあと",
+    logT: "技術ログ（不具合の報告用）",
+    homeLink: "Stallion でできること：音源エンジン、マトリクス、エディタ",
+    notpro: "Stallion が動くのは SMK-37 Pro だけです。何も書き込んでいません。このキーボードの名乗り: ",
+  },
+};
+const pickLang = () => { const l = (navigator.language || "en").toLowerCase(); return l.startsWith("fr") ? "fr" : l.startsWith("ja") ? "ja" : "en"; };
+let lang = pickLang();
+try { lang = localStorage.getItem("stallion-smk37-lang") || lang; } catch (_) {}
+const t = (k) => (TEXT[lang] && TEXT[lang][k]) ?? TEXT.en[k] ?? k;
+let lastKey = null, lastArg = "", lastCls = "";
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll(".lang").forEach((b) => b.setAttribute("aria-current", String(b.dataset.l === lang)));
+  if (lastKey) setStatus(t(lastKey) + lastArg, lastCls);
+}
+document.querySelectorAll(".lang").forEach((b) => b.addEventListener("click", () => {
+  lang = b.dataset.l;
+  try { localStorage.setItem("stallion-smk37-lang", lang); } catch (_) {}
+  applyLang();
+}));
+applyLang();
+function setStatus(txt, cls = "") { $("status").textContent = txt; $("status").className = cls; }
+/* the link to the FM-1 installer shows with the message that names an FM-1, and only then */
+const sayK = (k, arg = "", cls = "") => { lastKey = k; lastArg = arg; lastCls = cls; setStatus(t(k) + arg, cls); $("next").hidden = k !== "fm1"; };
+const log = (s) => { $("log").textContent += s + "\n"; $("log").scrollTop = 1e9; };
+const meta = {"version": "1.0", "pkgs": [{"product": "SMK-37 Pro_104210", "pkg": "../../firmware/stallion-smk37-1.0.fwsc", "sha256": "56cf2d8078d69eed132f158f02b75ed0513f3bf196766761c3c6dcec9b07b538"}]};   // { version, pkgs: [{ product, pkg, sha256 }] }: one package per model
+const images = new Map();                          // product -> logical image
+let writing = false;
+const lockAll = (on) => {
+  writing = on;
+  $("go").disabled = on || !images.size;
+  document.querySelectorAll("input").forEach((i) => { i.disabled = on; });
+};
+window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
+
+(async () => {
+  if (!navigator.requestMIDIAccess) { sayK("nomidi", "", "bad"); return; }
+  try {
+    /* never the browser's old copy: no-cache asks the server first, a mismatch is fetched once more past the cache;
+       a package whose SHA-256 or identity is not the one this page was made with is never offered */
+    const sha = async (b) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", b))].map((x) => x.toString(16).padStart(2, "0")).join("");
+    const check = self.crypto && crypto.subtle;
+    for (const p of meta.pkgs) {
+      const get = async (cache) => {
+        const r = await fetch(p.pkg, { cache });
+        if (!r.ok) throw new Error(`${p.pkg}: HTTP ${r.status}`);
+        return new Uint8Array(await r.arrayBuffer());
+      };
+      let pkg = await get("no-cache");
+      if (check && (await sha(pkg)) !== p.sha256) pkg = await get("reload");
+      if (productOf(pkg) !== p.product) { sayK("badpkg", ` (${p.product})`, "bad"); return; }
+      if (check) {
+        const h = await sha(pkg);
+        if (h !== p.sha256) { sayK("badpkg", ` (${p.product})`, "bad"); log(`${p.product}: sha256 ${h}, expected ${p.sha256}`); return; }
+      }
+      images.set(p.product, logicalImage(pkg));
+    }
+    sayK("ready", `${meta.version} (${[...images.keys()].map((k) => k.split("_")[0]).join(", ")})`);
+    lockAll(writing);
+  } catch (e) { sayK("loadfail", e.message, "bad"); }
+})();
+
+let total = 74 + 1256;                             /* reads: step 1, step 2 (head + the SMK-37's app area) */
+const step = (k, a) => {
+  log(`${k} ${a ?? ""}`);
+  if (k === "start") sayK("start");
+  if (k === "verify") { sayK("verify"); $("bar").value = Math.min(100, (a / total) * 100); }
+  if (k === "loader") sayK("loader");
+  if (k === "write") { sayK("write"); $("bar").value = Math.min(100, ((74 + a) / total) * 100); }
+  if (k === "wait") sayK("waitota", a);
+  if (k === "noreq") sayK("noreq", a);
+  if (k === "reboot") sayK("reboot");
+  if (k === "back") sayK("backwait", a);
+  if (k === "done") { $("bar").value = 100; sayK("done", a || "", "good"); }
+};
+const failed = (e) => {
+  if (e && e.code && TEXT.en[e.code]) sayK(e.code, e.code === "other" || e.code === "fm1" ? "" : e.detail || "", "bad");
+  else sayK("error", e && e.message, "bad");
+  log(String(e && e.stack || e));
+};
+const pfail = (code, detail = "") => { const e = new Error(code); e.code = code; e.detail = detail; return e; };
+/* the package for this device, by its identity: Stallion runs on the SMK-37 Pro only (the other models of the same
+   keyboard, the SMK-37 Elite, the MKE-P37 and the Starrykey 37 Play, are refused before anything is sent) */
+function choose(idText) {
+  if (OTHER_SMK({ text: idText })) throw pfail("other");
+  const dm = idText.split("_")[0].replace(/^ota-/i, "");
+  if (/^FM-1$/i.test(dm)) throw pfail("fm1");
+  if (!/^SMK-37 Pro$/i.test(dm)) throw pfail("notpro", dm);
+  const c = pickPackage(idText, [...images.keys()]);
+  if (!c) throw pfail("nopkg", idText);
+  return c;
+}
+
+/* Chrome's MIDI in a disposable document (MidiSession, after ChanceTheMaker's sloop-smk; sloop-pro #3): held only while
+   the page talks to the keyboard, let go while it restarts (into its loader, into Stallion) and once it is done, so
+   Chrome does not hold the keyboard while it leaves the USB and comes back (on Windows that froze Chrome) */
+const session = new MidiSession(document, navigator);
+window.addEventListener("pagehide", () => { session.release(); });
+$("go").addEventListener("click", async () => {
+  if (writing) return;
+  if (!$("risk").checked) { sayK("needRisk", "", "bad"); return; }
+  lockAll(true);
+  $("bar").value = 0;
+  let midi;
+  try { midi = await session.open(); }
+  catch (e) { sayK("denied", "", "bad"); log(String(e && e.message || e)); await session.release(); lockAll(false); return; }
+  try {
+    const up = new Updater(midi, log, { session });
+    /* the keyboard on its named port, running or left in update mode; a loader under a generic name: looked for too */
+    const dev = (await up.find(null)) || (await up.find((id) => /^ota-/i.test(id.model), true));
+    const ota = dev && /^ota-/i.test(dev.id.model) ? dev : null;   /* left in update mode: the write resumes */
+    if (!dev) throw pfail("notfound", up.seen());
+    dev.link.close();
+    const c = choose(dev.id.text);
+    const image = images.get(c.product);
+    total = 74 + Math.ceil(image.length / 512);
+    $("device").textContent = t("device") + dev.id.text + t("pkgFor") + c.product;
+    if (ota) {                                     /* the write finished, then the keyboard is checked as install() does */
+      if (!(await up.resume(image, step, { package: c.product, anyModel: c.anyModel, verify: true }))) throw pfail("stopped");
+    } else await up.install(image, c.product, step, c.anyModel, { refuseOldStock: true });
+  } catch (e) { failed(e); }
+  await session.release();                         /* (done or not: the keyboard is not held between two clicks) */
+  lockAll(false);
+});
+/* the site without internet (webapp/sw.js), as the FM-1 installer: opened once online, this page and its packages are
+   kept by the browser */
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol))
+  navigator.serviceWorker.register("../sw.js").catch(() => {});
+</script>
+</body>
+</html>

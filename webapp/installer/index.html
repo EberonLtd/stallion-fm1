@@ -1,0 +1,1157 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: GPL-3.0-only
+     Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+     Changes: Copyright (C) 2026 Eberon Limited (John Gorman)
+     Stallion's FM-1 installer (webapp/installer/): web/make_site.py inlines fm1pkg.js, fm1ota.js, the package's metadata,
+     web/site.css, the logo and the counts; the install script below is the one Felucca and SLOOP made, kept as it is -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Install Stallion, the synthesizer firmware, on the M-VAVE FM-1 from your browser.">
+<!--PWA--><link rel="manifest" href="../stallion.webmanifest"><meta name="theme-color" content="#0B1E36"><link rel="icon" href="../icon-192.png"><!--/PWA-->
+<title>Stallion installer for the FM-1</title>
+<style>
+  @font-face { font-family: "Stallion Pixel"; src: url("../stallion-pixel.ttf") format("truetype"); font-display: swap; }
+/* SPDX-License-Identifier: GPL-3.0-only
+   Copyright (C) 2026 Eberon Limited (John Gorman)
+   Stallion's site style, shared by the front page and both installers (web/make_site.py puts it in each page at its
+   SITE_CSS marker). The colours are the logo's (tools/gen_logo.py): deep-sea navy, sail white, Wicklow oak, rust, sea.
+   Each colour means one thing everywhere:
+     oak    what you do: install buttons, links that act, the step numbers
+     sea    information: notes, the browser rule, captions' headings
+     rust   a warning: do not unplug, no warranty, an error
+     sail   the text
+   Large type for weak eyes: body 20 px, nothing under 18 px; headings in the FM-1's own pixel font (Terminus, OFL)
+   at multiples of 16 px so its pixels stay sharp. No thin lines: rules and borders are 3 px or more. */
+:root {
+  --navy: #0b1e36; --deep: #06111f; --panel: #12294b; --edge: #2c4a78;
+  --sail: #f3eee2; --soft: #d9d3c4; --oak: #eaa54c; --oak-deep: #d98e2f; --rust: #ef7a5c; --rust-deep: #b8432a;
+  --sea: #6cc3dc; --sea-deep: #3b8fa8;
+  --body: "Avenir Next", "Segoe UI", "Helvetica Neue", Ubuntu, Roboto, "Noto Sans", Arial, sans-serif;
+  --pixel: "Stallion Pixel", "Courier New", monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--navy); color: var(--sail); font: 500 20px/1.6 var(--body); }
+img { max-width: 100%; height: auto; }
+a { color: var(--oak); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+a:hover { color: var(--sail); }
+:focus-visible { outline: 4px solid var(--sea); outline-offset: 4px; border-radius: 6px; }
+p { margin: 0 0 18px; }
+strong, b { font-weight: 700; color: var(--sail); }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+.narrow { max-width: 760px; margin: 0 auto; padding: 0 24px; }
+@media (max-width: 600px) { .wrap, .narrow { padding: 0 16px; } body { font-size: 19px; } }
+
+/* the pixel font for headings: Terminus, drawn for 16 px; kept at 32, 48, 64 */
+.px, h1, h2, h3 { font-family: var(--pixel); font-weight: 400; letter-spacing: 0; text-transform: uppercase;
+                  -webkit-font-smoothing: none; font-smooth: never; }
+h1 { font-size: 64px; line-height: 1.05; margin: 0 0 24px; }
+h2 { font-size: 48px; line-height: 1.1; margin: 0 0 24px; }
+h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
+@media (max-width: 700px) { h1 { font-size: 48px; } h2 { font-size: 32px; } h3 { font-size: 32px; } }
+@media (max-width: 380px) { h1 { font-size: 32px; } }
+.kicker { font: 400 32px/1.1 var(--pixel); color: var(--sea); text-transform: uppercase; margin: 0 0 12px; display: block; }
+.lead { font-size: 24px; line-height: 1.5; max-width: 40em; }
+@media (max-width: 600px) { .lead { font-size: 21px; } }
+
+/* the header: the logo, the language buttons */
+.bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-top: 20px; padding-bottom: 20px; flex-wrap: wrap; }
+.bar .logo { display: block; line-height: 0; }
+.bar .logo svg { display: block; width: 260px; height: auto; border-radius: 12px; }
+@media (max-width: 600px) { .bar .logo svg { width: 190px; } }
+.langs { display: flex; gap: 8px; flex-wrap: wrap; }
+.lang { font: 600 18px/1 var(--body); color: var(--sail); background: transparent; border: 3px solid var(--edge);
+        border-radius: 999px; padding: 10px 16px; cursor: pointer; min-height: 44px; }
+.lang:hover { border-color: var(--sail); }
+.lang[aria-current="true"] { background: var(--sail); color: var(--navy); border-color: var(--sail); }
+
+/* the sail: white and rust stripes, the logo's square sail, as a divider */
+.sail { height: 14px; background: repeating-linear-gradient(90deg, var(--sail) 0 56px, var(--rust-deep) 56px 112px); }
+.sea-line { height: 10px; background: radial-gradient(circle at 10px -4px, transparent 9px, var(--sea-deep) 10px 13px, transparent 14px) 0 0 / 40px 10px repeat-x; opacity: .9; }
+
+/* buttons: oak blocks, big */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 64px; padding: 14px 28px;
+       font: 400 32px/1 var(--pixel); text-transform: uppercase; text-decoration: none; color: var(--deep);
+       background: var(--oak); border: 4px solid var(--oak); border-radius: 14px; cursor: pointer; }
+.btn:hover { background: var(--sail); border-color: var(--sail); color: var(--deep); }
+.btn.ghost { background: transparent; color: var(--sail); border-color: var(--sail); }
+.btn.ghost:hover { background: var(--sail); color: var(--deep); }
+.btn small { font: 600 18px/1.2 var(--body); text-transform: none; display: block; }
+.btn.text { font: 700 22px/1.3 var(--body); text-transform: none; }
+.btn[disabled] { background: var(--panel); border-color: var(--edge); color: var(--soft); cursor: default; }
+@media (max-width: 600px) { .btn { font-size: 32px; padding: 12px 18px; } }
+
+/* notes: sea for information, rust for a warning */
+.note, .warn { border-left: 8px solid var(--sea); background: var(--panel); padding: 16px 20px; border-radius: 0 12px 12px 0;
+               margin: 0 0 20px; }
+.warn { border-left-color: var(--rust); }
+.note b, .warn b { display: block; font: 400 32px/1.1 var(--pixel); text-transform: uppercase; margin-bottom: 6px; }
+.note b { color: var(--sea); } .warn b { color: var(--rust); }
+.note p:last-child, .warn p:last-child { margin: 0; }
+
+/* the device: a drawn frame around a screen, so a screenshot reads as the product */
+.device { display: block; background: #04070d; border: 4px solid var(--edge); border-radius: 28px; padding: 16px;
+          box-shadow: 0 24px 48px rgba(0, 0, 0, .45), inset 0 0 0 4px #000; }
+.device img { display: block; width: 100%; height: auto; image-rendering: pixelated; border-radius: 6px; }
+.photo { display: block; width: 100%; height: auto; border-radius: 22px; }
+
+/* steps: big oak numbers */
+.steps { list-style: none; counter-reset: s; margin: 0; padding: 0; display: grid; gap: 18px; }
+.steps > li { counter-increment: s; position: relative; padding: 18px 20px 18px 92px; background: var(--panel);
+              border-radius: 16px; min-height: 84px; }
+.steps > li::before { content: counter(s); position: absolute; left: 20px; top: 14px; width: 56px; height: 56px;
+                      display: grid; place-items: center; font: 400 48px/1 var(--pixel); color: var(--deep);
+                      background: var(--oak); border-radius: 12px; }
+.steps > li b { display: block; font-size: 22px; }
+
+/* the footer */
+.foot { background: var(--deep); padding: 40px 0 48px; margin-top: 64px; }
+.foot p { color: var(--soft); font-size: 18px; }
+.foot .copy { color: var(--sail); font-weight: 700; font-size: 20px; }
+[hidden] { display: none !important; }
+
+
+  /* the installer's own parts */
+  .boards { margin: 8px 0 32px; }
+  .boards p { font-size: 20px; margin: 0 0 10px; color: var(--soft); }
+  .boards div { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .boards a { display: block; text-align: center; font: 400 32px/1.1 var(--pixel); text-transform: uppercase; padding: 18px 8px;
+              border: 4px solid var(--edge); color: var(--sail); text-decoration: none; border-radius: 14px; }
+  .boards a:hover { border-color: var(--sail); }
+  .boards a[aria-current="page"] { background: var(--sail); color: var(--navy); border-color: var(--sail); }
+  .hero-i { padding: 24px 0 8px; }
+  .panel { background: var(--panel); border-radius: 20px; padding: 28px; margin: 0 0 28px; }
+  @media (max-width: 600px) { .panel { padding: 20px 16px; } }
+  button#go { width: 100%; min-height: 84px; font-size: 48px; }
+  #status { margin: 18px 0 0; min-height: 1.6em; font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  #status.bad { color: var(--rust); } #status.good { color: var(--sea); }
+  #device { color: var(--soft); font-size: 18px; min-height: 1.4em; margin: 12px 0 0; }
+  progress { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 18px; border: 0;
+             border-radius: 9px; background: var(--deep); overflow: hidden; margin-top: 20px; }
+  progress::-webkit-progress-bar { background: var(--deep); }
+  progress::-webkit-progress-value { background: var(--oak); }
+  progress::-moz-progress-bar { background: var(--oak); }
+  details.log { margin: 16px 0 0; } details.log summary { cursor: pointer; font-size: 18px; color: var(--soft); }
+  pre { color: var(--soft); font-size: 16px; white-space: pre-wrap; margin: 8px 0 0; max-height: 220px; overflow: auto;
+        background: var(--deep); padding: 12px; border-radius: 10px; }
+  label.ck { display: flex; gap: 14px; align-items: flex-start; margin: 0 0 20px; cursor: pointer; font-size: 20px; }
+  input[type="checkbox"] { width: 28px; height: 28px; flex: none; margin-top: 2px; accent-color: var(--oak); }
+  .after { display: grid; gap: 14px; }
+  .after .btn { justify-content: flex-start; text-align: left; }
+  h2.sec { font-size: 32px; margin: 40px 0 16px; color: var(--sail); }
+  .trouble p { font-size: 20px; }
+  details.stock { background: var(--panel); border-radius: 16px; padding: 18px 22px; margin: 28px 0 0; }
+  details.stock summary { cursor: pointer; font: 400 32px/1.2 var(--pixel); text-transform: uppercase; color: var(--sail); }
+  details.stock[open] summary { margin-bottom: 14px; }
+  input[type="file"] { font: inherit; font-size: 18px; color: var(--sail); margin-top: 8px; }
+  button#stock-go { font: 400 32px/1 var(--pixel); text-transform: uppercase; background: transparent; color: var(--sail);
+                    border: 4px solid var(--sail); border-radius: 14px; padding: 14px 22px; cursor: pointer; }
+  button#stock-go:disabled { color: var(--soft); border-color: var(--edge); cursor: default; }
+  .back-home { font-size: 20px; }
+
+  /* the longship sails along the bar while the FM-1 is written (the boot logo's mark: the Sea Stallion from
+     Glendalough): it rocks on the swell, the sail fills, the oars sweep and the wave runs aft; it rides still at
+     100 %, and with reduced motion */
+  .ride { position: relative; margin-top: 16px; padding-top: 42px; }
+  .ride progress { display: block; margin-top: 0; }
+  .ship { position: absolute; top: 0; left: calc((100% - 60px) * var(--p, 0)); width: 60px; height: 42px;
+          transition: left .3s linear; pointer-events: none; }
+  .ship svg { display: block; width: 60px; height: 42px; overflow: hidden; }
+  .ship .oak { fill: var(--oak); } .ship .sl { fill: var(--sail); } .ship .ru { fill: var(--rust); }
+  .ship .st { fill: none; stroke: var(--oak); stroke-linecap: round; stroke-linejoin: round; }
+  .ship .oar { stroke-width: 1.3; transform-origin: var(--o) 23px; transform: rotate(40deg); }
+  .ship .wave { fill: none; stroke: var(--sea); stroke-width: 1.6; stroke-linecap: round; }
+  .ship .hull { transform-origin: 24px 23px; } .ship .sail { transform-origin: 24px 4px; }
+  .ride.run .ship .hull { animation: rock 1s ease-in-out infinite; }
+  .ride.run .ship .sail { animation: fill 1s ease-in-out infinite; }
+  .ride.run .ship .oar { animation: row 1s linear infinite; }
+  .ride.run .ship .wave { animation: swell 1s linear infinite; }
+  @keyframes rock { 0%, 100% { transform: translateY(.6px) rotate(0); } 25% { transform: rotate(-3deg); }
+                    50% { transform: translateY(-.6px) rotate(0); } 75% { transform: rotate(3deg); } }
+  @keyframes fill { 0%, 100% { transform: scale(.94, .96); } 50% { transform: scale(1.04, 1.04); } }
+  @keyframes row { 0%, 100% { transform: rotate(24deg); } 50% { transform: rotate(58deg); }
+                   75% { transform: rotate(40deg) scaleY(.72); } }
+  @keyframes swell { from { transform: translateX(0); } to { transform: translateX(-16px); } }
+  @media (prefers-reduced-motion: reduce) {
+    .ship { transition: none; }
+    .ride.run .ship .hull, .ride.run .ship .sail, .ride.run .ship .oar, .ride.run .ship .wave { animation: none; } }
+
+</style>
+</head>
+<body>
+<header class="wrap bar"><a class="logo" href="../../" aria-label="Stallion home"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 783.657 240" width="783.657" height="240" role="img" aria-label="Stallion">
+<!-- Stallion (EberonLtd), drawn by tools/gen_logo.py; GPL-3.0-only -->
+<rect width="783.657" height="240" rx="24" fill="#0B1E36"/>
+<polygon points="26.9,134.7 36.6,138.5 46.4,141.9 56.2,144.7 66.0,147.0 75.8,148.8 85.5,150.1 95.3,150.9 105.1,151.1 114.9,150.9 124.7,150.1 134.4,148.8 144.2,147.0 154.0,144.7 163.8,141.9 173.6,138.5 183.3,134.7 187.5,131.6 185.3,138.5 181.5,144.8 176.1,150.5 169.3,155.4 161.4,159.7 152.5,163.3 142.8,166.1 132.4,168.3 121.6,169.7 110.5,170.3 99.3,170.2 88.1,169.3 77.2,167.6 66.8,165.1 56.9,161.8 47.8,157.7 39.6,152.7 32.6,146.9 27.0,140.2 22.7,132.6" fill="#D98E2F"/>
+<polyline points="183.3,136.7 185.3,134.2 187.1,131.6 188.7,129.0 190.1,126.4 191.3,123.8 192.4,121.1 193.2,118.5 193.9,115.9 194.4,113.2 194.7,110.6 194.8,107.9 194.7,105.3 194.5,102.6 194.0,99.9 193.4,97.2 192.6,94.5" fill="none" stroke="#D98E2F" stroke-width="9.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="26.9,136.7 25.2,134.9 23.7,133.1 22.4,131.3 21.4,129.4 20.5,127.5 19.9,125.7 19.5,123.8 19.3,121.8 19.4,119.9 19.6,118.0 20.1,116.0 20.7,114.0 21.6,112.0 22.7,110.0 24.0,108.0 25.6,106.0 25.2,103.8 25.3,101.7 25.7,99.7 26.5,97.8 27.5,96.2 28.8,94.7 30.3,93.6 32.0,92.7 33.7,92.2 35.4,92.0 37.2,92.1 38.8,92.5 40.3,93.1 41.6,94.0 42.7,95.1 43.6,96.3 44.2,97.7 44.6,99.0 44.7,100.4 44.6,101.7 44.2,103.0 43.7,104.1 42.9,105.1 42.1,105.9 41.1,106.5 40.1,106.9 39.1,107.1 38.1,107.1 37.2,106.9" fill="none" stroke="#D98E2F" stroke-width="9.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="186.4,99.7 185.4,94.0 184.7,88.5 180.1,83.2 184.1,78.2 180.2,73.4 184.9,68.8 181.6,64.4 186.9,60.3 184.2,56.4 190.1,52.8 192.2,49.4 194.7,46.1 192.6,33.8 201.9,44.1 224.5,66.7 225.6,69.0 226.0,71.1 225.8,72.9 225.0,74.5 223.5,75.9 221.4,77.0 218.0,77.1 215.0,76.7 212.4,75.9 210.1,74.7 208.2,73.1 206.8,71.0 205.7,68.6 205.0,65.7 203.1,70.3 201.5,75.3 200.3,80.6 199.5,86.3 198.9,92.3 198.8,98.6" fill="#D98E2F"/>
+<circle cx="205.0" cy="53.4" r="2.68" fill="#0B1E36"/>
+<polyline points="105.1,149.1 105.1,25.6" fill="none" stroke="#F3EEE2" stroke-width="4.12" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="105.1,27.6 183.3,124.4" fill="none" stroke="#F3EEE2" stroke-width="2.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="105.1,27.6 33.0,122.3" fill="none" stroke="#F3EEE2" stroke-width="2.26" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="51.6,38.9 158.6,38.9" fill="none" stroke="#D98E2F" stroke-width="5.15" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="63.9,124.4 62.0,114.1 60.5,103.8 59.2,93.5 58.3,83.2 57.7,72.9 57.4,62.6 57.4,52.3 57.7,42.0 63.7,42.5 69.6,42.9 75.5,43.3 76.7,43.3 77.1,54.0 77.5,64.7 78.0,75.4 78.4,86.1 78.8,96.8 79.2,107.5 79.7,118.2 80.1,128.9 79.4,128.8 74.2,127.5 69.1,126.1" fill="#F3EEE2"/>
+<polygon points="80.1,128.9 79.7,118.2 79.2,107.5 78.8,96.8 78.4,86.1 78.0,75.4 77.5,64.7 77.1,54.0 76.7,43.3 81.4,43.6 87.3,43.8 93.3,44.0 95.6,44.0 95.8,54.9 95.9,65.8 96.0,76.7 96.2,87.6 96.3,98.5 96.4,109.4 96.6,120.4 96.7,131.3 94.8,131.1 89.7,130.6 84.5,129.8" fill="#B8432A"/>
+<polygon points="96.7,131.3 96.6,120.4 96.4,109.4 96.3,98.5 96.2,87.6 96.0,76.7 95.9,65.8 95.8,54.9 95.6,44.0 99.2,44.1 105.1,44.1 111.0,44.1 114.6,44.0 114.4,54.9 114.3,65.8 114.2,76.7 114.0,87.6 113.9,98.5 113.8,109.4 113.6,120.4 113.5,131.3 110.2,131.5 105.1,131.6 100.0,131.5" fill="#F3EEE2"/>
+<polygon points="113.5,131.3 113.6,120.4 113.8,109.4 113.9,98.5 114.0,87.6 114.2,76.7 114.3,65.8 114.4,54.9 114.6,44.0 116.9,44.0 122.9,43.8 128.8,43.6 133.5,43.3 133.1,54.0 132.7,64.7 132.3,75.4 131.8,86.1 131.4,96.8 131.0,107.5 130.5,118.2 130.1,128.9 125.7,129.8 120.5,130.6 115.4,131.1" fill="#B8432A"/>
+<polygon points="130.1,128.9 130.5,118.2 131.0,107.5 131.4,96.8 131.8,86.1 132.3,75.4 132.7,64.7 133.1,54.0 133.5,43.3 134.7,43.3 140.6,42.9 146.5,42.5 152.5,42.0 152.8,52.3 152.8,62.6 152.6,72.9 151.9,83.2 151.0,93.5 149.8,103.8 148.2,114.1 146.3,124.4 141.1,126.1 136.0,127.5 130.8,128.8" fill="#F3EEE2"/>
+<circle cx="51.1" cy="142.2" r="6.38" fill="#F3EEE2"/>
+<circle cx="51.1" cy="142.2" r="2.06" fill="#D98E2F"/>
+<circle cx="68.8" cy="146.5" r="6.38" fill="#B8432A"/>
+<circle cx="68.8" cy="146.5" r="2.06" fill="#D98E2F"/>
+<circle cx="86.8" cy="149.2" r="6.38" fill="#F3EEE2"/>
+<circle cx="86.8" cy="149.2" r="2.06" fill="#D98E2F"/>
+<circle cx="104.9" cy="150.1" r="6.38" fill="#B8432A"/>
+<circle cx="104.9" cy="150.1" r="2.06" fill="#D98E2F"/>
+<circle cx="123.1" cy="149.2" r="6.38" fill="#F3EEE2"/>
+<circle cx="123.1" cy="149.2" r="2.06" fill="#D98E2F"/>
+<circle cx="141.1" cy="146.6" r="6.38" fill="#B8432A"/>
+<circle cx="141.1" cy="146.6" r="2.06" fill="#D98E2F"/>
+<circle cx="158.8" cy="142.3" r="6.38" fill="#F3EEE2"/>
+<circle cx="158.8" cy="142.3" r="2.06" fill="#D98E2F"/>
+<polyline points="16.6,196.4 18.6,197.7 20.7,198.9 22.7,199.7 24.8,200.0 26.9,199.9 28.9,199.3 31.0,198.3 33.0,197.1 35.1,195.8 37.2,194.5 39.2,193.6 41.3,193.0 43.3,192.9 45.4,193.2 47.5,194.0 49.5,195.1 51.6,196.4 53.6,197.7 55.7,198.9 57.7,199.7 59.8,200.0 61.9,199.9 63.9,199.3 66.0,198.3 68.0,197.1 70.1,195.8 72.2,194.5 74.2,193.6 76.3,193.0 78.3,192.9 80.4,193.2 82.5,194.0 84.5,195.1 86.6,196.4 88.6,197.7 90.7,198.9 92.7,199.7 94.8,200.0 96.9,199.9 98.9,199.3 101.0,198.3 103.0,197.1 105.1,195.8 107.2,194.5 109.2,193.6 111.3,193.0 113.3,192.9 115.4,193.2 117.5,194.0 119.5,195.1 121.6,196.4 123.6,197.7 125.7,198.9 127.7,199.7 129.8,200.0 131.9,199.9 133.9,199.3 136.0,198.3 138.0,197.1 140.1,195.8 142.2,194.5 144.2,193.6 146.3,193.0 148.3,192.9 150.4,193.2 152.5,194.0 154.5,195.1 156.6,196.4 158.6,197.7 160.7,198.9 162.7,199.7 164.8,200.0 166.9,199.9 168.9,199.3 171.0,198.3 173.0,197.1 175.1,195.8 177.2,194.5 179.2,193.6 181.3,193.0 183.3,192.9 185.4,193.2 187.5,194.0 189.5,195.1 191.6,196.4 193.6,197.7" fill="none" stroke="#3B8FA8" stroke-width="5.15" stroke-linecap="round" stroke-linejoin="round"/>
+<polyline points="45.4,210.9 47.5,212.2 49.5,213.3 51.6,214.1 53.6,214.4 55.7,214.3 57.7,213.7 59.8,212.7 61.9,211.5 63.9,210.2 66.0,209.0 68.0,208.0 70.1,207.4 72.2,207.3 74.2,207.6 76.3,208.4 78.3,209.6 80.4,210.9 82.5,212.2 84.5,213.3 86.6,214.1 88.6,214.4 90.7,214.3 92.7,213.7 94.8,212.7 96.9,211.5 98.9,210.2 101.0,209.0 103.0,208.0 105.1,207.4 107.2,207.3 109.2,207.6 111.3,208.4 113.3,209.6 115.4,210.9 117.5,212.2 119.5,213.3 121.6,214.1 123.6,214.4 125.7,214.3 127.7,213.7 129.8,212.7 131.9,211.5 133.9,210.2 136.0,209.0 138.0,208.0 140.1,207.4 142.2,207.3 144.2,207.6 146.3,208.4 148.3,209.6 150.4,210.9 152.5,212.2 154.5,213.3 156.6,214.1 158.6,214.4 160.7,214.3 162.7,213.7 164.8,212.7" fill="none" stroke="#3B8FA8" stroke-width="4.12" stroke-linecap="round" stroke-linejoin="round"/>
+<polygon points="255.7,79.2 302.3,79.2 302.3,90.9 255.7,90.9" fill="#F3EEE2"/>
+<polygon points="255.7,79.2 244.0,90.9 255.7,90.9" fill="#F3EEE2"/>
+<polygon points="267.3,90.9 255.7,90.9 255.7,102.5" fill="#F3EEE2"/>
+<polygon points="313.9,79.2 372.2,79.2 372.2,90.9 313.9,90.9" fill="#F3EEE2"/>
+<polygon points="407.2,79.2 418.9,79.2 418.9,90.9 407.2,90.9" fill="#F3EEE2"/>
+<polygon points="407.2,79.2 395.5,90.9 407.2,90.9" fill="#F3EEE2"/>
+<polygon points="418.9,90.9 407.2,90.9 407.2,102.5" fill="#F3EEE2"/>
+<polygon points="418.9,79.2 430.5,90.9 418.9,90.9" fill="#F3EEE2"/>
+<polygon points="407.2,90.9 418.9,90.9 418.9,102.5" fill="#F3EEE2"/>
+<polygon points="453.8,79.2 465.5,79.2 465.5,90.9 453.8,90.9" fill="#F3EEE2"/>
+<polygon points="523.8,79.2 535.4,79.2 535.4,90.9 523.8,90.9" fill="#F3EEE2"/>
+<polygon points="593.7,79.2 605.4,79.2 605.4,90.9 593.7,90.9" fill="#F3EEE2"/>
+<polygon points="628.7,79.2 663.7,79.2 663.7,90.9 628.7,90.9" fill="#F3EEE2"/>
+<polygon points="628.7,79.2 617.0,90.9 628.7,90.9" fill="#F3EEE2"/>
+<polygon points="640.3,90.9 628.7,90.9 628.7,102.5" fill="#F3EEE2"/>
+<polygon points="663.7,79.2 675.3,90.9 663.7,90.9" fill="#F3EEE2"/>
+<polygon points="652.0,90.9 663.7,90.9 663.7,102.5" fill="#F3EEE2"/>
+<polygon points="687.0,79.2 698.6,79.2 698.6,90.9 687.0,90.9" fill="#F3EEE2"/>
+<polygon points="733.6,79.2 745.3,79.2 745.3,90.9 733.6,90.9" fill="#F3EEE2"/>
+<polygon points="244.0,90.9 255.7,90.9 255.7,102.5 244.0,102.5" fill="#F3EEE2"/>
+<polygon points="337.3,90.9 348.9,90.9 348.9,102.5 337.3,102.5" fill="#F3EEE2"/>
+<polygon points="395.5,90.9 407.2,90.9 407.2,102.5 395.5,102.5" fill="#F3EEE2"/>
+<polygon points="395.5,90.9 383.9,102.5 395.5,102.5" fill="#F3EEE2"/>
+<polygon points="407.2,102.5 395.5,102.5 395.5,114.2" fill="#F3EEE2"/>
+<polygon points="418.9,90.9 430.5,90.9 430.5,102.5 418.9,102.5" fill="#F3EEE2"/>
+<polygon points="430.5,90.9 442.2,102.5 430.5,102.5" fill="#F3EEE2"/>
+<polygon points="418.9,102.5 430.5,102.5 430.5,114.2" fill="#F3EEE2"/>
+<polygon points="453.8,90.9 465.5,90.9 465.5,102.5 453.8,102.5" fill="#F3EEE2"/>
+<polygon points="523.8,90.9 535.4,90.9 535.4,102.5 523.8,102.5" fill="#F3EEE2"/>
+<polygon points="593.7,90.9 605.4,90.9 605.4,102.5 593.7,102.5" fill="#F3EEE2"/>
+<polygon points="617.0,90.9 628.7,90.9 628.7,102.5 617.0,102.5" fill="#F3EEE2"/>
+<polygon points="663.7,90.9 675.3,90.9 675.3,102.5 663.7,102.5" fill="#F3EEE2"/>
+<polygon points="687.0,90.9 710.3,90.9 710.3,102.5 687.0,102.5" fill="#F3EEE2"/>
+<polygon points="733.6,90.9 745.3,90.9 745.3,102.5 733.6,102.5" fill="#F3EEE2"/>
+<polygon points="244.0,102.5 255.7,102.5 255.7,114.2 244.0,114.2" fill="#F3EEE2"/>
+<polygon points="255.7,102.5 267.3,114.2 255.7,114.2" fill="#F3EEE2"/>
+<polygon points="244.0,114.2 255.7,114.2 255.7,125.8" fill="#F3EEE2"/>
+<polygon points="337.3,102.5 348.9,102.5 348.9,114.2 337.3,114.2" fill="#F3EEE2"/>
+<polygon points="383.9,102.5 395.5,102.5 395.5,114.2 383.9,114.2" fill="#F3EEE2"/>
+<polygon points="430.5,102.5 442.2,102.5 442.2,114.2 430.5,114.2" fill="#F3EEE2"/>
+<polygon points="453.8,102.5 465.5,102.5 465.5,114.2 453.8,114.2" fill="#F3EEE2"/>
+<polygon points="523.8,102.5 535.4,102.5 535.4,114.2 523.8,114.2" fill="#F3EEE2"/>
+<polygon points="593.7,102.5 605.4,102.5 605.4,114.2 593.7,114.2" fill="#F3EEE2"/>
+<polygon points="617.0,102.5 628.7,102.5 628.7,114.2 617.0,114.2" fill="#F3EEE2"/>
+<polygon points="663.7,102.5 675.3,102.5 675.3,114.2 663.7,114.2" fill="#F3EEE2"/>
+<polygon points="687.0,102.5 710.3,102.5 710.3,114.2 687.0,114.2" fill="#F3EEE2"/>
+<polygon points="710.3,102.5 721.9,114.2 710.3,114.2" fill="#F3EEE2"/>
+<polygon points="698.6,114.2 710.3,114.2 710.3,125.8" fill="#F3EEE2"/>
+<polygon points="733.6,102.5 745.3,102.5 745.3,114.2 733.6,114.2" fill="#F3EEE2"/>
+<polygon points="255.7,114.2 290.6,114.2 290.6,125.8 255.7,125.8" fill="#F3EEE2"/>
+<polygon points="290.6,114.2 302.3,125.8 290.6,125.8" fill="#F3EEE2"/>
+<polygon points="279.0,125.8 290.6,125.8 290.6,137.5" fill="#F3EEE2"/>
+<polygon points="337.3,114.2 348.9,114.2 348.9,125.8 337.3,125.8" fill="#F3EEE2"/>
+<polygon points="383.9,114.2 395.5,114.2 395.5,125.8 383.9,125.8" fill="#F3EEE2"/>
+<polygon points="430.5,114.2 442.2,114.2 442.2,125.8 430.5,125.8" fill="#F3EEE2"/>
+<polygon points="453.8,114.2 465.5,114.2 465.5,125.8 453.8,125.8" fill="#F3EEE2"/>
+<polygon points="523.8,114.2 535.4,114.2 535.4,125.8 523.8,125.8" fill="#F3EEE2"/>
+<polygon points="593.7,114.2 605.4,114.2 605.4,125.8 593.7,125.8" fill="#F3EEE2"/>
+<polygon points="617.0,114.2 628.7,114.2 628.7,125.8 617.0,125.8" fill="#F3EEE2"/>
+<polygon points="663.7,114.2 675.3,114.2 675.3,125.8 663.7,125.8" fill="#F3EEE2"/>
+<polygon points="687.0,114.2 698.6,114.2 698.6,125.8 687.0,125.8" fill="#F3EEE2"/>
+<polygon points="710.3,114.2 721.9,114.2 721.9,125.8 710.3,125.8" fill="#F3EEE2"/>
+<polygon points="721.9,114.2 733.6,125.8 721.9,125.8" fill="#F3EEE2"/>
+<polygon points="710.3,125.8 721.9,125.8 721.9,137.5" fill="#F3EEE2"/>
+<polygon points="733.6,114.2 745.3,114.2 745.3,125.8 733.6,125.8" fill="#F3EEE2"/>
+<polygon points="290.6,125.8 302.3,125.8 302.3,137.5 290.6,137.5" fill="#F3EEE2"/>
+<polygon points="337.3,125.8 348.9,125.8 348.9,137.5 337.3,137.5" fill="#F3EEE2"/>
+<polygon points="383.9,125.8 442.2,125.8 442.2,137.5 383.9,137.5" fill="#F3EEE2"/>
+<polygon points="453.8,125.8 465.5,125.8 465.5,137.5 453.8,137.5" fill="#F3EEE2"/>
+<polygon points="523.8,125.8 535.4,125.8 535.4,137.5 523.8,137.5" fill="#F3EEE2"/>
+<polygon points="593.7,125.8 605.4,125.8 605.4,137.5 593.7,137.5" fill="#F3EEE2"/>
+<polygon points="617.0,125.8 628.7,125.8 628.7,137.5 617.0,137.5" fill="#F3EEE2"/>
+<polygon points="663.7,125.8 675.3,125.8 675.3,137.5 663.7,137.5" fill="#F3EEE2"/>
+<polygon points="687.0,125.8 698.6,125.8 698.6,137.5 687.0,137.5" fill="#F3EEE2"/>
+<polygon points="721.9,125.8 745.3,125.8 745.3,137.5 721.9,137.5" fill="#F3EEE2"/>
+<polygon points="290.6,137.5 302.3,137.5 302.3,149.1 290.6,149.1" fill="#F3EEE2"/>
+<polygon points="290.6,137.5 279.0,149.1 290.6,149.1" fill="#F3EEE2"/>
+<polygon points="302.3,149.1 290.6,149.1 290.6,160.8" fill="#F3EEE2"/>
+<polygon points="337.3,137.5 348.9,137.5 348.9,149.1 337.3,149.1" fill="#F3EEE2"/>
+<polygon points="383.9,137.5 395.5,137.5 395.5,149.1 383.9,149.1" fill="#F3EEE2"/>
+<polygon points="430.5,137.5 442.2,137.5 442.2,149.1 430.5,149.1" fill="#F3EEE2"/>
+<polygon points="453.8,137.5 465.5,137.5 465.5,149.1 453.8,149.1" fill="#F3EEE2"/>
+<polygon points="523.8,137.5 535.4,137.5 535.4,149.1 523.8,149.1" fill="#F3EEE2"/>
+<polygon points="593.7,137.5 605.4,137.5 605.4,149.1 593.7,149.1" fill="#F3EEE2"/>
+<polygon points="617.0,137.5 628.7,137.5 628.7,149.1 617.0,149.1" fill="#F3EEE2"/>
+<polygon points="628.7,137.5 640.3,149.1 628.7,149.1" fill="#F3EEE2"/>
+<polygon points="617.0,149.1 628.7,149.1 628.7,160.8" fill="#F3EEE2"/>
+<polygon points="663.7,137.5 675.3,137.5 675.3,149.1 663.7,149.1" fill="#F3EEE2"/>
+<polygon points="663.7,137.5 652.0,149.1 663.7,149.1" fill="#F3EEE2"/>
+<polygon points="675.3,149.1 663.7,149.1 663.7,160.8" fill="#F3EEE2"/>
+<polygon points="687.0,137.5 698.6,137.5 698.6,149.1 687.0,149.1" fill="#F3EEE2"/>
+<polygon points="721.9,137.5 745.3,137.5 745.3,149.1 721.9,149.1" fill="#F3EEE2"/>
+<polygon points="244.0,149.1 290.6,149.1 290.6,160.8 244.0,160.8" fill="#F3EEE2"/>
+<polygon points="337.3,149.1 348.9,149.1 348.9,160.8 337.3,160.8" fill="#F3EEE2"/>
+<polygon points="383.9,149.1 395.5,149.1 395.5,160.8 383.9,160.8" fill="#F3EEE2"/>
+<polygon points="430.5,149.1 442.2,149.1 442.2,160.8 430.5,160.8" fill="#F3EEE2"/>
+<polygon points="453.8,149.1 512.1,149.1 512.1,160.8 453.8,160.8" fill="#F3EEE2"/>
+<polygon points="523.8,149.1 582.1,149.1 582.1,160.8 523.8,160.8" fill="#F3EEE2"/>
+<polygon points="593.7,149.1 605.4,149.1 605.4,160.8 593.7,160.8" fill="#F3EEE2"/>
+<polygon points="628.7,149.1 663.7,149.1 663.7,160.8 628.7,160.8" fill="#F3EEE2"/>
+<polygon points="687.0,149.1 698.6,149.1 698.6,160.8 687.0,160.8" fill="#F3EEE2"/>
+<polygon points="733.6,149.1 745.3,149.1 745.3,160.8 733.6,160.8" fill="#F3EEE2"/>
+</svg>
+</a>
+  <div class="langs" role="group" aria-label="Language / Langue / 言語"><button class="lang" data-l="en">English</button><button class="lang" data-l="fr">Français</button><button class="lang" data-l="ja">日本語</button></div></header>
+<div class="sail" role="presentation"></div>
+<main class="narrow hero-i">
+  <nav class="boards"><p data-t="boardPick"></p><div><a href="../installer/" aria-current="page">FM-1</a><a href="../installer-smk37/">SMK-37 Pro</a></div></nav>
+  
+  
+  <h1 data-t="h1"></h1>
+    <section data-l="en"><p class="lead">Stallion turns the FM-1 into a deep polyphonic synthesizer: 26 synthesis engines and 819 sounds, 9 filter models, a modulation matrix on every sound and 13 tunings. Installing takes place in this page: there is nothing to download.</p></section>
+    <section data-l="fr"><p class="lead">Stallion fait de la FM-1 un vrai synthétiseur polyphonique : 26 moteurs de synthèse et 819 sons, 9 modèles de filtre, une matrice de modulation sur chaque son et 13 accordages. L'installation se fait dans cette page : rien à télécharger.</p></section>
+    <section data-l="ja"><p class="lead">Stallion は FM-1 を本格的なポリフォニック・シンセサイザーに変えます。26 の音源エンジンと 819 の音色、9 種類のフィルター・モデル、すべての音色にモジュレーション・マトリクス、13 のチューニング。インストールはこのページで完了します。ダウンロードは不要です。</p></section>
+  <p class="back-home"><a href="../../" data-t="homeLink"></a></p>
+  <h2 class="sec" data-t="stepsT"></h2>
+  <ol class="steps">
+    <li><b data-t="s1T"></b><span data-t="s1"></span></li>
+    <li><b data-t="s2T"></b><span data-t="s2"></span></li>
+    <li><b data-t="s3T"></b><span data-t="s3"></span></li>
+  </ol>
+  <div class="note" style="margin-top:24px"><b data-t="backupT"></b><p data-t="backup"></p></div>
+  <div class="panel">
+    <div class="warn"><p data-t="warn"></p></div>
+    <p><button id="go" class="btn" disabled data-t="install"></button></p>
+<div class="ride" id="ride">
+    <div class="ship" aria-hidden="true"><svg viewBox="0 0 48 34">
+      <g class="wave"><path d="M-2 30.2q2-1.8 4 0t4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0 4 0"/></g>
+      <g class="hull">
+        <g class="st"><line class="oar" style="--o:13px" x1="13" y1="23" x2="13" y2="33"/><line class="oar" style="--o:18.5px" x1="18.5" y1="23" x2="18.5" y2="33"/><line class="oar" style="--o:29.5px" x1="29.5" y1="23" x2="29.5" y2="33"/><line class="oar" style="--o:35px" x1="35" y1="23" x2="35" y2="33"/></g>
+        <path class="oak" d="M5.5 19Q24 23.6 41 19L41.8 18.6C40.4 27.8 10.6 28.2 4.8 19.4Z"/>
+        <path class="st" stroke-width="2.2" d="M40.6 19.4Q44.4 16 43.2 10.6"/>
+        <path class="oak" d="M41.8 12.2L41.4 7.6L41.8 4.8L42.4 3.4L42.8 .6L44.2 2.6L45.6 3.6L47.9 6L47.9 8.6L46.2 8.6L45 7.8L44.8 12.2Z"/>
+        <circle cx="43.7" cy="4.8" r=".7" fill="var(--navy)"/>
+        <path class="st" stroke-width="2" d="M6 19.6Q2.8 17.2 3.6 12.9L3.8 11.9L4.2 11.2L4.8 10.6L5.6 10.2L6.4 10.2L7.1 10.3L7.7 10.7L8.2 11.2L8.5 11.8L8.5 12.4L8.3 13L8 13.5L7.6 13.8"/>
+        <path class="st" stroke-width="1.5" d="M24 21V.6M14.8 2.5H33.2"/>
+        <g class="sail"><clipPath id="sail-cut"><path d="M15.4 4.6H32.6Q34.2 10.8 32.2 16.4Q24 18.4 15.8 16.4Q13.8 10.8 15.4 4.6Z"/></clipPath>
+          <g clip-path="url(#sail-cut)"><rect class="sl" x="13" y="4" width="22" height="15"/><rect class="ru" x="17.4" y="4" width="3.8" height="15"/><rect class="ru" x="25" y="4" width="3.8" height="15"/></g></g>
+      </g>
+    </svg></div>
+    <progress id="bar" max="100" value="0"></progress>
+  </div>
+    <p id="status" role="status" aria-live="polite"></p>
+    <p id="next" hidden><a class="btn text" href="../installer-smk37/" data-t="toSmk"></a></p>
+    <details class="log"><summary data-t="logT"></summary><pre id="log"></pre></details>
+  </div>
+  <h2 class="sec" data-t="afterT"></h2>
+  <div class="after">
+    <a class="btn text" href="../editor/" data-t="editor"></a>
+    <a class="btn ghost text" href="../editor/stallion-editor.html" download="stallion-editor-1.0.html" data-t="edOffline"></a>
+    <button id="app" class="btn ghost text" hidden data-t="appInstall"></button>
+  </div>
+  <section class="trouble">
+    <h2 class="sec" data-t="troubleT"></h2>
+    <p data-t="rescue"></p>
+    <p data-t="direct"></p>
+    <p><span data-t="brick"></span>
+      <a href="https://github.com/kurogedelic/FM-1-transporter" target="_blank" rel="noopener">FM-1-transporter</a></p>
+    <div class="warn"><p data-t="beta"></p></div>
+  </section>
+  <details class="stock">
+    <summary data-t="stockTitle"></summary>
+    <p data-t="stockHelp"></p>
+    <p><a href="https://www.m-vave.com/download" target="_blank" rel="noopener">www.m-vave.com/download</a></p>
+    <p data-t="stockBackup"></p>
+    <p><a class="btn ghost" href="../editor/" data-t="stockEditor"></a></p>
+    <p><label><input id="stock-saved" type="checkbox"> <span data-t="stockSaved"></span></label></p>
+    <p><label><span data-t="stockFile"></span><br><input id="stock-file" type="file" accept=".fwsc"></label></p>
+    <p><button id="stock-go" disabled data-t="stockGo"></button></p>
+    <p data-t="back"></p>
+  </details>
+
+</main>
+<footer class="foot">
+  <div class="narrow">
+    <p lang="en"><b>Stallion</b> is free, open-source firmware (GPL-3.0-only) by Eberon Limited (John Gorman):
+      <a href="https://github.com/EberonLtd/stallion-fm1" target="_blank" rel="noopener">github.com/EberonLtd/stallion-fm1</a>.
+      It grew out of <a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> and Clipper Pro by 3dSam (isod89), which grew out of
+      <a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a>; all are based on
+      <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita (@kurogedelic), Hügelton Instruments.
+      Everyone else whose work it uses is named in
+      <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/CREDITS.md" target="_blank" rel="noopener">CREDITS.md</a> and
+      <a href="https://github.com/EberonLtd/stallion-fm1/blob/main/LICENSING.md" target="_blank" rel="noopener">LICENSING.md</a>.</p>
+    <p lang="en">M-VAVE, FM-1 and SMK-37 are trademarks of their owners. Stallion is not affiliated with or endorsed by them. No warranty: you install it at your own risk.</p>
+    <p class="copy">Copyright (C) 2026 Eberon Limited (John Gorman)</p>
+  </div>
+</footer>
+<script type="module">
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+//
+// FM-1 (and M-Vave SMK-37 Pro) .fwsc packages in the browser: the package identity and the image the
+// device reads during an update.
+
+const BLOCKS = 20, BLK = 0x30, KEEP = 0x2F, MAX_BLOCKS = 64;
+
+// the package identity ("FM-1_904", "SMK-37 Pro_016"): one marker byte after each of the first 20 blocks
+function productOf(fwsc) {
+  if (fwsc.length < BLOCKS * BLK) throw new Error("not an FM-1 package (too short)");
+  let s = "";
+  for (let i = 0; i < BLOCKS; i++) {
+    const m = fwsc[i * BLK + KEEP];
+    if (m !== 0x7D) s += String.fromCharCode((m - i - 1) & 0xFF);
+  }
+  return s;
+}
+
+// interleave blocks: 20, then more while the marker is the unused 0x7D (the stock SMK-37 Pro v016 has 36)
+function blockCount(fwsc) {
+  let n = BLOCKS;
+  while (n < MAX_BLOCKS && (n + 1) * BLK <= fwsc.length && fwsc[n * BLK + KEEP] === 0x7D) n++;
+  return n;
+}
+
+function deinterleave(fwsc, blocks) {
+  const out = new Uint8Array(fwsc.length - blocks);
+  for (let i = 0; i < blocks; i++) out.set(fwsc.subarray(i * BLK, i * BLK + KEEP), i * KEEP);
+  out.set(fwsc.subarray(blocks * BLK), blocks * KEEP);
+  return out;
+}
+
+function crc16(d, c = 0) {                 // CRC-16/XMODEM, as the package and the device use
+  for (const b of d) {
+    c ^= b << 8;
+    for (let k = 0; k < 8; k++) c = c & 0x8000 ? ((c << 1) ^ 0x1021) & 0xFFFF : (c << 1) & 0xFFFF;
+  }
+  return c;
+}
+
+function jlDec(b) {                        // JieLi ENC stream cipher (its own inverse)
+  const out = Uint8Array.from(b);
+  let key = 0xFFFF;
+  for (let i = 0; i < out.length; i++) {
+    out[i] ^= key & 0xFF;
+    key = ((key << 1) ^ (key & 0x8000 ? 0x1021 : 0)) & 0xFFFF;
+  }
+  return out;
+}
+
+const rdLE = (a, o, n) => a.slice(o, o + n).reduce((v, x, i) => v + x * 2 ** (8 * i), 0);
+
+// a logical image's flash.bin (type 0): its offset, and whether its ota.bin (type 100) is the official update loader
+// (header CRC 0xEBAA, data CRC 0x5881, 0x4DE1 bytes: firmware/src/ota.c OTA_LDR_*); null without a flash.bin
+function flashHead(img) {
+  if (img.length < 0x40) return null;
+  const count = rdLE(jlDec(img.subarray(0, 0x40)), 8, 2);
+  if (count < 1 || count > 11 || img.length < 0x40 + 0x50 * count) return null;
+  let flOff = -1, official = false;
+  for (let i = 0; i < count; i++) {
+    const e = jlDec(img.subarray(0x40 + i * 0x50, 0x90 + i * 0x50));
+    const typ = rdLE(e, 0, 2), off = rdLE(e, 8, 4);
+    if (typ === 0) flOff = off;
+    if (typ === 100 && off + 12 <= img.length) {
+      const b = img.subarray(off, off + 12);
+      official = rdLE(b, 0, 2) === 0xEBAA && rdLE(b, 2, 2) === 0x5881 && rdLE(b, 8, 4) === 0x4DE1;
+    }
+  }
+  return flOff < 0 ? null : { flOff, official };
+}
+
+// the logical image's flash.bin (type 0) and ota.bin (type 100) match their CRCs (as fm1_install.py)
+function filesOk(img) {
+  if (img.length < 0x40) return false;
+  const h = jlDec(img.subarray(0, 0x40)), rd = (a, o, n) => a.slice(o, o + n).reduce((v, x, i) => v + x * 2 ** (8 * i), 0);
+  if (crc16(h.subarray(2, 0x40)) !== rd(h, 0, 2)) return false;
+  const count = rd(h, 8, 2);
+  if (count < 1 || count > 8 || img.length < 0x40 + 0x50 * count) return false;
+  for (let i = 0; i < count; i++) {
+    const e = jlDec(img.subarray(0x40 + i * 0x50, 0x90 + i * 0x50));
+    const typ = rd(e, 0, 2), off = rd(e, 8, 4), size = rd(e, 12, 4);
+    if (off + size > img.length) return false;
+    if ((typ === 0 || typ === 100) && crc16(img.subarray(off, off + size)) !== rd(e, 4, 2)) return false;
+  }
+  return true;
+}
+
+// the image the device addresses during an update: the .fwsc without the marker bytes (20 blocks, or the
+// detected count when the files' CRCs agree: a 20-block package can have 0x7D after block 20 by chance)
+function logicalImage(fwsc) {
+  const n = blockCount(fwsc);
+  if (n !== BLOCKS) {
+    const img = deinterleave(fwsc, n);
+    if (filesOk(img) || !filesOk(deinterleave(fwsc, BLOCKS))) return img;
+  }
+  return deinterleave(fwsc, BLOCKS);
+}
+
+// The official FM-1 V15 (M-VAVE Downloads -> PC Firmware -> FM-1 V15, FM-1.fwsc), for the return to the
+// official firmware: only that exact file is accepted (its SHA-256 pins every byte: the loader, the app, the
+// layout; the name of the file proves nothing). The digest is the one Felucca 1.0 pins.
+const STOCK_V15_SHA256 = "db1642b2b6fa5c2cccb11ffd13878068bb28601678d3644049f99dc40e7edb8a";
+const STOCK_V15_SIZE = 699956;
+const STOCK_V15_PRODUCT = "FM-1_015";
+// The official SMK-37 Pro V016 (SMK-37_Pro_016.fwsc, 36 interleave blocks), for the return of an SMK-37 Pro.
+const STOCK_SMK016_SHA256 = "2d98ce72530e71d617384963423820536f094501299e2cfec0a8d3c3fb6bcfb0";
+const STOCK_SMK016_SIZE = 705252;
+const STOCK_SMK016_PRODUCT = "SMK-37 Pro_016";
+
+async function sha256hex(bytes) {
+  const d = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(d)].map((x) => x.toString(16).padStart(2, "0")).join("");
+}
+
+// The official FM-1 V16: the same checks (after Clipper Pro 1.2:
+// only V15 was accepted, so the way back failed with the file M-VAVE now gives; sloop-fm1 #8). The firmware's own
+// update entry (ota.c) still checks the package's loader (the official one's CRCs) and that its head equals the FM-1's
+const STOCK_V16_SHA256 = "d017fb65e70aca97ee29d944470c3515a74581df5c0576bf70de917c7b2b61d5";
+const STOCK_V16_SIZE = 718196;
+const STOCK_V16_PRODUCT = "FM-1_016";
+const STOCK_FM1 = [
+  { version: "V16", size: STOCK_V16_SIZE, sha256: STOCK_V16_SHA256, product: STOCK_V16_PRODUCT },
+  { version: "V15", size: STOCK_V15_SIZE, sha256: STOCK_V15_SHA256, product: STOCK_V15_PRODUCT },
+];
+
+async function validateStockPackage(bytes) {
+  for (const [size, sha, product, version] of [[STOCK_V16_SIZE, STOCK_V16_SHA256, STOCK_V16_PRODUCT, "V16"],
+                                               [STOCK_V15_SIZE, STOCK_V15_SHA256, STOCK_V15_PRODUCT, "V15"],
+                                               [STOCK_SMK016_SIZE, STOCK_SMK016_SHA256, STOCK_SMK016_PRODUCT, "V016"]])
+    if (bytes.length === size && await sha256hex(bytes) === sha && productOf(bytes) === product)
+      return { product, version, image: logicalImage(bytes) };
+  throw new Error("select the unmodified official FM-1 file (FM-1.fwsc, V16 or V15) or SMK-37 Pro V016 file (SMK-37_Pro_016.fwsc)");
+}
+
+// SPDX-License-Identifier: GPL-3.0-only
+// Copyright (C) 2026 Leo Kuroshita (@kurogedelic), Hügelton Instruments
+//
+// The FM-1 USB-MIDI update protocol (M-UPGRADE compatible) over WebMIDI.
+// Step 1: the running firmware reads parts of the package and stages the update
+// loader. Step 2: the loader reads the whole image and writes it. In both steps
+// the device sends cmd 0x30 read requests on the logical image and we answer.
+
+
+const HS_QUERY = [0xF0, 0x00, 0x32, 0x45, 0x00, 0x00, 0x00, 0x40, 0x7F, 0xF7];
+const UPGRADE = [0xF0, 0x22, 0x24, 0x35, 0x7F, 0xF7];
+const MAXDATA = 512;
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const IS_OTA = (id) => /^ota-/i.test(id.model);
+// Stallion's identity number (tools/fm1pkg_make.py STALLION_NUM): its packages are FM-1_1042XY
+const STALLION_NUM = "1042";
+// the update loader of Stallion's packages ("ota-FM-1_1042XY") and of SLOOP / Felucca ones ("ota-FM-1_9XX": also
+// Stallion's before it had its own number, FM-1_900, which the owners' units still run, so an update from them that
+// was cut off is finished). A device left in the update mode of another firmware (the stock updater's loader) is
+// never written: its loader may lay the image out differently.
+const OUR_LOADER_RE = new RegExp(`^ota-FM-1_(9\\d\\d|${STALLION_NUM}\\d\\d)$`, "i");
+const OUR_LOADER = (id) => OUR_LOADER_RE.test(id.text);
+// the MIDI ports the installer may probe (never other gear): the FM-1 under Felucca ("Felucca"), under Stallion
+// ("Stallion"), under CLIPPER ("Clipper"), under SLOOP or another firmware named after itself ("SLOOP"), the update loaders, and the names
+// Windows / macOS give the stock firmware (after SLOOP 2.6: going from SLOOP to CLIPPER no longer stops at "not found")
+const FM1_PORT = /fm-1|felucca|sloop|clipper|stallion|kayo|ota|composite|sinco|usb-midi/i;
+
+// errors carry a code the pages translate: notfound, model (detail: the device's identity), stopped, noloader, lost, noreturn,
+// mismatch (detail: the identity the device reports), badreq, foreign (detail: the loader's identity), headother (the
+// device stopped in step 1 on a head read of a package with the official loader: its head is from another official version)
+function fail(code, msg, detail = "") { const e = new Error(msg); e.code = code; e.detail = detail; return e; }
+
+function pack7(data) {
+  const out = []; let acc = 0, nb = 0;
+  for (const b of data) {
+    acc |= b << nb; nb += 8;
+    while (nb >= 7) { out.push(acc & 0x7F); acc >>>= 7; nb -= 7; }
+  }
+  if (nb) out.push(acc & 0x7F);
+  return out;
+}
+
+function unpack7(s) {
+  const out = []; let acc = 0, nb = 0;
+  for (const b of s) {
+    acc |= (b & 0x7F) << nb; nb += 7;
+    while (nb >= 8) { out.push(acc & 0xFF); acc >>>= 8; nb -= 8; }
+  }
+  return out;
+}
+
+function response(addr, data, fl = 0) {
+  const len = data.length;
+  const body = [0x00, 0x59, 0x30, (len + 8) & 0xFF, ((len + 8) >> 8) & 0xFF, 0, fl,
+    addr & 0xFF, (addr >>> 8) & 0xFF, (addr >>> 16) & 0xFF, (addr >>> 24) & 0xFF,
+    len & 0xFF, (len >> 8) & 0xFF, 0, ...data];
+  let s = 0;
+  for (let i = 6; i < body.length; i++) s += body[i];
+  body.push(~s & 0xFF);
+  return [0xF0, ...pack7(body), 0xF7];
+}
+
+function parseRequest(pkt) {
+  if (pkt[0] !== 0xF0 || pkt[pkt.length - 1] !== 0xF7) return null;
+  const u = unpack7(pkt.slice(1, -1));
+  if (u.length !== 15 || u[0] !== 0 || u[1] !== 0x59 || u[2] !== 0x30) return null;
+  let s = 0;
+  for (let i = 6; i < 14; i++) s += u[i];
+  if ((~s & 0xFF) !== u[14]) return null;
+  return { fl: u[6], addr: (u[7] | (u[8] << 8) | (u[9] << 16) | (u[10] << 24)) >>> 0, len: u[11] | (u[12] << 8) | (u[13] << 16) };
+}
+
+function parseIdentity(pkt) {
+  const d = unpack7(pkt.slice(1, -1));
+  if (d.length !== 34 || d[0] !== 0 || d[1] !== 0x59 || d[2] !== 0x11) return null;
+  const txt = String.fromCharCode(...d.slice(6, 33)).replace(/\0+$/, "");
+  const m = /^([^_]+)_(\d+)$/.exec(txt);
+  return m ? { text: txt, model: m[1], version: parseInt(m[2], 10) } : null;
+}
+
+// one MIDI in/out pair with a SysEx queue
+class Link {
+  constructor(input, output) {
+    this.input = input; this.output = output; this.q = []; this.waiter = null;
+    input.onmidimessage = (ev) => {
+      if (ev.data[0] !== 0xF0) return;
+      this.q.push(Array.from(ev.data));
+      if (this.waiter) { const w = this.waiter; this.waiter = null; w(); }
+    };
+  }
+  get lost() { return this.input.state === "disconnected" || this.output.state === "disconnected"; }
+  // false when the port is gone (unplugged): WebMIDI throws on a disconnected output
+  send(bytes) {
+    try { this.output.send(bytes); return true; } catch (_) { return false; }
+  }
+  drain() { this.q.length = 0; }
+  async read(ms) {
+    if (!this.q.length) {
+      let tm;
+      await Promise.race([new Promise((r) => { this.waiter = r; }), new Promise((r) => { tm = setTimeout(r, ms); })]);
+      clearTimeout(tm);
+      this.waiter = null;
+    }
+    return this.q.shift() || null;
+  }
+  close() { this.input.onmidimessage = null; }
+}
+
+async function handshake(link, tries = 3) {
+  link.drain();
+  for (let t = 0; t < tries; t++) {
+    if (!link.send(HS_QUERY)) return null;
+    const end = Date.now() + 1000;
+    while (Date.now() < end) {
+      const p = await link.read(end - Date.now());
+      if (!p) break;
+      const id = parseIdentity(p);
+      if (id) return id;
+    }
+  }
+  return null;
+}
+
+// the last request of step 1 was in the head [0, 0x4000) of flash.bin, and the package has the official loader
+function headRefused(image, lastAddr) {
+  const fh = flashHead(image);
+  return !!fh && fh.official && lastAddr >= fh.flOff && lastAddr < fh.flOff + 0x4000;
+}
+
+class Updater {
+  constructor(access, log) {
+    this.access = access;
+    this.log = log || (() => {});
+    this.checkIdleMs = 8000;                      // step 1: the device stopped after this long without a request
+  }
+
+  // every in/out pair with the same port name that answers the handshake
+  async find(filter) {
+    const outs = [...this.access.outputs.values()];
+    for (const input of this.access.inputs.values()) {
+      if (input.state === "disconnected") continue;
+      if (!FM1_PORT.test(input.name || "")) continue;   // never probe other gear
+      const output = outs.find((o) => o.name === input.name) || (outs.length === 1 ? outs[0] : null);
+      if (!output) continue;
+      try { await input.open(); await output.open(); } catch (_) { continue; }
+      const link = new Link(input, output);
+      const id = await handshake(link, 2);
+      if (id && (!filter || filter(id))) return { link, id, name: input.name };
+      link.close();
+    }
+    return null;
+  }
+
+  // the MIDI inputs there are, for the "not found" message: " (MIDI: a, b)" (a port the installer skipped shows)
+  seen() {
+    const names = [...this.access.inputs.values()].filter((p) => p.state !== "disconnected").map((p) => p.name || "?");
+    return names.length ? ` (MIDI: ${names.join(", ")})` : " (MIDI: none)";
+  }
+
+  async waitFor(filter, ms) {
+    const end = Date.now() + ms;
+    while (Date.now() < end) {
+      const dev = await this.find(filter);
+      if (dev) return dev;
+      await sleep(1000);
+    }
+    return null;
+  }
+
+  // serve read requests until the device asks for one of the finish addresses; stops early
+  // when the port disappears (lost: true) instead of waiting out idleMs
+  async serve(link, image, finishAddr, idleMs, onProgress) {
+    let served = 0, last = Date.now(), lastAddr = -1;
+    for (;;) {
+      const pkt = await link.read(1000);
+      if (!pkt) {
+        if (link.lost) return { served, finished: false, lost: true, lastAddr };
+        if (Date.now() - last > idleMs) return { served, finished: false, lastAddr };
+        continue;
+      }
+      const r = parseRequest(pkt);
+      if (!r) continue;
+      last = Date.now();
+      if (r.addr === 0xE0000000 || r.addr === 0xF0000000) {
+        link.send(response(r.addr, [...new TextEncoder().encode("success"), 0]));
+        if (r.addr === finishAddr) return { served, finished: true };
+        continue;
+      }
+      if (r.len > MAXDATA || r.addr + r.len > image.length) throw fail("badreq", `bad request ${r.addr.toString(16)}+${r.len}`);
+      await sleep(10);
+      if (!link.send(response(r.addr, Array.from(image.subarray(r.addr, r.addr + r.len)), r.fl))) {
+        return { served, finished: false, lost: true, lastAddr };
+      }
+      served++;
+      lastAddr = r.addr;
+      if (onProgress) onProgress(served, r.addr);
+    }
+  }
+
+  // full install: running firmware -> loader -> new firmware
+  async install(image, product, onStep) {
+    const step = onStep || (() => {});
+    const dev = await this.find((id) => !IS_OTA(id));
+    if (!dev) throw fail("notfound", "FM-1 not found (USB cable, and no other app using it?)", this.seen());
+    const [model] = product.split("_");
+    if (dev.id.model !== model) { dev.link.close(); throw fail("model", `the device is ${dev.id.text}, the package is for ${product}`, dev.id.text); }
+    step("start", dev.id.text);
+    dev.link.send(UPGRADE);
+    await sleep(2000);
+    const s1 = await this.serve(dev.link, image, 0xE0000000, this.checkIdleMs, (n) => step("verify", n));
+    dev.link.close();
+    if (!s1.finished && !s1.lost && headRefused(image, s1.lastAddr))
+      throw fail("headother", "the FM-1 refused the file: its boot area is from another official version; nothing was written");
+    if (!s1.finished) throw fail(s1.lost ? "lost" : "stopped", `the device ${s1.lost ? "was disconnected" : "stopped"} after ${s1.served} requests: nothing was written`);
+    step("loader");
+    await sleep(3000);
+    const ota = await this.waitFor(IS_OTA, 30000);
+    if (!ota) throw fail("noloader", "the update loader did not appear. Replug the USB cable and press Install again: the device stays in update mode until it is finished.");
+    const s2 = await this.write(ota, image, step);
+    if (!s2.finished) throw fail(s2.lost ? "lost" : "stopped", `the loader ${s2.lost ? "was disconnected" : "stopped"} after ${s2.served} requests. Replug and press Install again to resume.`);
+    step("reboot");
+    await sleep(3000);
+    const back = await this.waitFor((id) => !IS_OTA(id), 40000);
+    if (!back) throw fail("noreturn", "the device did not come back: power-cycle it");
+    back.link.close();
+    if (back.id.text !== product) throw fail("mismatch", `installed, but the device reports ${back.id.text}`, back.id.text);
+    step("done", back.id.text);
+    return back.id.text;
+  }
+
+  // step 2 with the loader found by find()/waitFor()
+  async write(ota, image, step) {
+    ota.link.send(UPGRADE);
+    await sleep(2000);
+    const s2 = await this.serve(ota.link, image, 0xF0000000, 180000, (n) => step("write", n));
+    ota.link.close();
+    return s2;
+  }
+
+  // resume: the device is already in update mode (loader) -> true when the write finished. Only SLOOP's
+  // own loader is resumed, except for the return to the official firmware (opts.product: the official
+  // package, its identity checked once the FM-1 is back, after Felucca 1.0): that one is the official
+  // loader's own image, as M-UPGRADE would write it
+  async resume(image, onStep, opts = {}) {
+    const ota = await this.find(IS_OTA);
+    if (!ota) return false;
+    if (!OUR_LOADER(ota.id) && !opts.product) {
+      ota.link.close();
+      throw fail("foreign", `the FM-1 is in the update mode of another firmware (${ota.id.text}): finish that update with its own updater`, ota.id.text);
+    }
+    const step = onStep || (() => {});
+    if (!(await this.write(ota, image, step)).finished) return false;
+    if (opts.product) {
+      step("reboot");
+      await sleep(3000);
+      const back = await this.waitFor((id) => !IS_OTA(id), 40000);
+      if (!back) throw fail("noreturn", "the FM-1 did not come back after the write: power-cycle it");
+      back.link.close();
+      if (back.id.text !== opts.product) throw fail("mismatch", `written, but the FM-1 reports ${back.id.text}`, back.id.text);
+      step("done", back.id.text);
+    }
+    return true;
+  }
+}
+
+const $ = (id) => document.getElementById(id);
+const TEXT = {
+  ja: {
+    boardPick: "お使いの楽器：",
+    intro: "FM-1 を USB で接続してください。パソコンの Chrome か Edge（Windows、macOS、Linux、ChromeOS）、または Android の Chrome で使えます（Web MIDI）。Safari と iPhone・iPad のブラウザではインストールも編集もできません。",
+    warn: "Stallion の書き込み中は USB ケーブルを抜かないでください。",
+    install: "インストール",
+    other: "言語：日本語",
+    otherNext: "表示を英語に切り替える",
+    editor: "エディタを開く：パソコンからすべての音色を編集",
+    edOffline: "エディタを 1 つのファイルでダウンロード（インターネットなしで使う：Chrome か Edge で開く）",
+    appInstall: "アプリとしてインストール（エディタとインストーラーをオフラインでも・Android も）",
+    direct: "USB ケーブルはパソコンに直接つないでください。プローブなどの機材は不要です。",
+    brick: "万一インストールに失敗して起動しなくなった場合は、復旧に Transporter が必要です:",
+    beta: "これは無保証のカスタムファームウェアです。このファームウェアを使ったことで FM-1 が壊れたり不具合が起きたりしても、作者は一切の責任を負いません。自己責任でお使いください。",
+    nomidi: "このブラウザには Web MIDI がありません。パソコンの Chrome か Edge で開いてください（Safari と iPhone・iPad では使えません）。",
+    loadfail: "読み込めませんでした: ",
+    start: "開始します",
+    verify: "確認中",
+    loader: "書き込みモードに切り替え中",
+    write: "書き込み中",
+    reboot: "再起動中",
+    done: "完了しました",
+    stopped: "途中で止まりました。USB を挿し直してもう一度押してください。",
+    error: "エラー: ",
+    denied: "MIDI（SysEx）の使用が許可されませんでした。アドレスバーのサイト設定で MIDI を許可して、もう一度押してください。",
+    notfound: "FM-1 が見つかりません。USB ケーブル（データ通信用か）を確かめ、MIDI を使う他のアプリを閉じてから、もう一度押してください。",
+    model: "接続されている機器は FM-1 ではありません。",
+    smk: "接続されている機器は {m} です（FM-1 ではありません）。何も書き込んでいません。SMK-37 Pro のインストーラーでインストールしてください：",
+    toSmk: "SMK-37 Pro にインストール",
+    lost: "USB の接続が切れました。挿し直してもう一度押してください。",
+    noloader: "書き込みモードの FM-1 が見つかりません。USB を挿し直してもう一度押してください（終わるまで書き込みモードのままです）。",
+    noreturn: "FM-1 が戻ってきません。電源を入れ直してください。",
+    mismatch: "書き込みは終わりましたが、FM-1 が別のバージョンを報告しています: ",
+    foreign: "FM-1 は別のファームウェアの書き込みモードです。そのアップデーター（M-UPGRADE）で書き込みを終えてから、もう一度インストールしてください: ",
+    headother: "FM-1 は変更されていません。FM-1 の起動領域がこのファイルとは別の公式バージョンのものなので、このファイルは受け付けられませんでした。対処：1. FM-1 に最後に入っていた公式ファイルを選ぶ（最後が V16 なら V16、V15 なら V15）。2. または、まずそのファイルを入れてから、公式のアップデーターでこのバージョンに更新する。",
+    badpkg: "インストールするファイルが壊れています。ページを再読み込みしてください。",
+    leave: "書き込み中です。ページを閉じないでください。",
+    license: "GPL-3.0、無保証。ソース:",
+    stockTitle: "公式ファームウェアに戻す",
+    stockHelp: "M-VAVE のサイトから公式の FM-1 ファームウェア（V16、または V15）をダウンロードし、中の FM-1.fwsc（変更していないもの）を選んでください。ファイルはこのブラウザの中で確認され、どこにも送られません。",
+    stockBackup: "公式ファームウェアは Stallion の音色・プリセット・ウェーブテーブルを開けません。先にエディタでバックアップを保存してください（Backup タブ）。Stallion を入れ直せば、エディタから復元できます。",
+    stockEditor: "エディタを開いてバックアップする",
+    stockSaved: "バックアップをパソコンに保存しました",
+    stockFile: "公式の FM-1.fwsc",
+    stockGo: "公式ファームウェアをインストール",
+    stockValid: "公式ファームウェアを確認しました",
+    stockBad: "公式ファームウェア（V16 / V15）ではありません: ",
+    stockConfirm: "FM-1 に公式ファームウェアをインストールします。Stallion の曲は公式ファームウェアでは開けません。バックアップは保存しましたか？",
+    stockFinish: "FM-1 は Stallion の書き込みモードです。先に「インストール」で Stallion の書き込みを終えてから、公式ファームウェアに戻してください。",
+    back: "M-VAVE のアップデーター M-UPGRADE（Downloads → PC Software）でも戻せます。FM-1 が見つからない場合は、MIDI を使う他のアプリとブラウザのタブを閉じてください。",
+    h1: "FM-1 に Stallion をインストール",
+    stepsT: "はじめる前に",
+    s1T: "パソコンの Chrome か Edge、または Android の Chrome を使う",
+    s1: "Windows、macOS、Linux、ChromeOS で使えます。Safari と、iPhone・iPad のすべてのブラウザは Web MIDI がないため、インストールできません。",
+    s2T: "FM-1 をパソコンに直接つなぐ",
+    s2: "データ通信できる USB ケーブルを使い（充電専用ケーブルは不可）、ハブは通さないでください。MIDI を使う他のアプリやタブは閉じてください。",
+    s3T: "「インストール」を押して「完了」まで待つ",
+    s3: "ブラウザに聞かれたら MIDI を許可してください。FM-1 が書き込みモードで再起動し、Stallion が書き込まれ、Stallion のロゴで再起動します。",
+    backupT: "すでに Stallion を使っていますか？",
+    backup: "先にエディタで音色のバックアップを保存してください（Backup タブ）。何かあっても復元できます。",
+    afterT: "インストールのあと",
+    logT: "技術ログ（不具合の報告用）",
+    troubleT: "うまくいかないとき",
+    rescue: "インストールが途中で止まっても、FM-1 は書き込みモードのままです。ケーブルを挿し直してもう一度「インストール」を押せば、最後まで書き込みます。Stallion が起動しないときは、OCT− だけを押しながら FM-1 の電源を入れ（STALLION USB RESCUE）、もう一度「インストール」を押してください。",
+    homeLink: "Stallion でできること：音源エンジン、マトリクス、エディタ",
+  },
+  en: {
+    boardPick: "Your instrument:",
+    intro: "Connect the FM-1 by USB. Use Chrome or Edge on a computer (Windows, macOS, Linux, ChromeOS) or Chrome on Android: they have Web MIDI. Safari, and every browser on iPhone and iPad, cannot install or edit.",
+    warn: "Do not unplug the USB cable while Stallion is being written.",
+    install: "Install",
+    other: "Language: English",
+    otherNext: "Show the page in French",
+    editor: "Open the editor: edit every sound from your computer",
+    edOffline: "Download the editor as one file, to use it without internet (open it in Chrome or Edge)",
+    appInstall: "Install the app: the editor and the installer, offline too (Android as well)",
+    direct: "Connect the USB cable directly to the computer. You need no probe or other hardware.",
+    brick: "If an install fails and the FM-1 no longer starts, recovering it needs a Transporter:",
+    beta: "This is custom firmware with no warranty. The author accepts no responsibility if your FM-1 is damaged or misbehaves because of it. Use it at your own risk.",
+    nomidi: "This browser has no Web MIDI. Open the page in Chrome or Edge on a computer (Safari, iPhone and iPad cannot do it).",
+    loadfail: "Could not load: ",
+    start: "Starting",
+    verify: "Verifying",
+    loader: "Switching to update mode",
+    write: "Writing",
+    reboot: "Restarting",
+    done: "Done",
+    stopped: "Stopped. Replug the USB cable and press Install again.",
+    error: "Error: ",
+    denied: "MIDI (SysEx) access was not allowed. Allow MIDI in the site settings (address bar) and press Install again.",
+    notfound: "FM-1 not found. Check the USB cable (a data cable), close other apps that use MIDI, and press Install again.",
+    model: "The connected device is not an FM-1.",
+    smk: "The connected device is an {m}, not an FM-1. Nothing was written. Install Stallion on it with the SMK-37 Pro installer:",
+    toSmk: "Install on SMK-37 Pro",
+    lost: "The USB connection was lost. Replug it and press Install again.",
+    noloader: "The FM-1 in update mode was not found. Replug the USB cable and press Install again (it stays in update mode until it is finished).",
+    noreturn: "The FM-1 did not come back. Power-cycle it.",
+    mismatch: "Written, but the FM-1 reports another version: ",
+    foreign: "The FM-1 is in the update mode of another firmware. Finish that update with its own updater (M-UPGRADE), then press Install again: ",
+    headother: "The FM-1 is unchanged. Its boot area is from another official version than this file, so the FM-1 refused it. What to do: 1. choose the official file the FM-1 last had (V16 if it last ran V16, V15 if V15); 2. or install that file first, then update to this version with the official updater.",
+    badpkg: "The file to install is damaged. Reload the page.",
+    leave: "Writing. Do not close the page.",
+    license: "GPL-3.0, no warranty. Source:",
+    stockTitle: "Return to the official firmware",
+    stockHelp: "Download the official FM-1 firmware (V16, or V15) from M-VAVE and select the FM-1.fwsc inside it, unmodified. The file is checked in this browser; it is not sent anywhere.",
+    stockBackup: "The official firmware cannot open Stallion's sounds, presets or wavetables. Save a backup with the editor first (the Backup tab); reinstall Stallion and restore it from the editor whenever you want them back.",
+    stockEditor: "Open the editor to back up",
+    stockSaved: "I saved a backup on this computer",
+    stockFile: "The official FM-1.fwsc",
+    stockGo: "Install the official firmware",
+    stockValid: "Official firmware verified",
+    stockBad: "Not the official firmware (V16 / V15): ",
+    stockConfirm: "Install the official firmware on the FM-1? The official firmware cannot open Stallion's music. Did you save a backup?",
+    stockFinish: "The FM-1 is in Stallion's update mode. Press Install to finish the Stallion update first, then return to the official firmware.",
+    back: "M-VAVE's own updater, M-UPGRADE (Downloads → PC Software), works too. If it does not find the FM-1, close every other app and browser tab that uses MIDI.",
+    h1: "Install Stallion on the FM-1",
+    stepsT: "Before you start",
+    s1T: "Use Chrome or Edge on a computer, or Chrome on Android",
+    s1: "Windows, macOS, Linux and ChromeOS all work. Safari, and every browser on iPhone and iPad, cannot install Stallion: they have no Web MIDI.",
+    s2T: "Connect the FM-1 straight to the computer",
+    s2: "Use a USB cable that carries data, not a charge-only cable, and no hub. Close other apps and browser tabs that use MIDI.",
+    s3T: "Press Install and wait for Done",
+    s3: "Allow MIDI when the browser asks. The FM-1 restarts into update mode, Stallion is written, and the FM-1 restarts on the Stallion logo.",
+    backupT: "Already using Stallion?",
+    backup: "Save a backup of your sounds with the editor first (the Backup tab). If anything goes wrong, you can restore it.",
+    afterT: "After installing",
+    logT: "Technical log (for bug reports)",
+    troubleT: "If something goes wrong",
+    rescue: "If an install stops part way, the FM-1 stays in update mode: replug the cable and press Install again, and it finishes. If Stallion does not start, hold OCT− alone while you switch the FM-1 on (STALLION USB RESCUE), then press Install again.",
+    homeLink: "What Stallion does: the engines, the matrix, the editor",
+  },
+  fr: {
+    boardPick: "Ton instrument :",
+    intro: "Branche la FM-1 en USB. Utilise Chrome ou Edge sur un ordinateur (Windows, macOS, Linux, ChromeOS) ou Chrome sur Android : ils ont le Web MIDI. Safari, et tous les navigateurs sur iPhone et iPad, ne peuvent ni installer ni éditer.",
+    warn: "Ne débranche pas le câble USB pendant l'écriture de Stallion.",
+    install: "Installer",
+    other: "Langue : français",
+    otherNext: "Afficher la page en japonais",
+    editor: "Ouvrir l'éditeur : édite chaque son depuis ton ordinateur",
+    edOffline: "Télécharger l'éditeur en un seul fichier, pour l'utiliser sans internet (ouvre-le dans Chrome ou Edge)",
+    appInstall: "Installer l'app : l'éditeur et l'installateur, hors ligne aussi (Android également)",
+    direct: "Branche le câble USB directement sur l'ordinateur. Aucune sonde ni autre matériel n'est nécessaire.",
+    brick: "Si une installation échoue et que la FM-1 ne démarre plus, il faut un Transporter pour la récupérer :",
+    beta: "C'est un firmware personnalisé sans garantie. L'auteur décline toute responsabilité si ta FM-1 est endommagée ou fonctionne mal à cause de lui. Utilise-le à tes risques.",
+    nomidi: "Ce navigateur n'a pas le Web MIDI. Ouvre la page dans Chrome ou Edge sur un ordinateur (Safari, iPhone et iPad ne peuvent pas).",
+    loadfail: "Chargement impossible : ",
+    start: "Démarrage",
+    verify: "Vérification",
+    loader: "Passage en mode mise à jour",
+    write: "Écriture",
+    reboot: "Redémarrage",
+    done: "Terminé",
+    stopped: "Arrêté. Rebranche le câble USB et appuie de nouveau sur Installer.",
+    error: "Erreur : ",
+    denied: "L'accès MIDI (SysEx) a été refusé. Autorise le MIDI dans les paramètres du site (barre d'adresse) et appuie de nouveau sur Installer.",
+    notfound: "FM-1 introuvable. Vérifie le câble USB (un câble de données), ferme les autres applis qui utilisent le MIDI, et appuie de nouveau sur Installer.",
+    model: "L'appareil branché n'est pas une FM-1.",
+    smk: "L'appareil branché est un {m}, pas une FM-1. Rien n'a été écrit. Installe Stallion dessus avec l'installateur SMK-37 Pro :",
+    toSmk: "Installer sur SMK-37 Pro",
+    lost: "La connexion USB a été perdue. Rebranche-la et appuie de nouveau sur Installer.",
+    noloader: "La FM-1 en mode mise à jour est introuvable. Rebranche le câble USB et appuie de nouveau sur Installer (elle reste en mode mise à jour jusqu'à la fin).",
+    noreturn: "La FM-1 n'est pas revenue. Éteins-la et rallume-la.",
+    mismatch: "Écrit, mais la FM-1 annonce une autre version : ",
+    foreign: "La FM-1 est en mode mise à jour d'un autre firmware. Termine cette mise à jour avec son propre outil (M-UPGRADE), puis appuie de nouveau sur Installer : ",
+    headother: "La FM-1 n'a pas été modifiée. Sa zone de démarrage vient d'une autre version officielle que ce fichier, elle l'a donc refusé. Que faire : 1. choisis le fichier officiel que la FM-1 avait en dernier (V16 si elle avait la V16, V15 si elle avait la V15) ; 2. ou installe d'abord ce fichier-là, puis passe à cette version avec l'outil de mise à jour officiel.",
+    badpkg: "Le fichier à installer est endommagé. Recharge la page.",
+    leave: "Écriture en cours. Ne ferme pas la page.",
+    license: "GPL-3.0, sans garantie. Source :",
+    stockTitle: "Revenir au firmware officiel",
+    stockHelp: "Télécharge le firmware officiel de la FM-1 (V16, ou V15) sur le site de M-VAVE et choisis le FM-1.fwsc qu'elle contient, sans le modifier. Le fichier est vérifié dans ce navigateur ; il n'est envoyé nulle part.",
+    stockBackup: "Le firmware officiel ne peut pas ouvrir les sons, les presets ni les tables d'ondes de Stallion. Fais d'abord une sauvegarde avec l'éditeur (onglet Backup) ; réinstalle Stallion et restaure-la depuis l'éditeur quand tu veux les retrouver.",
+    stockEditor: "Ouvrir l'éditeur pour sauvegarder",
+    stockSaved: "J'ai enregistré une sauvegarde sur cet ordinateur",
+    stockFile: "Le FM-1.fwsc officiel",
+    stockGo: "Installer le firmware officiel",
+    stockValid: "Firmware officiel vérifié",
+    stockBad: "Ce n'est pas le firmware officiel (V16 / V15) : ",
+    stockConfirm: "Installer le firmware officiel sur la FM-1 ? Le firmware officiel ne peut pas ouvrir la musique de Stallion. As-tu fait une sauvegarde ?",
+    stockFinish: "La FM-1 est en mode mise à jour de Stallion. Appuie d'abord sur Installer pour terminer la mise à jour de Stallion, puis reviens au firmware officiel.",
+    back: "L'outil de M-VAVE, M-UPGRADE (Downloads → PC Software), fonctionne aussi. S'il ne trouve pas la FM-1, ferme toutes les autres applis et onglets qui utilisent le MIDI.",
+    h1: "Installer Stallion sur la FM-1",
+    stepsT: "Avant de commencer",
+    s1T: "Utilise Chrome ou Edge sur un ordinateur, ou Chrome sur Android",
+    s1: "Windows, macOS, Linux et ChromeOS conviennent. Safari, et tous les navigateurs sur iPhone et iPad, ne peuvent pas installer Stallion : ils n'ont pas le Web MIDI.",
+    s2T: "Branche la FM-1 directement sur l'ordinateur",
+    s2: "Utilise un câble USB qui transmet les données (pas un câble de charge seule), sans hub. Ferme les autres applis et onglets qui utilisent le MIDI.",
+    s3T: "Appuie sur Installer et attends « Terminé »",
+    s3: "Autorise le MIDI quand le navigateur le demande. La FM-1 redémarre en mode mise à jour, Stallion est écrit, puis la FM-1 redémarre sur le logo Stallion.",
+    backupT: "Tu utilises déjà Stallion ?",
+    backup: "Fais d'abord une sauvegarde de tes sons avec l'éditeur (onglet Backup). En cas de problème, tu pourras la restaurer.",
+    afterT: "Après l'installation",
+    logT: "Journal technique (pour signaler un bug)",
+    troubleT: "En cas de problème",
+    rescue: "Si une installation s'arrête en route, la FM-1 reste en mode mise à jour : rebranche le câble et appuie de nouveau sur Installer, elle se termine. Si Stallion ne démarre pas, maintiens OCT− seul en allumant la FM-1 (STALLION USB RESCUE), puis appuie de nouveau sur Installer.",
+    homeLink: "Ce que fait Stallion : les moteurs, la matrice, l'éditeur",
+  },
+};
+const pickLang = () => { const l = (navigator.language || "en").toLowerCase(); return l.startsWith("fr") ? "fr" : l.startsWith("ja") ? "ja" : "en"; };
+let lang = pickLang();                               /* the browser's language first; the buttons switch, and the choice is remembered */
+try { const v = localStorage.getItem("clipper-installer-lang"); if (["en", "fr", "ja"].includes(v)) lang = v; } catch (e) { /* no storage */ }
+const t = (k) => TEXT[lang][k];
+let lastKey = null, lastArg = "";
+/* a text with {m} takes the argument in its place (the device's model), any other has it after */
+const fmt = (k, arg) => t(k).includes("{m}") ? t(k).replace("{m}", arg) : t(k) + arg;
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll("[data-t]").forEach((e) => { e.textContent = t(e.dataset.t); });
+  document.querySelectorAll("section[data-l]").forEach((e) => { e.hidden = e.dataset.l !== lang; });
+  document.querySelectorAll(".lang").forEach((b) => { b.setAttribute("aria-current", String(b.dataset.l === lang)); b.title = t("other"); });
+  if (lastKey) $("status").textContent = fmt(lastKey, lastArg);
+}
+document.querySelectorAll(".lang").forEach((b) => b.addEventListener("click", () => {
+  lang = b.dataset.l;
+  try { localStorage.setItem("clipper-installer-lang", lang); } catch (e) { /* no storage */ }
+  applyLang();
+}));
+applyLang();
+/* (1.1, after SLOOP 2.6) the site without internet (webapp/sw.js): opened once online, the installer, the firmware and
+ * the editor work offline too, still on https (Android: a downloaded file opens as content://, where Chrome refuses MIDI) */
+if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol))
+  navigator.serviceWorker.register("../sw.js").catch(() => {});
+{
+  let ask = null;
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); ask = e; $("app").hidden = false; });
+  window.addEventListener("appinstalled", () => { ask = null; $("app").hidden = true; });
+  $("app").addEventListener("click", async () => {
+    if (!ask) return;
+    ask.prompt();
+    await ask.userChoice.catch(() => {});
+    ask = null;
+    $("app").hidden = true;
+  });
+}
+/* the link to the SMK-37 Pro installer shows with the message that names an SMK-37 Pro, and only then */
+const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textContent = fmt(k, arg); $("next").hidden = k !== "smk"; };
+const say = (txt) => { lastKey = null; $("status").textContent = txt; $("next").hidden = true; };
+const log = (t) => { $("log").textContent += t + "\n"; };
+let image = null;
+const meta = {"version": "1.0", "product": "FM-1_104210", "pkg": "../../firmware/stallion-1.0.fwsc", "sha256": "2b5b6b638b4d0b9b1c20a7603bd4ba2bf994fb1ebbef7711c4990f91dda755ba"};
+
+let writing = false, stock = null;
+const ride = () => {                               /* the longship: where the bar is, sailing while it fills */
+  const v = $("bar").value, r = $("ride");
+  r.style.setProperty("--p", v / 100);
+  r.classList.toggle("run", writing && v < 100);
+  r.classList.toggle("home", v >= 100);
+};
+const lockAll = (on) => {
+  writing = on;
+  ride();
+  $("go").disabled = on || !image;
+  $("stock-go").disabled = on || !stock || !$("stock-saved").checked;
+  $("stock-file").disabled = on;
+};
+window.addEventListener("beforeunload", (e) => { if (writing) { e.preventDefault(); e.returnValue = t("leave"); } });
+
+(async () => {
+  if (!navigator.requestMIDIAccess) { sayK("nomidi"); return; }
+  try {
+    const r = await fetch(meta.pkg);
+    if (!r.ok) throw new Error(`${meta.pkg}: HTTP ${r.status}`);
+    const pkg = new Uint8Array(await r.arrayBuffer());
+    if (productOf(pkg) !== meta.product) { sayK("badpkg"); return; }
+    if (meta.sha256 && self.crypto && crypto.subtle) {   /* a damaged download is never offered (the loader checks its CRC too) */
+      const h = [...new Uint8Array(await crypto.subtle.digest("SHA-256", pkg))].map((b) => b.toString(16).padStart(2, "0")).join("");
+      if (h !== meta.sha256) { sayK("badpkg"); log(`sha256 ${h}, expected ${meta.sha256}`); return; }
+    }
+    image = logicalImage(pkg);
+    say(`Stallion ${meta.version}`);
+    lockAll(writing);
+  } catch (e) { sayK("loadfail", e.message); }
+})();
+
+const total = 74 + 1179;                           /* reads: step 1, step 2 (head + app area, SLOOP 2.0 loader) */
+const step = (k, a) => {
+  log(`${k} ${a ?? ""}`);
+  if (k === "start") sayK("start");
+  if (k === "verify") { sayK("verify"); $("bar").value = Math.min(100, (a / total) * 100); }
+  if (k === "loader") sayK("loader");
+  if (k === "write") { sayK("write"); $("bar").value = Math.min(100, ((74 + a) / total) * 100); }
+  if (k === "reboot") sayK("reboot");
+  if (k === "done") { $("bar").value = 100; sayK("done"); }
+  ride();
+};
+/* an SMK-37 Pro on the FM-1's page (its identity, or a port of that name when no FM-1 answered): the message names
+   it and the link goes straight to its installer */
+const SMK_PRO = /^(ota-)?SMK-37 Pro$/i;
+const failed = (e) => {
+  const model = e && e.code === "model" ? String(e.detail || "").split("_")[0].replace(/^ota-/i, "") : "";
+  if (SMK_PRO.test(model)) sayK("smk", model);
+  else if (e && e.code === "notfound" && /SMK-37 Pro/i.test(e.detail || "")) sayK("smk", "SMK-37 Pro");
+  else if (e && e.code === "model") sayK("model");
+  else if (e && e.code && TEXT[lang][e.code]) sayK(e.code, e.detail || "");
+  else sayK("error", e && e.message);
+  log(String(e && e.stack || e));
+};
+
+$("go").addEventListener("click", async () => {
+  if (writing) return;
+  lockAll(true);
+  let midi;
+  try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
+  catch (e) { sayK("denied"); lockAll(false); return; }
+  try {
+    const up = new Updater(midi, log);
+    const ota = await up.find((id) => /^ota-/i.test(id.model));
+    if (ota) {
+      ota.link.close();
+      sayK((await up.resume(image, step)) ? "done" : "stopped");
+    } else {
+      await up.install(image, meta.product, step);
+    }
+  } catch (e) { failed(e); }
+  lockAll(false);
+});
+
+/* back to the official firmware, V16 or V15 (after Felucca 1.0; V16 after 1.2): only the exact official files, a backup first (the editor),
+   through the same update path as M-UPGRADE; a device left in the official updater's mode is finished */
+$("stock-saved").addEventListener("change", () => lockAll(writing));
+$("stock-file").addEventListener("change", async () => {
+  const f = $("stock-file").files[0];
+  stock = null;
+  lockAll(writing);
+  if (!f) return;
+  try { stock = await validateStockPackage(new Uint8Array(await f.arrayBuffer())); sayK("stockValid"); }
+  catch (e) { sayK("stockBad", e.message); }
+  lockAll(writing);
+});
+$("stock-go").addEventListener("click", async () => {
+  if (writing || !stock || !$("stock-saved").checked || !confirm(t("stockConfirm"))) return;
+  lockAll(true);
+  let midi;
+  try { midi = await navigator.requestMIDIAccess({ sysex: true }); }
+  catch (e) { sayK("denied"); lockAll(false); return; }
+  try {
+    const up = new Updater(midi, log);
+    const ota = await up.find((id) => /^ota-/i.test(id.model));
+    if (ota) {
+      ota.link.close();
+      if (OUR_LOADER(ota.id)) sayK("stockFinish");    /* our loader: finish the update first (Install) */
+      else sayK((await up.resume(stock.image, step, { product: stock.product })) ? "done" : "stopped");
+    } else {
+      await up.install(stock.image, stock.product, step);
+    }
+  } catch (e) { failed(e); }
+  lockAll(false);
+});
+</script>
+</body>
+</html>
