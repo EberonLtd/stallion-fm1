@@ -7,7 +7,7 @@
   "editor": "https://eberonltd.github.io/stallion-fm1/webapp/editor/",
   "cheat": "https://eberonltd.github.io/stallion-fm1/cheat-sheet.html",
   "image": "assets/logo/stallion-splash.png",
-  "sounds": "licensed: VSCO-2 CE and VCSL (Versilian Studios) and Sonic Pi samples, CC0; Wurlitzer EP200 samples by Greg Sullivan, CC-BY-3.0; the rest synthesised by the firmware's own GPL tools",
+  "sounds": "licensed: VSCO-2 CE and VCSL (Versilian Studios) and Sonic Pi samples, CC0; electric piano samples by Greg Sullivan, CC-BY-3.0; the rest synthesised by the firmware's own GPL tools",
   "color": "#D98E2F",
   "smk37": {
     "what": "The same 26 engines and 819 sounds on the SMK-37 Pro, played from its 37 keys with pad and key aftertouch, the wheels and a pedal. The installer takes the SMK-37 Pro only and never writes the keyboard's factory calibration.",
