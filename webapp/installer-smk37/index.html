@@ -1447,7 +1447,7 @@ function setStatus(txt, cls = "") { $("status").textContent = txt; $("status").c
 /* the link to the FM-1 installer shows with the message that names an FM-1, and only then */
 const sayK = (k, arg = "", cls = "") => { lastKey = k; lastArg = arg; lastCls = cls; setStatus(t(k) + arg, cls); $("next").hidden = k !== "fm1"; };
 const log = (s) => { $("log").textContent += s + "\n"; $("log").scrollTop = 1e9; };
-const meta = {"version": "1.0", "pkgs": [{"product": "SMK-37 Pro_104210", "pkg": "../../firmware/stallion-smk37-1.0.fwsc", "sha256": "56cf2d8078d69eed132f158f02b75ed0513f3bf196766761c3c6dcec9b07b538"}]};   // { version, pkgs: [{ product, pkg, sha256 }] }: one package per model
+const meta = {"version": "1.1", "pkgs": [{"product": "SMK-37 Pro_104211", "pkg": "../../firmware/stallion-smk37-1.1.fwsc", "sha256": "ee267330ccc70513bc1ba3c998ef2b402446c7141b1da30e5a5835b009f58a94"}]};   // { version, pkgs: [{ product, pkg, sha256 }] }: one package per model
 const images = new Map();                          // product -> logical image
 let writing = false;
 const lockAll = (on) => {

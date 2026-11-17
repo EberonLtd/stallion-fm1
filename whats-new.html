@@ -276,9 +276,9 @@ h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
   <span class="kicker">What's new in 1.0</span>
   <h1>Everything Stallion 1.0 adds to Clipper</h1>
   <p class="lead">Stallion is built on <a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> by 3dSam (isod89), and on Clipper Pro, its SMK-37 port (isod89 with M. Geisler). Clipper grew out of <a href="https://github.com/isod89/sloop-fm1" target="_blank" rel="noopener">SLOOP</a>, and all of them are based on <a href="https://github.com/hugelton/Felucca" target="_blank" rel="noopener">Felucca</a> by Leo Kuroshita (@kurogedelic), Hügelton Instruments. Stallion keeps everything they do. This page lists only what Stallion adds on top.</p>
-  <p class="total">132 new features and fixes</p>
+  <p class="total">131 new features and fixes</p>
   <ul class="sum">
-      <li><a href="#sound-engines">Sound engines</a> <span class="n">24</span></li>
+      <li><a href="#sound-engines">Engines and sounds</a> <span class="n">24</span></li>
       <li><a href="#filters">Filters</a> <span class="n">6</span></li>
       <li><a href="#effects">Effects</a> <span class="n">2</span></li>
       <li><a href="#modulation-and-the-matrix">Modulation and the matrix</a> <span class="n">12</span></li>
@@ -290,15 +290,15 @@ h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
       <li><a href="#saving-and-presets">Saving and presets</a> <span class="n">5</span></li>
       <li><a href="#midi-and-usb">MIDI and USB</a> <span class="n">3</span></li>
       <li><a href="#installing-and-updating">Installing and updating</a> <span class="n">2</span></li>
-      <li><a href="#fixes">Fixes</a> <span class="n">26</span></li>
+      <li><a href="#fixes">Fixes</a> <span class="n">25</span></li>
   </ul>
-  <p class="base">In short: 26 engines and 819 factory sounds, 4 of the engines new (PALOMINO, STAMPEDE, RODEO, MARE) and PONY rebuilt from the ground up (24 engine and sound features) · 6 filter features · 2 effect features · 12 modulation and matrix features · 10 playing features · 11 touch and aftertouch features · 8 sequencer and arpeggiator features · 9 screen and control features · 14 web editor features · 5 saving features · 3 MIDI features · 2 installing features · 26 fixes.</p>
+  <p class="base">In short: 26 engines and 819 factory sounds, 4 of the engines new (PALOMINO, STAMPEDE, MARE, and RODEO after zvenson's OberVave) and Clipper's PONY rebuilt (24 engine and sound features) · 6 filter features · 2 effect features · 12 modulation and matrix features · 10 playing features · 11 touch and aftertouch features · 8 sequencer and arpeggiator features · 9 screen and control features · 14 web editor features · 5 saving features · 3 MIDI features · 2 installing features · 25 fixes.</p>
   <section class="story" id="sounds">
     <h2>819 sounds on 26 engines</h2>
     <p>Every engine now comes with a full bank of its classic sounds.</p>
     <ul>
         <li><b>A full bank for every engine</b>: 32 classic sounds on 23 engines, 28 on ACID and SAMPLE, 27 on WSEQ (819 in all), every bank starting with a plain INIT.</li>
-        <li><b>Centred and level-matched</b>: every factory sound has its left and right within 1 dB, and each is measured with a phrase that suits it and trimmed to the same loudness (within 1.5 dB; the sample-based SAMPLE and GRAIN sounds keep their own levels).</li>
+        <li><b>Centred and level-matched</b> (Clipper's level-matching, extended): every factory sound has its left and right within 1 dB, and each is measured with a phrase that suits it and trimmed to the same loudness (within 1.5 dB; the sample-based SAMPLE and GRAIN sounds keep their own levels).</li>
         <li><b>Sounds that move</b>: the PONY, PALOMINO, STAMPEDE, RODEO and MARE sounds are patched in the matrix, so LFOs, envelopes, velocity, pressure and the wheel move them as you play. A factory sound can use all 24 matrix slots.</li>
         <li><b>MARE, from the instrument's patch books</b>: 32 sounds built from the patch books' routings and techniques, in balanced stereo, with SPACE working as the instrument's SPACING and P&gt;VCO as its PITCH MOD ASSIGN.</li>
     </ul>
@@ -318,7 +318,7 @@ h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
     </ul>
   </section>
     <section class="grp" id="sound-engines">
-      <h2>Sound engines <span class="n">24</span></h2>
+      <h2>Engines and sounds <span class="n">24</span></h2>
       <ul>
         <li><b>PALOMINO</b>: a big early-1980s 8-voice poly. Two VCOs with six waves each, cross mod, hard sync, an OTA filter at 12 or 24 dB. 32 sounds: pads, strings, brass, leads, basses and keys.</li>
         <li><b>STAMPEDE</b>: a late-1970s poly with two complete channels per voice. A wave morph through noise, saw, pulse, sine and ring; channel II's feet and detune; a resonant high-pass then low-pass with its own envelope. 32 sounds.</li>
@@ -331,7 +331,7 @@ h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
         <li><b>MARE split modes</b> (MODE SPLT, SPL+N): VCO 1 alone goes to the left filter and VCO 2 alone to the right.</li>
         <li><b>MARE's normals</b>: a cable into VCO 1's pitch moves VCO 2 too, and filter 2 follows filter 1's cutoff, until you give them cables of their own.</li>
         <li><b>STALLION</b>: a new signature HYBRID sound.</li>
-        <li><b>Every factory sound level-matched and centred</b>: no sound jumps out louder or quieter than the next, and none sits in one ear (left and right within 1 dB). The test suite checks both.</li>
+        <li><b>Every factory sound level-matched and centred</b> (Clipper's level-matching, extended): no sound jumps out louder or quieter than the next, and none sits in one ear (left and right within 1 dB). The test suite checks both.</li>
         <li><b>PALOMINO VCO-2 fine tune</b> (EDIT &gt; VOICE 2 &gt; DTUNE): sets how far VCO 2 sits above VCO 1, from 0 to about 16 cents (the old fixed 5 cents is the default, 40), for thick brass, strings and pads.</li>
         <li><b>Resonance that stops short of howling</b>: PALOMINO's filter now stops just below self-oscillation at full RES, and RODEO's up to RES 123, so a resonant bass or brass rings and decays instead of whistling. RODEO's top four steps sing on purpose, as its originals do.</li>
         <li><b>PALOMINO pulse width one way</b>: SHAPE (and an LFO or envelope on it) sweeps the pulse from square towards narrow, once per cycle, instead of folding both ways.</li>
@@ -375,7 +375,7 @@ h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
         <li><b>New destinations</b>: the arpeggiator's rate, the delay, reverb and chorus sends, LFO 1's rate and ENV 1's amount.</li>
         <li><b>S&amp;H, NOISE and +V</b> sources. +V is a constant, for a fixed offset.</li>
         <li><b>Bend and pressure in the matrix</b>: BEND, poly pressure, channel pressure and RIBBON as sources; PIT1, PIT2, XMOD and HPF as destinations.</li>
-        <li><b>The MATRIX page</b>: the selected cable in large type (for example LFO1 &gt; CUT +62), coloured by signal type. Sources and destinations are in panel order, and MARE's normals are shown in words.</li>
+        <li><b>The MATRIX page</b> (Clipper's, extended): the selected cable in large type (for example LFO1 &gt; CUT +62), coloured by signal type. Sources and destinations are in panel order, and MARE's normals are shown in words.</li>
         <li><b>MATRIX 2 &gt; CLEAR</b>: take out all 24 cables at once. UNDO brings them back.</li>
         <li><b>31 sources and 35 destinations</b> in total. User presets keep every one.</li>
         <li><b>CHAO</b>: a chaotic LFO wave on LFO 1, 2 and 3, for movement that never repeats.</li>
@@ -446,11 +446,11 @@ h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
       <h2>Web editor <span class="n">14</span></h2>
       <ul>
         <li><b>Every parameter</b>: the editor now reaches every parameter, including FILTER 2, SLOPE, the BEND page and the FM-1's own settings (tuning, MIDI, TOUCH, LIGHTS, BROWSE).</li>
-        <li><b>Live controls</b>: values are sent while a control moves, not only when you let go.</li>
+        <li><b>Live controls</b> (Clipper's, extended): values are sent while a control moves, not only when you let go.</li>
         <li><b>Envelope grab points</b>: drag the envelope picture's attack, decay, sustain and release points with a mouse, finger or pen.</li>
         <li><b>The patch bay</b>, on every engine: drag cables between 64 jacks to patch the matrix, coloured as on the device, in large, bright type. Switch to the MATRIX tab to see the same cables as a table; up to 24 cables per sound, and only the inputs the engine uses. The matrix is shown once: the old card of MATRIX knobs is gone. FILTER FM, RING, SPLT/SPL+N and the VCO1-&gt;VCO2 pitch normal are MARE's own.</li>
         <li><b>MIDI 3 settings</b> (CC A, CC B, SUST) and the new INSERT types are named in the editor.</li>
-        <li><b>Tuning card</b>: checked against the device, and it says what the FM-1 tunes to.</li>
+        <li><b>Tuning card</b> (Clipper's, extended): checked against the device, and it says what the FM-1 tunes to.</li>
         <li><b>Device banner</b>: the top of every page names the instrument the editor is talking to (FM-1 or SMK-37 Pro), its firmware and the sound playing: its name, engine and voice mode, or a multi sound's name, mode and parts A and B. Without an instrument it says that none is connected.</li>
         <li><b>Folding sections</b>: click a heading to fold its card to the heading (Enter or Space too); Shift+click opens one and folds the rest of the tab; Fold all and Open all on the Sound tab. The browser remembers what is folded, across sounds and engines.</li>
         <li><b>Envelope and LFO pictures that move</b>: ENV and ENV 2 show where the newest note played on the instrument is. LFO, LFO 2 and LFO 3 are drawn as the firmware makes them, with RATE (and on LFO, PHASE and FADE) to drag, a button for each of the six waves, and the same playhead.</li>
@@ -487,9 +487,8 @@ h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
       </ul>
     </section>
     <section class="grp" id="fixes">
-      <h2>Fixes <span class="n">26</span></h2>
+      <h2>Fixes <span class="n">25</span></h2>
       <ul>
-        <li><b>Reverb chop</b>: PLATE, HALL and SHIMMER no longer chop in the left channel.</li>
         <li><b>Reverb pulse and flutter</b>: PLATE and HALL no longer pulse, and SHIMMER no longer flutters.</li>
         <li><b>Reverb at rest</b>: the reverb now rests when nothing is sent to it, saving about a voice's worth of processing.</li>
         <li><b>Chorus RATE</b>: turning RATE glides instead of ticking.</li>

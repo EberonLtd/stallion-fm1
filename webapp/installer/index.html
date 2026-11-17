@@ -365,7 +365,7 @@ h3 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
   <h2 class="sec" data-t="afterT"></h2>
   <div class="after">
     <a class="btn text" href="../editor/" data-t="editor"></a>
-    <a class="btn ghost text" href="../editor/stallion-editor.html" download="stallion-editor-1.0.html" data-t="edOffline"></a>
+    <a class="btn ghost text" href="../editor/stallion-editor.html" download="stallion-editor-1.1.html" data-t="edOffline"></a>
     <button id="app" class="btn ghost text" hidden data-t="appInstall"></button>
   </div>
   <section class="trouble">
@@ -1043,7 +1043,7 @@ const sayK = (k, arg = "") => { lastKey = k; lastArg = arg; $("status").textCont
 const say = (txt) => { lastKey = null; $("status").textContent = txt; $("next").hidden = true; };
 const log = (t) => { $("log").textContent += t + "\n"; };
 let image = null;
-const meta = {"version": "1.0", "product": "FM-1_104210", "pkg": "../../firmware/stallion-1.0.fwsc", "sha256": "2b5b6b638b4d0b9b1c20a7603bd4ba2bf994fb1ebbef7711c4990f91dda755ba"};
+const meta = {"version": "1.1", "product": "FM-1_104211", "pkg": "../../firmware/stallion-1.1.fwsc", "sha256": "47cd2625587a2fdadd66b59572593d91858fbcc91000e62ff73439a768408258"};
 
 let writing = false, stock = null;
 const ride = () => {                               /* the longship: where the bar is, sailing while it fills */
