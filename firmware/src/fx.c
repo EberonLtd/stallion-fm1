@@ -105,6 +105,7 @@ static void track_dist(track_t *t, int32_t *b, uint32_t n, uint32_t fresh)
  * needs, so a hot kick or bass is already turned down when it comes. Before, the gain caught up in ~4 samples and the
  * first ones went through the tanh knee at up to 4x: a crackle on the beats with the MASTER up (in headphones most) */
 #define LIM_T 18000
+#define OUT_FRAC 7                      /* bits under Q15 the DAC takes (audio.c: out << OUT_FRAC + out_lo) */
 typedef struct {
     int32_t dl[CTL], dr[CTL];           /* the mix of the last block (the delay) */
     uint32_t w;                         /* its oldest sample (the next out) */
@@ -118,14 +119,17 @@ typedef struct {
 #define LIM_HOLD 48u
 #define LIM_REL 11                      /* the release after the hold: ~46 ms (12 before the hold: ~93 ms; the same loudness) */
 static lim_t lim_dac = {.env = LIM_T, .g = 32768}, lim_usb = {.env = LIM_T, .g = 32768};
+static int8_t lim_lo[2][CTL];           /* the delay of the bits under Q15 (lim_block's fl, fr: lim_dac's alone) */
 /* (Clipper 0.9) the gain's way over a block: an S curve (smoothstep at (i + 1) / 32), not a straight line: no corner in
  * the gain at the blocks' joints (a straight ramp put one at each, a tick on every loud attack). Each block still ends
  * at the gain its look-ahead asks for; the samples going out were in the last block's look-ahead (g0 fits them) */
 static const uint16_t LIM_S[CTL] = {94, 368, 810, 1408, 2150, 3024, 4018, 5120, 6318, 7600, 8954, 10368, 11830, 13328,
                                     14850, 16384, 17918, 19440, 20938, 22400, 23814, 25168, 26450, 27648, 28750, 29744,
                                     30618, 31360, 31958, 32400, 32674, 32768};
-/* l, r: n (<= CTL) samples in; out: the n samples of CTL before, limited (before the knee) */
-static void lim_block(lim_t *s, int32_t *l, int32_t *r, uint32_t n)
+/* l, r: n (<= CTL) samples in; out: the n samples of CTL before, limited (before the knee). fl, fr (lim_dac, or 0):
+ * the samples' OUT_FRAC bits under Q15 (x + f / 2^OUT_FRAC, -64 .. 64), delayed with them (lim_lo); 0 where the gain
+ * is under 1 */
+static void lim_block(lim_t *s, int32_t *l, int32_t *r, int8_t *fl, int8_t *fr, uint32_t n)
 {
     uint32_t i, w = s->w;
     int32_t pk = 0, a, g0 = s->g, g1, dg, e = s->env;
@@ -155,6 +159,11 @@ static void lim_block(lim_t *s, int32_t *l, int32_t *r, uint32_t n)
     for (i = 0; i < n; i++) {
         int32_t xl = s->dl[w], xr = s->dr[w], g = n == CTL ? g0 + (int32_t)(((int64_t)(g1 - g0) * LIM_S[i]) >> 15)
                                                            : g0 + dg * (int32_t)(i + 1u);
+        if (fl) {
+            int8_t el = lim_lo[0][w], er = lim_lo[1][w];
+            lim_lo[0][w] = fl[i], lim_lo[1][w] = fr[i];
+            fl[i] = el, fr[i] = er;
+        }
         s->dl[w] = l[i], s->dr[w] = r[i];
         w = (w + 1u) & (CTL - 1u);
         if (i + 1u == n)
@@ -163,6 +172,8 @@ static void lim_block(lim_t *s, int32_t *l, int32_t *r, uint32_t n)
                                                          * the limited signal to 12 bits, a whistle on loud basses) */
             xl = (int32_t)(((int64_t)xl * g) >> 15);
             xr = (int32_t)(((int64_t)xr * g) >> 15);
+            if (fl)                                     /* (limited: Q15 alone) */
+                fl[i] = fr[i] = 0;
         }
         l[i] = xl, r[i] = xr;
     }
@@ -214,6 +225,10 @@ static int32_t usb_out[2u * CTL];
 /* the visualiser's input (audio.c fills the scope with it): the mix as if MASTER were all the way up, so the
  * picture does not follow the volume knob, even at 0 (2.4). The same soft knee as the output, no limiter state */
 static int16_t vis_tap[2u * CTL];
+/* the DAC's bits under each sample of mix_block's out (Q15), left then right: out 2^OUT_FRAC + out_lo is the output
+ * with OUT_FRAC more bits, through the MASTER and the knee (out_lo added at the knee's input slope; the DC blocker and
+ * the low cut run on the Q15 part; 0 while the limiter's gain is under 1). -64 .. 64 */
+static int8_t out_lo[2][CTL];
 static struct { int32_t dc[2], dce[2], lc[4], lce[4]; } uo;
 static void master_pre_usb(int32_t *l, int32_t *r)      /* (USB AUDIO = FULL: its own state) */
 {
@@ -1886,8 +1901,8 @@ static void mix_part1(track_t *t, uint32_t n)
 #if CLIPPER_SYNTH
         int32_t sa = 0;                                 /* (1.0) |the part| before DIST and the INSERT (SPREAD's side
                                                          * follows their level: they run on the mid) */
-        {   /* (1.0) SPACE: more reverb and delay; + the matrix's DLY, REV, CHO (voice.c) */
-            int32_t sp = clamp(t->p[P_MAC4], 0, 127);
+        {   /* (1.0) SPACE (voice.c mac_glide): more reverb and delay; + the matrix's DLY, REV, CHO (voice.c) */
+            int32_t sp = mac_st[(uint32_t)(t - trk) % NTRK].q8[3] >> 8;
             r = clamp(t->p[P_REV] + sp + t->revmod, 0, 127) * 258, d = clamp(t->p[P_DLY] + sp / 2 + t->dlymod, 0, 127) * 258;
             c = clamp(t->p[P_CHOR] + t->chomod, 0, 127) * 258;
         }
@@ -2167,13 +2182,19 @@ static void mix_block(int32_t *out, uint32_t n)
     if (n > CTL)
         n = CTL;                                        /* (the buffers' size) */
     {
-        static int32_t ol[CTL], orr[CTL], ul[CTL], ur[CTL];
+        int32_t *ol = wet_l, *orr = wet_r, *ul = send_d, *ur = send_r;   /* (the buses' buffers: free after fx_buses) */
         static uint8_t usb_was;
         for (i = 0; i < n; i++) {
             int32_t m = m0 + (((m1 - m0) * (int32_t)i) >> CTL_LOG2);
             int32_t xl = clamp(mix_l[i], -MIX_MAX, MIX_MAX), xr = clamp(mix_r[i], -MIX_MAX, MIX_MAX);
-            ol[i] = MULQ12R(xl, m, 2);                 /* (1.0: bounded first: x MASTER in 32 bits; #4: rounded, */
-            orr[i] = MULQ12R(xr, m, 2);                /* (x >> 2) * m >> 10 floored to 4 LSB) */
+            /* x MASTER / 4096 as MULQ12R(x, m, 2) (1.0: bounded first: in 32 bits; #4: rounded): sl, sr at 2^-10 LSB
+             * (+ a half of Q15), the Q15 sample rounded from them and its OUT_FRAC bits under it (-64 .. 64) */
+            int32_t sl = (xl >> 2) * m + (((xl & 3) * m + 2) >> 2) + 512;
+            int32_t sr = (xr >> 2) * m + (((xr & 3) * m + 2) >> 2) + 512;
+            ol[i] = sl >> 10;
+            orr[i] = sr >> 10;
+            out_lo[0][i] = (int8_t)(((sl & 1023) - 508) >> 3);
+            out_lo[1][i] = (int8_t)(((sr & 1023) - 508) >> 3);
             master_pre(&ol[i], &orr[i]);
             if ((i & 1u)) {                             /* the visualiser: every other sample, as audio.c reads it */
                 vis_tap[2u * i] = (int16_t)knee(mix_l[i]);
@@ -2184,7 +2205,7 @@ static void mix_block(int32_t *out, uint32_t n)
                 master_pre_usb(&ul[i], &ur[i]);
             }
         }
-        lim_block(&lim_dac, ol, orr, n);
+        lim_block(&lim_dac, ol, orr, out_lo[0], out_lo[1], n);
         for (i = 0; i < n; i++) {
             out[2u * i] = knee(ol[i]);
             out[2u * i + 1u] = knee(orr[i]);
@@ -2195,7 +2216,7 @@ static void mix_block(int32_t *out, uint32_t n)
         }
         usb_was = usb_full_now;
         if (usb_full_now) {
-            lim_block(&lim_usb, ul, ur, n);
+            lim_block(&lim_usb, ul, ur, 0, 0, n);
             for (i = 0; i < n; i++) {
                 usb_out[2u * i] = knee(ul[i]);
                 usb_out[2u * i + 1u] = knee(ur[i]);

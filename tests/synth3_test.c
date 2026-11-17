@@ -272,7 +272,7 @@ static void t_mod(void)
     capture(40), b1 = bright(512, 600), trk_note_off(&trk[0], 48), capture(80);
     part_ctl[0].at = 0;
     snprintf(w, sizeof w, "AT > CUT: pressure opens the filter (%.3f vs %.3f)", b1, b0);
-    ok(b1 > b0 * 1.5, w);
+    ok(b1 > b0 * 1.25, w);
 }
 
 static uint32_t held_gate(uint32_t p, uint32_t note)

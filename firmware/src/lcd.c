@@ -19,10 +19,19 @@ static void lcd_spin(uint32_t n)
         ;
 }
 
+#if BOARD_SMK37
+static void lcd_idle(void);         /* (main.c: the faders) */
+static uint8_t lcd_idle_on;         /* lcd_sync calls lcd_idle while it waits (main.c: during ui_draw) */
+#endif
+
 static void lcd_sync(void)          /* finish the running transfer (before touching its buffer) */
 {
     if (!lcd_busy)
         return;
+#if BOARD_SMK37
+    while (lcd_idle_on && !fm1_lcd_done())
+        lcd_idle();
+#endif
     fm1_lcd_wait();
     fm1_lcd_deselect();
     lcd_busy = 0;

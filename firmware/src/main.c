@@ -136,7 +136,9 @@ static void hexs(char *b, uint32_t v)
 #if BOARD_SMK37
 /* Clipper Pro: the SMK-37's 4 faders play the sound, by FADER BANK (ui_fbank.c: A MACROS, B ENV, C TONE, D MIX).
  * A fader takes over only once it moves (also after a bank change), so nothing jumps. The wheels and the pedal are
- * seq.c's (smk_perf_block: the pitch bend, the mod wheel, the sustain, as from a MIDI keyboard) */
+ * seq.c's (smk_perf_block: the pitch bend, the mod wheel, the sustain, as from a MIDI keyboard). Called once a frame,
+ * in the wait after it, and while ui_draw waits for an LCD transfer (lcd_idle): a reading (every 12.6 ms,
+ * hal/smk_input.h) reaches the sound within a transfer's time; fb_note brings the screen up between frames */
 static void smk_faders(void)
 {
     static uint8_t last[4] = {0xFF, 0xFF, 0xFF, 0xFF};
@@ -158,6 +160,7 @@ static void smk_faders(void)
         fb_apply(smk_fbank, i, v > 127u ? 127u : v);
     }
 }
+static void lcd_idle(void) { smk_faders(); }       /* (lcd.c lcd_sync, while lcd_idle_on) */
 #endif
 
 static void fm1_fault(const fm1_crash_t *c)
@@ -167,6 +170,9 @@ static void fm1_fault(const fm1_crash_t *c)
     if (fm1_c1_on)                                      /* (SLOOP 2.8.3, X0X ed35a45) a crash beside the second core: one */
         fm1_cpu1_bar();                                 /* core until power-off (a misread on core 0 can't be caught) */
     fm1_audio_stop();
+#if BOARD_SMK37
+    lcd_idle_on = 0;                                    /* (the LCD waits: no fader work) */
+#endif
     lcd_fill(0, 0, 240, 240, RGB(160, 0, 0));
     draw_text_box(0, 8, 240, &FONT_S, "STALLION CRASH", C_WHITE, 1);
     hexs(b, c->vec);
@@ -474,9 +480,14 @@ UI_SMALL static void fm1_main(void)
         ui_leds();
 #if BOARD_SMK37
         smk_faders();
+        fb_note();
         padled_flush();                                 /* the pads' colours, between LCD transfers */
+        lcd_idle_on = 1;
 #endif
         ui_draw();
+#if BOARD_SMK37
+        lcd_idle_on = 0;
+#endif
         felucca_dbg.stage = 8;
         autosave_tick();                                /* the working project into flash, when quiet */
 #if FELUCCA_ARRANGER
@@ -485,6 +496,10 @@ UI_SMALL static void fm1_main(void)
         felucca_dbg.stage = 9;
         while (fm1_ms - m < 15u) {                               /* ~60 UI frames/s at most */
             ui_input();
+#if BOARD_SMK37
+            smk_faders();
+            fb_note();
+#endif
 #if FELUCCA_OTA
             ed_service();                       /* editor replies without waiting for the next frame */
 #endif

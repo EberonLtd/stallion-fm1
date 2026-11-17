@@ -162,7 +162,7 @@ static const param_desc_t XD[X_COUNT] = {
     [X_KFALL] = {"FALL", F_MS10, 1, 300, 40, 0, 0},
     [X_KHOLD] = PD("HOLD%", F_INT, 0, 100, 40),
     [X_KSWELL] = {"SWELL", F_MS10, 0, 1000, 300, 0, 0},
-    [X_KCEIL] = PD("CEIL", F_INT, 0, 127, 127),
+    [X_KCEIL] = PD("CEIL", F_INT, 0, 127, 64),
 #if BOARD_SMK37
     [X_PDEAD] = PD("DEAD", F_INT, 0, 150, 60),       /* PAD AT (pat_cfg.h) */
     [X_PRISE] = {"RISE", F_MS10, 1, 40, 12, 0, 0},   /* PAD AT 2 */

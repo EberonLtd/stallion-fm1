@@ -72,6 +72,8 @@ HOT = [
 # (Stallion) on the SMK-37 Pro (its board code larger) the RAM code area is full with PONY's character pass: FILTER 2's
 # per-block setup (FILTER 2 is OFF by default) runs from the flash there (engines.c F2_SETUP)
 HOT_NOT_SMK37 = {"f2_setup", "pch_mode"}   # (pch_mode: fx.c PCH_MODE, a call a block and part, since PONY's CHAR)
+# (Stallion) the bytes of the RAM region added to the RAM code area for .ram_hot, per board (app.ld: the FM-1's)
+HOT_AREA = {"fm1": 0x1B80, "smk37": 0x1980}
 
 
 def hot_list():
@@ -294,12 +296,13 @@ def build_app():
     hot_move(OUT / "felucca.o")
     elf = OUT / "felucca.elf"
     ld = FW / "app.ld"
-    if APP_SLOT != 0x8DFBC:          # another board's app slot (SMK-37 Pro): the same script, its XIP length
+    if BOARD != "fm1":               # another board (SMK-37 Pro): the same script, its XIP length and RAM code area
         txt = ld.read_text()
-        if txt.count("LENGTH = 0x8DFBC") != 1:
-            raise SystemExit("app.ld: the XIP LENGTH line was not found")
+        if txt.count("LENGTH = 0x8DFBC") != 1 or txt.count(f"0x{HOT_AREA['fm1']:X}") != 3:
+            raise SystemExit("app.ld: the XIP LENGTH line or the RAM code area's 3 sizes were not found")
         ld = OUT / "app.ld"
-        ld.write_text(txt.replace("LENGTH = 0x8DFBC", f"LENGTH = {APP_SLOT:#X}".replace("0X", "0x")))
+        ld.write_text(txt.replace("LENGTH = 0x8DFBC", f"LENGTH = {APP_SLOT:#X}".replace("0X", "0x"))
+                      .replace(f"0x{HOT_AREA['fm1']:X}", f"0x{HOT_AREA[BOARD]:X}"))
     tc("pi32v2/bin/ld", "-T", ld, OUT / "crt0.o", OUT / "fm1_vec.o", OUT / "fm1_isr.o",
        OUT / "fm1_cpu1.o", OUT / "fm1_clk.o", OUT / "felucca.o", "-o", elf)
     for sect in ("text.bin", "data.bin", "ramtext.bin", "c1text.bin", "hottext.bin", "hottab.bin"):

@@ -958,9 +958,9 @@ async function backupTouch() {
     "touch backup: object 15 == project.c touch_store_t (TCH1, 148 bytes, the LEVER's mode at 116, KEY AT at 120, PAD AT at 132)");
   {   /* KEY AT and PAD AT: the editor's defaults == touch.h KAT_CFG_DEFAULTS, pat_cfg.h PAT_CFG_DEFAULTS */
     const pa = readFileSync(join(HERE, "../firmware/src/pat_cfg.h"), "utf8"), m = E.TOUCH.make(), mv = new DataView(m.buffer);
-    ok(/KAT_CFG_DEFAULTS \{1, 50, 70, 40, 127, 0, 120, 400, 3000\}/.test(th) && /PAT_CFG_DEFAULTS \{60, SH_SLOW, SH_EASE, 0, 80, 800, 250, 120, 120, 0\}/.test(pa)
+    ok(/KAT_CFG_DEFAULTS \{1, 50, 70, 40, 64, 0, 120, 400, 3000\}/.test(th) && /PAT_CFG_DEFAULTS \{60, SH_SLOW, SH_EASE, 0, 80, 800, 250, 120, 120, 0\}/.test(pa)
       && /enum \{ SH_LIN, SH_EASE, SH_SLOW, SH_FAST, SH_N \}/.test(pa)
-      && [1, 50, 70, 40, 127, 0].every((b, i) => m[120 + i] === b) && mv.getUint16(126, true) === 120 && mv.getUint16(128, true) === 400
+      && [1, 50, 70, 40, 64, 0].every((b, i) => m[120 + i] === b) && mv.getUint16(126, true) === 120 && mv.getUint16(128, true) === 400
       && mv.getUint16(130, true) === 3000 && [60, 2, 1, 0].every((b, i) => m[132 + i] === b)
       && [80, 800, 250, 120, 120, 0].every((w, i) => mv.getUint16(136 + 2 * i, true) === w) && E.TOUCH.ok(m),
       "touch backup: the editor's KEY AT / PAD AT defaults == touch.h KAT_CFG_DEFAULTS, pat_cfg.h PAT_CFG_DEFAULTS");

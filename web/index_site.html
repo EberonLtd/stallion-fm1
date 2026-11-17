@@ -40,6 +40,7 @@
   section.band { padding: 72px 0; }
   section.band.alt { background: var(--deep); }
   .intro { max-width: 46em; }
+  .hero .built { max-width: 40em; font-size: 15px; opacity: .85; }
   .feat { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; margin: 56px 0 0; }
   .feat:nth-of-type(even) .feat-art { order: 2; }
   @media (max-width: 860px) { .feat { grid-template-columns: 1fr; gap: 24px; } .feat:nth-of-type(even) .feat-art { order: 0; } }
@@ -87,9 +88,9 @@
   <div>
     <span class="kicker" data-t="kicker"></span>
     <h1 data-t="h1"></h1>
-    <section data-l="en"><p class="lead">{{ENGINES}} synthesis engines and {{SOUNDS}} sounds, {{FILTERS}} filter models, a modulation matrix on every sound and {{TUNINGS}} tunings. Free and open source. Install it from your browser, and edit every sound on your computer.</p></section>
-    <section data-l="fr"><p class="lead">{{ENGINES}} moteurs de synthèse et {{SOUNDS}} sons, {{FILTERS}} modèles de filtre, une matrice de modulation sur chaque son et {{TUNINGS}} accordages. Libre et gratuit. Installe-le depuis ton navigateur, et édite chaque son sur ton ordinateur.</p></section>
-    <section data-l="ja"><p class="lead">{{ENGINES}} の音源エンジンと {{SOUNDS}} の音色、{{FILTERS}} 種類のフィルター・モデル、すべての音色にモジュレーション・マトリクス、{{TUNINGS}} のチューニング。無料のオープンソース。ブラウザからインストールでき、パソコンですべての音色を編集できます。</p></section>
+    <section data-l="en"><p class="lead">{{ENGINES}} synthesis engines and {{SOUNDS}} sounds, {{FILTERS}} filter models, a modulation matrix on every sound and {{TUNINGS}} tunings. Free and open source. Install it from your browser, and edit every sound on your computer.</p><p class="built">Built on <a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> by 3dSam (isod89), which grew out of SLOOP and Felucca by Leo Kuroshita / Hügelton Instruments: most of what Stallion does is theirs. Where Stallion adds or rebuilds, it builds on other open projects too, such as OberVave by zvenson for RODEO; every one is named in the <a href="#credits">credits</a>. It is all GPL-3.0: free for everyone to play, change and build on.</p></section>
+    <section data-l="fr"><p class="lead">{{ENGINES}} moteurs de synthèse et {{SOUNDS}} sons, {{FILTERS}} modèles de filtre, une matrice de modulation sur chaque son et {{TUNINGS}} accordages. Libre et gratuit. Installe-le depuis ton navigateur, et édite chaque son sur ton ordinateur.</p><p class="built">Bâti sur <a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> de 3dSam (isod89), lui-même issu de SLOOP et de Felucca de Leo Kuroshita / Hügelton Instruments : l'essentiel de ce que fait Stallion vient d'eux. Là où Stallion ajoute ou reconstruit, il s'appuie aussi sur d'autres projets libres, comme OberVave de zvenson pour RODEO ; tous sont nommés dans les <a href="#credits">crédits</a>. Tout est sous GPL-3.0 : libre pour tous, à jouer, modifier et prolonger.</p></section>
+    <section data-l="ja"><p class="lead">{{ENGINES}} の音源エンジンと {{SOUNDS}} の音色、{{FILTERS}} 種類のフィルター・モデル、すべての音色にモジュレーション・マトリクス、{{TUNINGS}} のチューニング。無料のオープンソース。ブラウザからインストールでき、パソコンですべての音色を編集できます。</p><p class="built">Stallion は 3dSam（isod89）の <a href="https://github.com/isod89/clipper-fm1" target="_blank" rel="noopener">Clipper</a> をもとに作られています。Clipper は SLOOP と、Leo Kuroshita / Hügelton Instruments の Felucca から生まれました。Stallion の機能の多くは彼らのものです。追加・作り直した部分も、RODEO の zvenson による OberVave など、ほかのオープンなプロジェクトの上に作られており、すべて<a href="#credits">クレジット</a>に記載しています。すべて GPL-3.0 で、誰でも自由に演奏し、改造し、もとにして作れます。</p></section>
     <div class="choose">
       <a class="btn" href="webapp/installer/"><small class="on" data-t="instOn"></small><span class="px big">FM-1</span><small data-t="instFm1s"></small></a>
       <a class="btn" href="webapp/installer-smk37/"><small class="on" data-t="instOn"></small><span class="px big">SMK-37 Pro</span><small data-t="instSmks"></small></a>
@@ -335,8 +336,8 @@ const TEXT = {
     browserT: "Your browser:",
     browser: "Chrome or Edge on a computer, or Chrome on Android. Not Safari, iPhone or iPad.",
     heroCap: "The FM-1's own screen, rendered from Stallion's code: PALOMINO playing GOLDEN PAD.",
-    newK: "New in Stallion 1.0", newH: "Four new engines, and PONY rebuilt from the ground up",
-    newP: "PALOMINO, STAMPEDE, RODEO and MARE: four new voices with 110 new sounds between them. PONY, rebuilt from the ground up, completes the herd. Play them on the FM-1 or the SMK-37 Pro.",
+    newK: "New in Stallion 1.0", newH: "Four new engines, and Clipper's PONY rebuilt",
+    newP: "PALOMINO, STAMPEDE and MARE, and RODEO after zvenson's OberVave: four new voices with 110 new sounds between them, on Clipper's engine framework. Clipper's PONY, rebuilt, completes the herd. Play them on the FM-1 or the SMK-37 Pro.",
     palP: "A big early-1980s polysynth: two oscillators with cross modulation and hard sync, into a warm resonant filter at 12 or 24 dB. Stallion gives it everything the later, smaller edition of its instrument added:",
     pal1: "Six waves on both oscillators: sine and noise join oscillator 1, triangle and square join oscillator 2.",
     pal2: "Oscillator 2's LOW range drops it eight octaves, into a slow modulator for wobbles and vibrato. Its fine tune sets how far it sits above oscillator 1.",
@@ -364,7 +365,7 @@ const TEXT = {
     mx3: "New destinations: the arpeggiator's rate, the delay, reverb and chorus sends, an LFO's rate.",
     mx4: "The selected cable in large type, coloured by its kind of signal, and CLEAR to take out all 24 cables at once.",
     rK: "Reverb", rH: "Shimmer on any reverb",
-    rP: "REVERB 2 > SHIM adds an octave-up shimmer to ROOM, PLATE or HALL, from a touch to full. The reverbs are cleaner too: no chop in the left channel, no pulse, no flutter.",
+    rP: "REVERB 2 > SHIM adds an octave-up shimmer to ROOM, PLATE or HALL, from a touch to full. The reverbs are cleaner too: no pulse, no flutter.",
     iK: "Effects", iH: "Five new insert effects",
     iP: "Every sound has its own INSERT effect. Stallion 1.0 adds five:",
     in1: "PITCH: a pitch shifter, with feedback for rising or falling cascades.",
@@ -390,7 +391,7 @@ const TEXT = {
     mo5: "Free delay times from 35 to 780 ms, beside the tempo values.",
     mo6: "An analog attack on PALOMINO, STAMPEDE, RODEO and MARE: quick to charge, then easing in.",
     mo7: "Every factory sound re-levelled, and no more clicks at the start and end of notes.",
-    moAll: "Everything Stallion 1.0 adds: 93 features and fixes",
+    moAll: "Everything Stallion 1.0 adds: 131 features and fixes",
     engK: "Every engine", engH: "{{ENGINES}} engines, {{SOUNDS}} sounds",
     engP: "Every sound is level-matched, so no preset jumps out louder or quieter than the next.",
     ePAL: "Early-1980s poly: two oscillators, cross mod, hard sync, a warm filter at 12 or 24 dB.",
@@ -449,8 +450,8 @@ const TEXT = {
     browserT: "Ton navigateur :",
     browser: "Chrome ou Edge sur un ordinateur, ou Chrome sur Android. Pas Safari, ni iPhone, ni iPad.",
     heroCap: "L'écran de la FM-1, rendu à partir du code de Stallion : PALOMINO joue GOLDEN PAD.",
-    newK: "Nouveau dans Stallion 1.0", newH: "Quatre nouveaux moteurs, et PONY reconstruit de fond en comble",
-    newP: "PALOMINO, STAMPEDE, RODEO et MARE : quatre nouvelles voix et 110 nouveaux sons. PONY, reconstruit de fond en comble, complète le troupeau. À jouer sur la FM-1 ou le SMK-37 Pro.",
+    newK: "Nouveau dans Stallion 1.0", newH: "Quatre nouveaux moteurs, et le PONY de Clipper reconstruit",
+    newP: "PALOMINO, STAMPEDE et MARE, et RODEO d'après OberVave de zvenson : quatre nouvelles voix et 110 nouveaux sons, sur la base des moteurs de Clipper. Le PONY de Clipper, reconstruit, complète le troupeau. À jouer sur la FM-1 ou le SMK-37 Pro.",
     palP: "Un grand polysynthé du début des années 1980 : deux oscillateurs avec modulation croisée et synchro, dans un filtre résonant chaud à 12 ou 24 dB. Stallion lui donne tout ce que l'édition plus récente et plus compacte de son instrument a ajouté :",
     pal1: "Six formes d'onde sur les deux oscillateurs : sinus et bruit sur l'oscillateur 1, triangle et carré sur l'oscillateur 2.",
     pal2: "La plage LOW de l'oscillateur 2 le descend de huit octaves : un modulateur lent pour les wobbles et le vibrato. Son accord fin règle son écart avec l'oscillateur 1.",
@@ -478,7 +479,7 @@ const TEXT = {
     mx3: "Nouvelles destinations : la vitesse de l'arpégiateur, les envois de délai, de réverbération et de chorus, la vitesse d'un LFO.",
     mx4: "Le câble choisi en grands caractères, coloré selon son type de signal, et CLEAR pour retirer les 24 câbles d'un coup.",
     rK: "Réverbération", rH: "Du shimmer sur toutes les réverbérations",
-    rP: "REVERB 2 > SHIM ajoute un shimmer à l'octave au-dessus à ROOM, PLATE ou HALL, d'une touche légère au maximum. Les réverbérations sont aussi plus propres : plus de hachures à gauche, ni de pulsation, ni de flottement.",
+    rP: "REVERB 2 > SHIM ajoute un shimmer à l'octave au-dessus à ROOM, PLATE ou HALL, d'une touche légère au maximum. Les réverbérations sont aussi plus propres : plus de pulsation, ni de flottement.",
     iK: "Effets", iH: "Cinq nouveaux effets d'insert",
     iP: "Chaque son a son propre effet INSERT. Stallion 1.0 en ajoute cinq :",
     in1: "PITCH : un pitch shifter, avec réinjection pour des cascades qui montent ou descendent.",
@@ -504,7 +505,7 @@ const TEXT = {
     mo5: "Des temps de délai libres de 35 à 780 ms, en plus des valeurs au tempo.",
     mo6: "Une attaque analogique sur PALOMINO, STAMPEDE, RODEO et MARE : rapide à monter, puis plus douce.",
     mo7: "Tous les sons d'usine remis à niveau, et plus de clics au début et à la fin des notes.",
-    moAll: "Tout ce qu'ajoute Stallion 1.0 : 93 nouveautés et corrections (en anglais)",
+    moAll: "Tout ce qu'ajoute Stallion 1.0 : 131 nouveautés et corrections (en anglais)",
     engK: "Tous les moteurs", engH: "{{ENGINES}} moteurs, {{SOUNDS}} sons",
     engP: "Tous les sons sont mis à niveau : aucun preset ne sort plus fort ou plus faible que le suivant.",
     ePAL: "Poly du début des années 1980 : deux oscillateurs, modulation croisée, synchro, un filtre chaud à 12 ou 24 dB.",
@@ -563,8 +564,8 @@ const TEXT = {
     browserT: "ブラウザ：",
     browser: "パソコンの Chrome か Edge、または Android の Chrome。Safari、iPhone、iPad では使えません。",
     heroCap: "FM-1 の画面を Stallion のコードから描いたもの：PALOMINO で GOLDEN PAD を演奏中。",
-    newK: "Stallion 1.0 の新機能", newH: "4 つの新しい音源エンジンと、一から作り直した PONY",
-    newP: "PALOMINO、STAMPEDE、RODEO、MARE：4 つの新しいボイスと 110 の新しい音色。一から作り直した PONY が群れを完成させます。FM-1 でも SMK-37 Pro でも演奏できます。",
+    newK: "Stallion 1.0 の新機能", newH: "4 つの新しい音源エンジンと、作り直した Clipper の PONY",
+    newP: "PALOMINO、STAMPEDE、MARE、そして zvenson の OberVave をもとにした RODEO：Clipper のエンジン基盤の上に作った 4 つの新しいボイスと 110 の新しい音色。作り直した Clipper の PONY が群れを完成させます。FM-1 でも SMK-37 Pro でも演奏できます。",
     palP: "1980 年代初めの大型ポリシンセ：クロス・モジュレーションとハード・シンク付きの 2 オシレーターを、12 dB または 24 dB の温かいレゾナント・フィルターへ。その楽器の新しい小型版が加えたものを、Stallion はすべて備えています：",
     pal1: "両オシレーターに 6 つの波形：オシレーター 1 にサインとノイズ、オシレーター 2 に三角波と矩形波が加わりました。",
     pal2: "オシレーター 2 の LOW レンジで 8 オクターブ下がり、ウォブルやビブラート用のゆっくりしたモジュレーターになります。ファイン・チューンでオシレーター 1 との差を設定できます。",
@@ -592,7 +593,7 @@ const TEXT = {
     mx3: "新しいデスティネーション：アルペジエーターの速さ、ディレイ・リバーブ・コーラスのセンド、LFO の速さ。",
     mx4: "選んだケーブルを大きな文字で、信号の種類ごとの色で表示。CLEAR で 24 本を一度に外せます。",
     rK: "リバーブ", rH: "どのリバーブにもシマー",
-    rP: "REVERB 2 > SHIM で ROOM、PLATE、HALL に 1 オクターブ上のシマーを、ほんのり〜最大まで加えられます。リバーブ自体もきれいになりました：左チャンネルの途切れ、うねり、揺れはありません。",
+    rP: "REVERB 2 > SHIM で ROOM、PLATE、HALL に 1 オクターブ上のシマーを、ほんのり〜最大まで加えられます。リバーブ自体もきれいになりました：うねりや揺れはありません。",
     iK: "エフェクト", iH: "5 つの新しいインサート・エフェクト",
     iP: "すべての音色に専用の INSERT エフェクトがあります。Stallion 1.0 で 5 つ追加：",
     in1: "PITCH：ピッチ・シフター。フィードバックで上昇・下降するカスケードに。",
@@ -618,7 +619,7 @@ const TEXT = {
     mo5: "テンポの値に加えて、35〜780 ms の自由なディレイ・タイム。",
     mo6: "PALOMINO、STAMPEDE、RODEO、MARE にアナログらしいアタック：素早く立ち上がり、なめらかに落ち着きます。",
     mo7: "すべてのファクトリー音色の音量をそろえ直し、ノートの始まりと終わりのクリックもなくなりました。",
-    moAll: "Stallion 1.0 で加わったすべて：93 の新機能と修正（英語）",
+    moAll: "Stallion 1.0 で加わったすべて：131 の新機能と修正（英語）",
     engK: "すべてのエンジン", engH: "{{ENGINES}} のエンジン、{{SOUNDS}} の音色",
     engP: "すべての音色は音量がそろえてあり、どのプリセットも次より大きすぎたり小さすぎたりしません。",
     ePAL: "1980 年代初めのポリ：2 オシレーター、クロス・モジュレーション、ハード・シンク、12 / 24 dB の温かいフィルター。",

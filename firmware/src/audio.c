@@ -6,7 +6,7 @@
  * -> dist -> level / pan -> sends -> drums -> buses -> master), then scaled to 24-bit stereo. */
 /* registers: hal/fm1_audio.h */
 #define HALF_WORDS (HALF_FRAMES * 2u)
-#define OUT_SHIFT 7               /* Q15 -> 24-bit, -6 dBFS ceiling */
+#define OUT_SHIFT OUT_FRAC        /* Q15 -> 24-bit, -6 dBFS ceiling (fx.c: out_lo, the bits under it) */
 
 static int32_t abuf[2u * HALF_WORDS] __attribute__((aligned(4)));
 
@@ -29,7 +29,7 @@ static uint32_t scope_w;
 /* noinline: the ISR calls it a block at a time, as it did up to Clipper 1.1 (1.2's FM-1 image, the drum machine left
  * out, made the mix small enough for the compiler to inline it, in a loop: tests/target_budget.py measures the ISR and
  * the mix apart, fm1_alnk0_irq and audio_block) */
-static __attribute__((noinline)) void audio_block(int32_t *out, uint32_t n)   /* mix (fx.c), then Q15 -> 24 bit */
+static __attribute__((noinline)) void audio_block(int32_t *out, uint32_t n)   /* mix (fx.c), then Q15 and its low bits -> 24 bit */
 {
     uint32_t i;
     mix_block(out, n);
@@ -42,8 +42,8 @@ static __attribute__((noinline)) void audio_block(int32_t *out, uint32_t n)   /*
             scope_bufr[scope_w & (SCOPE_N - 1u)] = vis_tap[2u * i + 1u];   /* (fx.c: MASTER all the way up) */
             scope_buf[scope_w++ & (SCOPE_N - 1u)] = vis_tap[2u * i];
         }
-        out[2u * i] <<= OUT_SHIFT;
-        out[2u * i + 1u] <<= OUT_SHIFT;
+        out[2u * i] = (out[2u * i] << OUT_SHIFT) + out_lo[0][i];
+        out[2u * i + 1u] = (out[2u * i + 1u] << OUT_SHIFT) + out_lo[1][i];
     }
 }
 

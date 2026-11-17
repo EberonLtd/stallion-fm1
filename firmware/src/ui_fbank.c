@@ -24,6 +24,7 @@ static const uint8_t FB_CC[FB_N][4] = {{16, 17, 18, 19}, {73, 75, FB_SUS, 72}, {
 static const uint8_t FB_RGB[4][3] = {{255, 190, 60}, {40, 220, 80}, {0, 200, 255}, {170, 60, 255}};
 #define FB_SHOW_MS 4000u                           /* up this long after the last change */
 static uint8_t fb_open;
+static uint8_t fb_moved;                           /* a fader moved a value since fb_note */
 static uint32_t fb_t, fb_frame;                    /* last action (ms); the frame drawn last */
 
 static int fb_shown(void)
@@ -83,7 +84,8 @@ static int16_t fb_level(uint32_t v)
         l++;
     return (int16_t)l;
 }
-/* fader i of bank b moved to v (0..127): as the CC (seq.c midi_cc), then SEND CC (cc_out_knob) */
+/* fader i of bank b moved to v (0..127): as the CC (seq.c midi_cc), then SEND CC (cc_out_knob); the screen in
+ * fb_note. Draws nothing: main.c calls it during a frame's LCD transfers too */
 static void fb_apply(uint32_t b, uint32_t i, uint32_t v)
 {
     track_t *t = &trk[0];
@@ -101,10 +103,18 @@ static void fb_apply(uint32_t b, uint32_t i, uint32_t v)
         midi_cc(t, cc, v);
     if (*vp != old) {
         cc_out_knob(vp, old);                      /* (GLO > MIDI 2 > SEND CC) */
-        if (!pick_shown())                         /* the screen shows what moved (not over SOUNDS, which asks for it) */
-            fb_open = 1, fb_t = fm1_ms;
-        ui.force = 1;
+        fb_moved = 1;
     }
+}
+/* after fb_apply, between frames: the screen shows what moved (not over SOUNDS, which asks for it) */
+static void fb_note(void)
+{
+    if (!fb_moved)
+        return;
+    fb_moved = 0;
+    if (!pick_shown())
+        fb_open = 1, fb_t = fm1_ms;
+    ui.force = 1;
 }
 
 static void fb_draw(void)

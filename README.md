@@ -3,11 +3,13 @@
 <p align="center"><b>A deep synthesizer firmware for the M-VAVE FM-1 and SMK-37 Pro.</b><br>
 Free and open source (GPL-3.0), by Eberon Limited (John Gorman). It grew out of <a href="https://github.com/isod89/clipper-fm1">Clipper</a> by 3dSam (isod89), which grew out of <a href="https://github.com/isod89/sloop-fm1">SLOOP</a>; both are based on <a href="https://github.com/hugelton/Felucca">Felucca</a> by Leo Kuroshita / Hügelton Instruments.</p>
 
+**Built on the work of others.** Stallion is [Clipper](https://github.com/isod89/clipper-fm1) by 3dSam (isod89), which grew out of [SLOOP](https://github.com/isod89/sloop-fm1) and [Felucca](https://github.com/hugelton/Felucca) by Leo Kuroshita / Hügelton Instruments, with more added on top: most of what Stallion does is theirs. Where Stallion adds or rebuilds, it builds on other open projects too, such as [OberVave](https://github.com/zvenson/obervave) by zvenson for RODEO; every one is named in [CREDITS.md](CREDITS.md). It is all GPL-3.0: free for everyone to play, change and build on.
+
 <p align="center"><b><a href="https://eberonltd.github.io/stallion-fm1/">Install it from the browser</a></b> · <a href="https://eberonltd.github.io/stallion-fm1/webapp/editor/">Editor</a> · <a href="https://github.com/EberonLtd/stallion-fm1/releases">Releases</a> · <a href="QUICKSTART.md">Quick start</a> · <a href="DEMARRAGE-RAPIDE-FR.md">Démarrage rapide (français)</a> · <a href="BUILDING.md">Building</a> · <a href="web/EDITOR_PROTOCOL.md">Editor protocol</a> · <a href="docs/sloop/">SLOOP's manuals</a></p>
 
 ---
 
-> **Status: Stallion 1.0.** Stallion is built on Clipper 1.3, which runs on the FM-1, and it passes its whole test suite on a computer. What Stallion adds is below ([New in Stallion 1.0](#new-in-stallion-10-more-insert-types)); the sections headed *Clipper X.Y* are Clipper's own release notes, kept because Stallion has all of it. There is still a lot to do (see [What is left to do](#what-is-left-to-do)). Install it at your own risk, and keep a backup made with the editor. You can go back to the official firmware (V16 or V15) from the installer page, to Clipper from its own installer page, or to SLOOP with its own `INSTALL-SLOOP.bat`.
+> **Status: Stallion 1.1.** Stallion is built on Clipper 1.3, which runs on the FM-1, and it passes its whole test suite on a computer. What Stallion adds is below ([New in Stallion 1.0](#new-in-stallion-10-more-insert-types)); the sections headed *Clipper X.Y* are Clipper's own release notes, kept because Stallion has all of it. There is still a lot to do (see [What is left to do](#what-is-left-to-do)). Install it at your own risk, and keep a backup made with the editor. You can go back to the official firmware (V16 or V15) from the installer page, to Clipper from its own installer page, or to SLOOP with its own `INSTALL-SLOOP.bat`.
 
 **The name.** Stallion is named after the *Sea Stallion from Glendalough* (*Havhesten fra Glendalough*), the Viking longship built in Dublin around 1042 from Wicklow oak. Its logo, drawn from code by `tools/gen_logo.py`, is a longship whose stem rises into a horse's head, under a striped square sail; on the FM-1 it is the boot screen, with the version, the voices and the cores under it (for example **STALLION · 1.0 8V 2 CORES**).
 
@@ -24,14 +26,22 @@ SLOOP is a groovebox. **Stallion is a synthesizer** with 26 engines and 819 soun
 
 ## New features in Stallion
 
+### New in Stallion 1.1
+
+- **Quiet sounds at a low volume no longer buzz**: the output keeps the 24-bit converter's extra resolution through the volume, the limiter and the knee.
+- **The macros glide** (about 40 ms) instead of jumping, and the SMK-37 Pro's faders reach the sound within milliseconds: no more stepping or wobble on a fast sweep.
+- **Gentler aftertouch on the filter** (AT> CUT up to about 2 octaves) and a softer key swell on the SMK-37 Pro (KEY AT CEIL 64 by default).
+- **PONY's factory sounds re-voiced**: 18 of them darker, closer to the original instrument.
+- **Releases built and signed on GitHub.** Details: [docs/stallion-1.1.md](docs/stallion-1.1.md).
+
 Everything Stallion 1.0 adds to [Clipper](https://github.com/isod89/clipper-fm1) by 3dSam (isod89) and Clipper Pro, its SMK-37 port (isod89 with M. Geisler), which Stallion is built on; Clipper grew out of [SLOOP](https://github.com/isod89/sloop-fm1), and all of them are based on [Felucca](https://github.com/hugelton/Felucca) by Leo Kuroshita / Hügelton Instruments. Stallion keeps everything they do; this list is only what it adds. Every item was checked against the code.
 
-**133 new features and fixes:** 26 engines and 819 factory sounds, 4 of the engines new (PALOMINO, STAMPEDE, RODEO, MARE) and PONY rebuilt from the ground up (25 engine and sound features) · 6 filter features · 2 effect features · 12 modulation and matrix features · 10 playing features · 11 touch and aftertouch features · 8 sequencer and arpeggiator features · 9 screen and control features · 14 web editor features · 5 saving features · 3 MIDI features · 2 installing features · 26 fixes.
+**132 new features and fixes:** 26 engines and 819 factory sounds, 4 of the engines new (PALOMINO, STAMPEDE, MARE, and RODEO after zvenson's OberVave) and Clipper's PONY rebuilt (25 engine and sound features) · 6 filter features · 2 effect features · 12 modulation and matrix features · 10 playing features · 11 touch and aftertouch features · 8 sequencer and arpeggiator features · 9 screen and control features · 14 web editor features · 5 saving features · 3 MIDI features · 2 installing features · 25 fixes.
 
 **819 sounds on 26 engines.** Every engine now comes with a full bank of its classic sounds.
 
 - **A full bank for every engine**: 32 classic sounds on 23 engines, 28 on ACID and SAMPLE, 27 on WSEQ (819 in all), every bank starting with a plain INIT.
-- **Centred and level-matched**: every factory sound has its left and right within 1 dB, and each is measured with a phrase that suits it and trimmed to the same loudness (within 1.5 dB; the sample-based SAMPLE and GRAIN sounds keep their own levels).
+- **Centred and level-matched** (Clipper's level-matching, extended): every factory sound has its left and right within 1 dB, and each is measured with a phrase that suits it and trimmed to the same loudness (within 1.5 dB; the sample-based SAMPLE and GRAIN sounds keep their own levels).
 - **Synth sounds for a keys player**: pads, leads, basses, synth brass and strings, keys, organs, plucks and sequences. No bells, chimes, mallets, drums or imitations of other players' instruments.
 - **Sounds that move**: the PONY, PALOMINO, STAMPEDE, RODEO and MARE sounds, and every sound new in this release on the other engines, are patched in the matrix, so LFOs, envelopes, velocity, pressure and the wheel move them as you play. A factory sound can use all 24 matrix slots.
 - **MARE, from the instrument's patch books**: 32 sounds built from the patch books' routings and techniques, in balanced stereo, with SPACE working as the instrument's SPACING and P>VCO as its PITCH MOD ASSIGN.
@@ -47,7 +57,7 @@ Everything Stallion 1.0 adds to [Clipper](https://github.com/isod89/clipper-fm1)
 - **32 sounds**: pads, strings, brass, leads, basses and keys.
 - **Even unison**: fixed phase offsets, so a stack is as loud every time.
 
-### Sound engines (25)
+### Engines and sounds (25 changes)
 
 - **PALOMINO**: a big early-1980s 8-voice poly. Two VCOs with six waves each, cross mod, hard sync, an OTA filter at 12 or 24 dB. 32 sounds: pads, strings, brass, leads, basses and keys.
 - **STAMPEDE**: a late-1970s poly with two complete channels per voice. A wave morph through noise, saw, pulse, sine and ring; channel II's feet and detune; a resonant high-pass then low-pass with its own envelope. 32 sounds.
@@ -75,7 +85,7 @@ Everything Stallion 1.0 adds to [Clipper](https://github.com/isod89/clipper-fm1)
 - **MARE split modes** (MODE SPLT, SPL+N): VCO 1 alone goes to the left filter and VCO 2 alone to the right.
 - **MARE's normals**: a cable into VCO 1's pitch moves VCO 2 too, and filter 2 follows filter 1's cutoff, until you give them cables of their own.
 - **STALLION**: a new signature HYBRID sound.
-- **Every factory sound level-matched and centred**: no sound jumps out louder or quieter than the next, and none sits in one ear (left and right within 1 dB). The test suite checks both.
+- **Every factory sound level-matched and centred** (Clipper's level-matching, extended): no sound jumps out louder or quieter than the next, and none sits in one ear (left and right within 1 dB). The test suite checks both.
 - **PALOMINO VCO-2 fine tune** (EDIT > VOICE 2 > DTUNE): sets how far VCO 2 sits above VCO 1, from 0 to about 16 cents (the old fixed 5 cents is the default, 40), for thick brass, strings and pads.
 - **Resonance that stops short of howling**: PALOMINO's filter now stops just below self-oscillation at full RES, and RODEO's up to RES 123, so a resonant bass or brass rings and decays instead of whistling. RODEO's top four steps sing on purpose, as its originals do.
 - **PALOMINO pulse width one way**: SHAPE (and an LFO or envelope on it) sweeps the pulse from square towards narrow, once per cycle, instead of folding both ways.
@@ -110,7 +120,7 @@ Everything Stallion 1.0 adds to [Clipper](https://github.com/isod89/clipper-fm1)
 - **New destinations**: the arpeggiator's rate, the delay, reverb and chorus sends, LFO 1's rate and ENV 1's amount.
 - **S&H, NOISE and +V** sources. +V is a constant, for a fixed offset.
 - **Bend and pressure in the matrix**: BEND, poly pressure, channel pressure and RIBBON as sources; PIT1, PIT2, XMOD and HPF as destinations.
-- **The MATRIX page**: the selected cable in large type (for example LFO1 > CUT +62), coloured by signal type. Sources and destinations are in panel order, and MARE's normals are shown in words.
+- **The MATRIX page** (Clipper's, extended): the selected cable in large type (for example LFO1 > CUT +62), coloured by signal type. Sources and destinations are in panel order, and MARE's normals are shown in words.
 - **MATRIX 2 > CLEAR**: take out all 24 cables at once. UNDO brings them back.
 - **31 sources and 35 destinations** in total. User presets keep every one.
 - **CHAO**: a chaotic LFO wave on LFO 1, 2 and 3, for movement that never repeats.
@@ -138,7 +148,7 @@ Everything Stallion 1.0 adds to [Clipper](https://github.com/isod89/clipper-fm1)
 - **TOUCH CAL**: calibrate your keys with a live meter. It names any key whose soft and hard presses read alike.
 - **One pressure shaping for everything**: curve, offset, attack and release (GLO > TOUCH 2), for the keys and for MIDI and MPE pressure.
 - **SMK-37 Pro pad aftertouch** (GLO > PAD AT): a light press plays the note and a harder squeeze is aftertouch. Set the dead zone, range and curve on a graph.
-- **SMK-37 Pro key aftertouch** (GLO > KEY AT): the keys have no pressure sensor, so pressure is made from velocity, hold time and a swell, with its own graph. A held key swells up to full pressure (CEIL 127).
+- **SMK-37 Pro key aftertouch** (GLO > KEY AT): the keys have no pressure sensor, so pressure is made from velocity, hold time and a swell, with its own graph. A held key swells up to half pressure (CEIL 64; 127 is full).
 - **SMK-37 Pro pad velocity and aftertouch curve** (GLO > PAD VEL, AFTERTOUCH): five pad velocity responses and the pressure shaping.
 - **Pressure bar**: a thin bar shows how hard you are pressing: your touch itself, before the AT curve and offset shape the sound's response.
 - **KEY AT on and off** (GLO + the lowest key): turns the keys' aftertouch on or off without opening a page. K-AT shows in the top line, bright while it is on. The SMK-37 Pro's pads always have their aftertouch.
@@ -171,11 +181,11 @@ Everything Stallion 1.0 adds to [Clipper](https://github.com/isod89/clipper-fm1)
 ### Web editor (14)
 
 - **Every parameter**: the editor now reaches every parameter, including FILTER 2, SLOPE, the BEND page and the FM-1's own settings (tuning, MIDI, TOUCH, LIGHTS, BROWSE).
-- **Live controls**: values are sent while a control moves, not only when you let go.
+- **Live controls** (Clipper's, extended): values are sent while a control moves, not only when you let go.
 - **Envelope grab points**: drag the envelope picture's attack, decay, sustain and release points with a mouse, finger or pen.
 - **The patch bay**, on every engine: drag cables between 64 jacks to patch the matrix, coloured as on the device, in large, bright type. Switch to the MATRIX tab to see the same cables as a table; up to 24 cables per sound, and only the inputs the engine uses. The matrix is shown once: the old card of MATRIX knobs is gone. FILTER FM, RING, SPLT/SPL+N and the VCO1->VCO2 pitch normal are MARE's own.
 - **MIDI 3 settings** (CC A, CC B, SUST) and the new INSERT types are named in the editor.
-- **Tuning card**: checked against the device, and it says what the FM-1 tunes to.
+- **Tuning card** (Clipper's, extended): checked against the device, and it says what the FM-1 tunes to.
 - **Device banner**: the top of every page names the instrument the editor is talking to (FM-1 or SMK-37 Pro), its firmware and the sound playing: its name, engine and voice mode, or a multi sound's name, mode and parts A and B. Without an instrument it says that none is connected.
 - **Folding sections**: click a heading to fold its card to the heading (Enter or Space too); Shift+click opens one and folds the rest of the tab; Fold all and Open all on the Sound tab. The browser remembers what is folded, across sounds and engines.
 - **Envelope and LFO pictures that move**: ENV and ENV 2 show where the newest note played on the instrument is. LFO, LFO 2 and LFO 3 are drawn as the firmware makes them, with RATE (and on LFO, PHASE and FADE) to drag, a button for each of the six waves, and the same playhead.
@@ -204,9 +214,8 @@ Everything Stallion 1.0 adds to [Clipper](https://github.com/isod89/clipper-fm1)
 - **Stallion's own identity**: the 1.0 release build answers as **FM-1_104210** on the FM-1 and **SMK-37 Pro_104210** on the SMK-37 Pro, its update loader as ota- and the same, and its USB maker name is Eberon Limited. The web installers and the terminal installer know it, and still finish a write cut off in an earlier Stallion build's loader.
 - **One package per device**: stallion-<version>.fwsc for the FM-1 and stallion-smk37-<version>.fwsc for the SMK-37 Pro.
 
-### Fixes (26)
+### Fixes (25)
 
-- **Reverb chop**: PLATE, HALL and SHIMMER no longer chop in the left channel.
 - **Reverb pulse and flutter**: PLATE and HALL no longer pulse, and SHIMMER no longer flutters.
 - **Reverb at rest**: the reverb now rests when nothing is sent to it, saving about a voice's worth of processing.
 - **Chorus RATE**: turning RATE glides instead of ticking.
@@ -243,7 +252,6 @@ What Stallion fixed in code it took from upstream (Clipper, Clipper Pro, and the
 
 **Stallion only**
 
-- **PLATE, HALL, SHIMMER: the chop.** The left output read past the end of a delay line 16 times a second (two groups of output taps swapped); the taps are now wired as in the published design, every tap inside its line (in Clipper's `fx.c`; Stallion PR #1).
 - **PLATE, HALL: the helicopter pulse.** The tank's moving diffusers moved fast enough to beat; they now move slower and less (PR #1).
 - **SHIMMER: the flutter.** The octave line's crossfades dipped 3 dB 49 times a second; now equal-power fades (PR #1).
 - **PLATE, HALL, SHIMMER at rest.** The reverb tank ran on every block with nothing sent, about the cost of a voice; it now rests and wakes at once (PR #1).

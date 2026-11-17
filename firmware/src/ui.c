@@ -6,7 +6,7 @@
 #define UI_SMALL                                   /* (gfx.c: minsize on the device; a test alone: nothing) */
 #endif
 #ifndef FELUCCA_VERSION
-#define FELUCCA_VERSION "STALLION 1.0"  /* (stallion R1) Stallion's first: from Clipper 1.3, SLOOP 2.5, based on Felucca */
+#define FELUCCA_VERSION "STALLION 1.1"  /* (stallion R1) from Clipper 1.3, SLOOP 2.5, based on Felucca */
 #endif
 static void project_save(uint32_t slot);
 static void arrangement_save(void);

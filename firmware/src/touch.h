@@ -84,13 +84,13 @@ typedef struct {
     uint8_t hit;                /* HIT 0..127 (50): a full-velocity hit's lift */
     uint8_t vel;                /* VEL 0..100 % (70): how much the velocity scales it (0: every hit the same) */
     uint8_t hold;               /* HOLD 0..100 % (40): what the lift settles to */
-    uint8_t ceil;               /* CEIL 0..127 (127): where holding swells to */
+    uint8_t ceil;               /* CEIL 0..127 (64): where holding swells to */
     uint8_t rsv;
     uint16_t rise;              /* RISE 0..1000 ms (120): the lift's arrival (40 stepped 10 a reading) */
     uint16_t fall;              /* FALL 10..3000 ms (400): its settling */
     uint16_t swell;             /* SWELL 0..10000 ms (3000; 0 off): holding to CEIL, at a full-velocity hit */
 } kat_cfg_t;
-#define KAT_CFG_DEFAULTS {1, 50, 70, 40, 127, 0, 120, 400, 3000}
+#define KAT_CFG_DEFAULTS {1, 50, 70, 40, 64, 0, 120, 400, 3000}
 static kat_cfg_t kat_cfg = KAT_CFG_DEFAULTS;
 #include "pat_cfg.h"                                    /* (PAD AT, PAD AT 2, KEY AT 3: the pads' squeeze, the keys' swell) */
 static pat_cfg_t pat_cfg = PAT_CFG_DEFAULTS;

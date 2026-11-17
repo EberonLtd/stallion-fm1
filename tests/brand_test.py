@@ -27,7 +27,7 @@ CREDIT = {"FROM CLIPPER + SLOOP (ISOD89)", "from Clipper, SLOOP + Felucca"}
 INTERNAL = {"clipper-pattern", "clipper-pattern-bank", "clipper-hybrid", "clipper-fmx", "clipper-seq-lane",
             "clipper-installer-lang", "clipper", "FELUCCA CLIPPER 0.2 (MOCK)"}
 LINEAGE = re.compile(r"stallion|isod89|clipper-fm1|from clipper|clipper (by|0\.|1\.)|clipper's and|clipper made|"
-                     r"de clipper|venues de clipper|clipper から|clipper が|clipper \d", re.I)
+                     r"de clipper|venues de clipper|clipper から|clipper が|clipper \d|clipper's (pony|engine)|moteurs de clipper|clipper の", re.I)
 fails = []
 
 
@@ -201,7 +201,7 @@ def main():
     check("assets/logo/stallion-" in head.splitlines()[0] + head and "clipper-logo" not in rd, "README: Stallion's logo on top")
     check(all(u in rd for u in ("github.com/isod89/clipper-fm1", "github.com/isod89/sloop-fm1", "github.com/hugelton/Felucca")),
           "README: credits Clipper, SLOOP and Felucca with links (R3)")
-    check(re.search(r"trademarks? .*belong to their (respective )?owners", rd, re.I | re.S) and
+    check(re.search(r"trademarks? .*(belong to|of) (their|its) (respective )?owners?", rd, re.I | re.S) and
           re.search(r"not affiliated with or endorsed by", rd), "README: the trademark notice (R9)")
     qs = (ROOT / "QUICKSTART.md").read_text(encoding="utf-8")
     check("github.com/isod89/clipper-fm1" in qs and "github.com/hugelton/Felucca" in qs and "github.com/isod89/sloop-fm1" in qs,

@@ -402,6 +402,17 @@ _Static_assert(VC_NENG == NENGINES, "vcost_tables.h: one cost per engine (tools/
 #endif
 static uint16_t vc_ratio = VC_RATIO0;                   /* measured / predicted voice load, Q8 (0.25 .. 4) */
 static uint16_t vc_base = VC_BASE;                      /* the render with no voice, 1/VC_Q of the half */
+#if CLIPPER_SYNTH
+/* (1.0) each part's macros (mac_glide): q8, BRITE TIMBR MOTN SPACE as it plays them, x 256; live: a voice was active
+ * at the last block's start; fresh: a new sound, its values at once */
+#define MAC_GLIDE 5                                     /* 5/256 of the way a block (~37 ms) */
+#define MAC_NEAR ((255 + MAC_GLIDE) / MAC_GLIDE)         /* nearer than that (x 256): a move of 0, the value at once */
+typedef struct {
+    int16_t q8[4];
+    uint8_t live, fresh;
+} macg_t;
+static macg_t mac_st[NTRK];
+#endif
 static uint32_t vc_acc;                                 /* this half's predicted voice load, summed over its blocks */
 static uint32_t vc_steals;                              /* voices given up for the load (console, tests) */
 static uint16_t vc_c[NPART], vc_k[NPART];              /* (vc_cache) a voice's cost, the part's own, each part */
@@ -440,7 +451,8 @@ static uint32_t vc_voice(const track_t *t, uint8_t *ser, uint16_t *own)
              (p[P_DIST] ? VC_MT_DIST : 0u);
     if (fm_model2(t))
         c += VC_F2;
-    if (p[P_SPREAD] || p[P_MAC4] > 0 || (fm_model2(t) && fm_route(t) == F2_SPLIT))
+    if (p[P_SPREAD] || p[P_MAC4] > 0 || mac_st[(uint32_t)(t - trk) % NTRK].q8[3] > 0 ||
+        (fm_model2(t) && fm_route(t) == F2_SPLIT))
         c += VC_SIDE;
     *ser = (uint8_t)(!vs_ok(e) || !cpu1_units || !cpu1_on());
     *own = (uint16_t)(VC_PART + (p[P_DIST] || p[P_ITYPE] || p[P_CHOR] || p[P_DLY] || p[P_REV] ? VC_PFX : 0u) +
@@ -1404,6 +1416,7 @@ static void engine_block(track_t *t)
         t->xf_on = 0;
 #if CLIPPER_SYNTH
         t->xf_snd = 0;
+        mac_st[(uint32_t)(t - trk) % NTRK].fresh = 1;   /* (the new sound's macros at once: mac_glide) */
 #endif
         t->nmono = 0;
         t->mono_note = 0;
@@ -1775,6 +1788,26 @@ static int32_t vs_g0[NVOICE], vs_g1[NVOICE];
 /* the places, Q15: neighbours (the voices one note after the other take) left and right, the outer ones first */
 static const int16_t VS_POS[16] = {-32767, 32767, -16384, 16384, -24576, 24576, -8192, 8192,
                                    -29491, 29491, -19661, 19661, -11469, 11469, -3277, 3277};
+/* (1.0) the part's macros this block, x 256, into mq[4] (mac_st): each moves MAC_GLIDE/256 of the way to its value a
+ * block, within MAC_NEAR/256 of it to the value; the values at once when no voice was active at the last block's
+ * start (a note from silence starts at them) or a new sound came (fresh). In the flash (track_render calls it
+ * through HOT_FAR): core 0, once a block and part, before the voices */
+static void mac_glide(track_t *t, int32_t *mq)
+{
+    uint32_t k, any = 0;
+    macg_t *ms = &mac_st[(uint32_t)(t - trk) % NTRK];
+    int16_t *s = ms->q8;
+    uint32_t glide = ms->live && !ms->fresh;
+    for (k = 0; k < NVOICE; k++)
+        any |= t->v[k].active;
+    ms->live = (uint8_t)(any != 0);
+    ms->fresh = 0;
+    for (k = 0; k < 4u; k++) {
+        int32_t to = clamp(t->p[P_MAC1 + k], k < 2u ? -64 : 0, k < 2u ? 63 : 127) * 256, d = to - s[k];
+        s[k] = (int16_t)(!glide || (d > -MAC_NEAR && d < MAC_NEAR) ? to : s[k] + ((d * MAC_GLIDE) >> 8));
+        mq[k] = s[k];
+    }
+}
 /* (spread-centre) SPREAD: a sounding voice's place is its slot's (VS_POS) less the part's centre, its sounding voices'
  * places weighed by their level (squared: as they add up; a voice in its attack at the level it heads for, its velocity),
  * scaled so the outermost of the voices within 18 dB of the loudest sits at the side (quieter ones at most there): a
@@ -2012,11 +2045,13 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
     /* (Stallion) BEND TARGET LEAD (a note per key): the bend on the newest held note's voices alone */
     int lead = p[P_BTGT] == BT_LEAD && voice_poly((int)voice_mode(t)) && (bend || bvcf), lnote = -1;
     int b1 = !e->vco2 || p[P_BVCO1], b2 = !e->vco2 || p[P_BVCO2];   /* (the BEND page's VCOs: two-VCO engines) */
-    /* (1.0) the macros: BRITE (the cutoff, +-) and TIMBR (the shape, +-), MOTN (a vibrato and LFO 3 on the cutoff),
-     * SPACE (fx.c: the reverb and delay sends, and SPREAD); SPREAD: the voices' gains from the last block's to this
-     * one's */
-    int32_t mac1 = clamp(t->p[P_MAC1], -64, 63), mac2 = clamp(t->p[P_MAC2], -64, 63), mac3 = clamp(t->p[P_MAC3], 0, 127);
-    int32_t spr = clamp(t->p[P_SPREAD] + clamp(t->p[P_MAC4], 0, 127) / 2, 0, 127), spr0 = t->spr;
+    /* (1.0) the macros, glided (mac_glide, x 256): BRITE (the cutoff, +-) and TIMBR (the shape, +-), MOTN (a vibrato
+     * and LFO 3 on the cutoff), SPACE (fx.c: the reverb and delay sends, and SPREAD); SPREAD: the voices' gains from
+     * the last block's to this one's */
+    int32_t mq[4];
+    HOT_FAR(mac_glide)(t, mq);
+    int32_t mac1 = mq[0], mac2 = mq[1], mac3 = mq[2] >> 8;   /* (mac1, mac2 x 256) */
+    int32_t spr = clamp(t->p[P_SPREAD] + (mq[3] >> 9), 0, 127), spr0 = t->spr;
     int sided;
     int32_t vg0[NVOICE], vg1[NVOICE];                   /* (spread-centre) the voices' gains: spread_place */
     {   /* FILTER 2 this block: in the engine (beside its MODEL filter) or after it; SPLIT: the voices' side */
@@ -2100,8 +2135,8 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
             t->l3rnd = (int16_t)(rng() >> 16);
         l3free = lfo_wave_n(p[P_L3WAVE], t->l3ph, t->l3rnd, t->l3cx);
         sv[MS_LFO3] = l3free;
-        sv[MS_MAC1] = mac1 * 512, sv[MS_MAC2] = mac2 * 512;
-        sv[MS_MAC3] = mac3 * 258, sv[MS_MAC4] = clamp(p[P_MAC4], 0, 127) * 258;
+        sv[MS_MAC1] = mac1 * 2, sv[MS_MAC2] = mac2 * 2;
+        sv[MS_MAC3] = (mq[2] * 258) >> 8, sv[MS_MAC4] = (mq[3] * 258) >> 8;
     }
     sv[MS_LFO2] = p[P_L2MODE] == L2_KEY ? 0 : l2free;   /* LFO1: the next block's (the voices set LFO 2) */
     t->l1rmod = (int8_t)mx_l1rate(p, &mx, sv);
@@ -2412,7 +2447,7 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
         m.shape = (64 << 8) + ((PONY_LFO1(e, lfo, t->lfo_fade) * p[P_LD_SHP]) >> 7) +
                   e1_scale((m.envq15 * p[P_ED_SHP]) >> 7, e1a);
 #if CLIPPER_SYNTH
-        {   /* VEL>F: around velocity 96, up to ~2 octaves up (127) and ~4.5 down (32); CUT: up to ~4 octaves,
+        {   /* VEL>F: around velocity 96, up to ~2 octaves up (127) and ~4.5 down (32); CUT: up to ~4 octaves (MW), ~2 (AT),
              * WAH: the sound's LFO on the cutoff, up to ~+-2 octaves; SHP: the shape up to its top */
             int32_t a = e == &ENG_HYBRID ? 0 : v->pat > cat ? v->pat : cat;
             if (p[P_VELF])
@@ -2421,9 +2456,9 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
                 m.cutoff += mw * 120;
             if (p[P_ATDST] == MD_CUT)
 #if BOARD_SMK37
-                m.cutoff += a * 120 - (v->squish && e != &ENG_HYBRID ? SMK_SQUISH_DARK : 0);   /* (0 since the squeeze) */
+                m.cutoff += a * 60 - (v->squish && e != &ENG_HYBRID ? SMK_SQUISH_DARK : 0);   /* (0 since the squeeze) */
 #else
-                m.cutoff += a * 120;
+                m.cutoff += a * 60;
 #endif
             if (p[P_MWDST] == MD_WAH)
                 m.cutoff += (lfo * mw) >> 9;
@@ -2438,10 +2473,10 @@ static uint32_t track_render(track_t *t, int32_t *out, uint32_t n)
             m.cutoff += clamp(mcut, -32767, 32767);    /* the matrix */
             if (bvcf && !(lead && !(v->gate && (int)v->note == lnote)))
                 m.cutoff += bvcf;                       /* (Stallion) VCF BEND (LEAD: the newest note's alone) */
-            m.cutoff += mac1 * 160;                     /* (1.0) BRITE: +-40 steps (about +-2.5 octaves) */
+            m.cutoff += (mac1 * 5) >> 3;                /* (1.0) BRITE: +-40 steps (about +-2.5 octaves; x 160 / 256) */
             if (mac3)                                   /* .. MOTN: LFO 3 on the cutoff, up to +-24 steps */
                 m.cutoff += (l3free * mac3) >> 10;
-            m.shape = clamp(m.shape + mac2 * 128, 0, 127 << 8);   /* .. TIMBR: +-32 steps of the shape */
+            m.shape = clamp(m.shape + (mac2 >> 1), 0, 127 << 8);   /* .. TIMBR: +-32 steps of the shape (x 128 / 256) */
             if (vint)                                   /* (0.9) VINTAGE: each voice's filter a little off */
                 m.cutoff += ((vcard((uint32_t)(t - trk) * NVOICE + i, 1u) * 400) >> 15) * vint >> 7;
             if (mshp)

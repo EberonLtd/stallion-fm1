@@ -33,7 +33,7 @@ static void t_limiter(void)
     for (b = 0; b < 40u; b++) {                        /* silence, then a square at 3x the threshold */
         for (i = 0; i < CTL; i++)
             l[i] = r[i] = b < 20u ? 0 : ((i / 8u) & 1u ? -54000 : 54000);
-        lim_block(&s, l, r, CTL);
+        lim_block(&s, l, r, 0, 0, CTL);
         for (i = 0; i < CTL; i++) {
             int32_t a = l[i] < 0 ? -l[i] : l[i];
             pk = a > pk ? a : pk;
@@ -47,7 +47,7 @@ static void t_limiter(void)
             double ph = 2 * M_PI * 40 * (double)(b * CTL + i) / FS;
             l[i] = r[i] = (int32_t)(36000 * sin(ph));
         }
-        lim_block(&s, l, r, CTL);
+        lim_block(&s, l, r, 0, 0, CTL);
         if (b > 300u) {
             gmin = s.g < gmin ? s.g : gmin;
             gmax = s.g > gmax ? s.g : gmax;
@@ -64,7 +64,7 @@ static void t_limiter(void)
         {
             int32_t in[CTL];
             memcpy(in, l, sizeof in);
-            lim_block(&s, l, r, CTL);
+            lim_block(&s, l, r, 0, 0, CTL);
             for (i = 0; i < CTL; i++)
                 same &= b == 0 ? l[i] == 0 : l[i] == prev[i];
             memcpy(prev, in, sizeof prev);

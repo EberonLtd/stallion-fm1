@@ -2,9 +2,9 @@
 
 Stallion 1.0.0 is the first release of Stallion, free, open-source synthesizer firmware for the **M-VAVE FM-1** and the **M-VAVE SMK-37 Pro**, by Eberon Limited (John Gorman).
 
-Stallion is built on [Clipper](https://github.com/isod89/clipper-fm1) by 3dSam (isod89) and Clipper Pro, its SMK-37 port (isod89 with M. Geisler). Clipper grew out of [SLOOP](https://github.com/isod89/sloop-fm1), and all of them are based on [Felucca](https://github.com/hugelton/Felucca) by Leo Kuroshita / Hügelton Instruments. Stallion keeps everything they do. These notes list what Stallion 1.0.0 adds on top: **132 new features and fixes**.
+Stallion is built on [Clipper](https://github.com/isod89/clipper-fm1) by 3dSam (isod89) and Clipper Pro, its SMK-37 port (isod89 with M. Geisler). Clipper grew out of [SLOOP](https://github.com/isod89/sloop-fm1), and all of them are based on [Felucca](https://github.com/hugelton/Felucca) by Leo Kuroshita / Hügelton Instruments. Stallion keeps everything they do. These notes list what Stallion 1.0.0 adds on top: **131 new features and fixes**.
 
-26 engines and 819 factory sounds, 4 of the engines new (PALOMINO, STAMPEDE, RODEO, MARE) and PONY rebuilt from the ground up (24 engine and sound features) · 6 filter features · 2 effect features · 12 modulation and matrix features · 10 playing features · 11 touch and aftertouch features · 8 sequencer and arpeggiator features · 9 screen and control features · 14 web editor features · 5 saving features · 3 MIDI features · 2 installing features · 26 fixes.
+26 engines and 819 factory sounds, 4 of the engines new (PALOMINO, STAMPEDE, MARE, and RODEO after zvenson's OberVave) and Clipper's PONY rebuilt (24 engine and sound features) · 6 filter features · 2 effect features · 12 modulation and matrix features · 10 playing features · 11 touch and aftertouch features · 8 sequencer and arpeggiator features · 9 screen and control features · 14 web editor features · 5 saving features · 3 MIDI features · 2 installing features · 25 fixes.
 
 ## Licence
 
@@ -23,7 +23,7 @@ Every part of Stallion is free to use, change and share under its listed licence
 **819 sounds on 26 engines.** Every engine now comes with a full bank of its classic sounds.
 
 - **A full bank for every engine**: 32 classic sounds on 23 engines, 28 on ACID and SAMPLE, 27 on WSEQ (819 in all), every bank starting with a plain INIT.
-- **Centred and level-matched**: every factory sound has its left and right within 1 dB, and each is measured with a phrase that suits it and trimmed to the same loudness (within 1.5 dB; the sample-based SAMPLE and GRAIN sounds keep their own levels).
+- **Centred and level-matched** (Clipper's level-matching, extended): every factory sound has its left and right within 1 dB, and each is measured with a phrase that suits it and trimmed to the same loudness (within 1.5 dB; the sample-based SAMPLE and GRAIN sounds keep their own levels).
 - **Synth sounds for a keys player**: pads, leads, basses, synth brass and strings, keys, organs, plucks and sequences. No bells, chimes, mallets, drums or imitations of other players' instruments.
 - **Sounds that move**: the PONY, PALOMINO, STAMPEDE, RODEO and MARE sounds, and every sound new in this release on the other engines, are patched in the matrix, so LFOs, envelopes, velocity, pressure and the wheel move them as you play. A factory sound can use all 24 matrix slots.
 - **MARE, from the instrument's patch books**: 32 sounds built from the patch books' routings and techniques, in balanced stereo, with SPACE working as the instrument's SPACING and P>VCO as its PITCH MOD ASSIGN.
@@ -39,7 +39,7 @@ Every part of Stallion is free to use, change and share under its listed licence
 - **32 sounds**: pads, strings, brass, leads, basses and keys.
 - **Even unison**: fixed phase offsets, so a stack is as loud every time.
 
-### Sound engines (24)
+### Engines and sounds (24 changes)
 
 - **PALOMINO**: a big early-1980s 8-voice poly. Two VCOs with six waves each, cross mod, hard sync, an OTA filter at 12 or 24 dB. 32 sounds: pads, strings, brass, leads, basses and keys.
 - **STAMPEDE**: a late-1970s poly with two complete channels per voice. A wave morph through noise, saw, pulse, sine and ring; channel II's feet and detune; a resonant high-pass then low-pass with its own envelope. 32 sounds.
@@ -52,7 +52,7 @@ Every part of Stallion is free to use, change and share under its listed licence
 - **MARE split modes** (MODE SPLT, SPL+N): VCO 1 alone goes to the left filter and VCO 2 alone to the right.
 - **MARE's normals**: a cable into VCO 1's pitch moves VCO 2 too, and filter 2 follows filter 1's cutoff, until you give them cables of their own.
 - **STALLION**: a new signature HYBRID sound.
-- **Every factory sound level-matched and centred**: no sound jumps out louder or quieter than the next, and none sits in one ear (left and right within 1 dB). The test suite checks both.
+- **Every factory sound level-matched and centred** (Clipper's level-matching, extended): no sound jumps out louder or quieter than the next, and none sits in one ear (left and right within 1 dB). The test suite checks both.
 - **PALOMINO VCO-2 fine tune** (EDIT > VOICE 2 > DTUNE): sets how far VCO 2 sits above VCO 1, from 0 to about 16 cents (the old fixed 5 cents is the default, 40), for thick brass, strings and pads.
 - **Resonance that stops short of howling**: PALOMINO's filter now stops just below self-oscillation at full RES, and RODEO's up to RES 123, so a resonant bass or brass rings and decays instead of whistling. RODEO's top four steps sing on purpose, as its originals do.
 - **PALOMINO pulse width one way**: SHAPE (and an LFO or envelope on it) sweeps the pulse from square towards narrow, once per cycle, instead of folding both ways.
@@ -91,7 +91,7 @@ Every part of Stallion is free to use, change and share under its listed licence
 - **New destinations**: the arpeggiator's rate, the delay, reverb and chorus sends, LFO 1's rate and ENV 1's amount.
 - **S&H, NOISE and +V** sources. +V is a constant, for a fixed offset.
 - **Bend and pressure in the matrix**: BEND, poly pressure, channel pressure and RIBBON as sources; PIT1, PIT2, XMOD and HPF as destinations.
-- **The MATRIX page**: the selected cable in large type (for example LFO1 > CUT +62), coloured by signal type. Sources and destinations are in panel order, and MARE's normals are shown in words.
+- **The MATRIX page** (Clipper's, extended): the selected cable in large type (for example LFO1 > CUT +62), coloured by signal type. Sources and destinations are in panel order, and MARE's normals are shown in words.
 - **MATRIX 2 > CLEAR**: take out all 24 cables at once. UNDO brings them back.
 - **31 sources and 35 destinations** in total. User presets keep every one.
 - **CHAO**: a chaotic LFO wave on LFO 1, 2 and 3, for movement that never repeats.
@@ -152,11 +152,11 @@ Every part of Stallion is free to use, change and share under its listed licence
 ### Web editor (14)
 
 - **Every parameter**: the editor now reaches every parameter, including FILTER 2, SLOPE, the BEND page and the FM-1's own settings (tuning, MIDI, TOUCH, LIGHTS, BROWSE).
-- **Live controls**: values are sent while a control moves, not only when you let go.
+- **Live controls** (Clipper's, extended): values are sent while a control moves, not only when you let go.
 - **Envelope grab points**: drag the envelope picture's attack, decay, sustain and release points with a mouse, finger or pen.
 - **The patch bay**, on every engine: drag cables between 64 jacks to patch the matrix, coloured as on the device, in large, bright type. Switch to the MATRIX tab to see the same cables as a table; up to 24 cables per sound, and only the inputs the engine uses. The matrix is shown once: the old card of MATRIX knobs is gone. FILTER FM, RING, SPLT/SPL+N and the VCO1->VCO2 pitch normal are MARE's own.
 - **MIDI 3 settings** (CC A, CC B, SUST) and the new INSERT types are named in the editor.
-- **Tuning card**: checked against the device, and it says what the FM-1 tunes to.
+- **Tuning card** (Clipper's, extended): checked against the device, and it says what the FM-1 tunes to.
 - **Device banner**: the top of every page names the instrument the editor is talking to (FM-1 or SMK-37 Pro), its firmware and the sound playing: its name, engine and voice mode, or a multi sound's name, mode and parts A and B. Without an instrument it says that none is connected.
 - **Folding sections**: click a heading to fold its card to the heading (Enter or Space too); Shift+click opens one and folds the rest of the tab; Fold all and Open all on the Sound tab. The browser remembers what is folded, across sounds and engines.
 - **Envelope and LFO pictures that move**: ENV and ENV 2 show where the newest note played on the instrument is. LFO, LFO 2 and LFO 3 are drawn as the firmware makes them, with RATE (and on LFO, PHASE and FADE) to drag, a button for each of the six waves, and the same playhead.
@@ -185,9 +185,8 @@ Every part of Stallion is free to use, change and share under its listed licence
 - **Stallion's own identity**: the 1.0 release build answers as **FM-1_104210** on the FM-1 and **SMK-37 Pro_104210** on the SMK-37 Pro, its update loader as ota- and the same, and its USB maker name is Eberon Limited. The web installers and the terminal installer know it, and still finish a write cut off in an earlier Stallion build's loader.
 - **One package per device**: stallion-<version>.fwsc for the FM-1 and stallion-smk37-<version>.fwsc for the SMK-37 Pro.
 
-### Fixes (26)
+### Fixes (25)
 
-- **Reverb chop**: PLATE, HALL and SHIMMER no longer chop in the left channel.
 - **Reverb pulse and flutter**: PLATE and HALL no longer pulse, and SHIMMER no longer flutters.
 - **Reverb at rest**: the reverb now rests when nothing is sent to it, saving about a voice's worth of processing.
 - **Chorus RATE**: turning RATE glides instead of ticking.

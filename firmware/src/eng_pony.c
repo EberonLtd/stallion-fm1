@@ -344,32 +344,32 @@ static const preset_t PONY_PRESETS[] = {
      * its span doubled to the whole cutoff range, voice.c: each sweep's top where it was) */
     {"INIT", {JW_SAW, 0, 0, 0, 1, 127, 0, 0}, {0, 64, 127, 20}, 0, 0, PON_FX0},
     /* strings and pads */
-    {"STRINGS", {JW_SAW, 0, 0, 0, 2, 88, 0, 2}, {74, 100, 116, 92}, 3, 0, PON_FX0,
+    {"STRINGS", {JW_SAW, 0, 24, 0, 2, 78, 0, 2}, {74, 100, 116, 92}, 3, 0, PON_FX0,
      XP(P_LRATE + 1, 84, P_LD_PIT + 1, 1)},
     /* (matrix showcase: PONY_PATCHES) the strings under the fingers: pressure opens the filter, swells the level, speeds
      * the ensemble's LFO; the aftertouch's own vibrato on top */
-    {"TOUCH STRING", {JW_SAW, 0, 0, 0, 2, 80, 0, 2}, {74, 100, 116, 92}, 3, 0, PON_FX0,
+    {"TOUCH STRING", {JW_SAW, 0, 24, 0, 2, 80, 0, 2}, {74, 100, 116, 92}, 3, 0, PON_FX0,
      XP(P_LRATE + 1, 84, P_LD_PIT + 1, 1, P_ATDST + 1, MD_VIB)},
     {"DARK STRINGS", {JW_SAW, 0, 30, 0, 1, 64, 0, 2}, {84, 104, 118, 100}, 2, 0, PON_FX0,
      XP(P_LRATE + 1, 80, P_LD_PIT + 1, 1)},
-    {"PWM STRINGS", {JW_SP, 50, 0, 0, 2, 84, 0, 1}, {72, 100, 116, 92}, 3, 0, PON_FX0,
+    {"PWM STRINGS", {JW_SP, 50, 24, 0, 2, 78, 0, 1}, {72, 100, 116, 92}, 3, 0, PON_FX0,
      XP(P_LRATE + 1, 64, P_LD_SHP + 1, 36)},
     {"WARM PAD", {JW_SP, 40, 40, 0, 1, 70, 10, 2}, {84, 104, 120, 100}, 4, 0, PON_FX0,
      XP(P_LRATE + 1, 56, P_LD_SHP + 1, 30)},
     {"SYNTH CHOIR", {JW_PLS, 90, 0, 6, 2, 62, 36, 2}, {80, 100, 118, 96}, 0, 0, PON_FX0,
      XP(P_LRATE + 1, 88, P_LD_PIT + 1, 1, P_LD_SHP + 1, 10)},
-    {"RESO SWEEP", {JW_SAW, 0, 30, 0, 1, 34, 70, 1}, {90, 112, 70, 104}, 22, 0, PON_FX0, PON_STEPS},   /* (STEPS:
+    {"RESO SWEEP", {JW_SAW, 0, 30, 0, 1, 32, 70, 1}, {90, 112, 70, 104}, 22, 0, PON_FX0, PON_STEPS},   /* (STEPS:
                                                                                          * the hand sweep in steps) */
-    {"BRASS+STRING", {JW_SAW, 0, 30, 0, 1, 70, 6, 1}, {60, 96, 110, 84}, 12, 0, PON_FX0},
+    {"BRASS+STRING", {JW_SAW, 0, 30, 0, 1, 62, 6, 1}, {60, 96, 110, 84}, 12, 0, PON_FX0},
     /* brass */
-    {"SYNTH BRASS", {JW_SAW, 0, 40, 0, 1, 48, 10, 0}, {56, 86, 100, 62}, 20, 0, PON_FX0},
+    {"SYNTH BRASS", {JW_SAW, 0, 40, 0, 1, 42, 10, 0}, {56, 86, 100, 62}, 20, 0, PON_FX0},
     /* (showcase) velocity brass: the filter envelope's depth and speed and the cutoff all follow the strike */
-    {"VEL BRASS", {JW_SAW, 0, 40, 0, 1, 48, 10, 0}, {56, 86, 100, 62}, 20, 0, PON_FX0},
-    {"PHASE BRASS", {JW_SP, 50, 30, 0, 1, 50, 10, 1}, {56, 86, 100, 62}, 19, 0, PON_FX0,
+    {"VEL BRASS", {JW_SAW, 0, 40, 0, 1, 38, 10, 0}, {56, 86, 100, 62}, 20, 0, PON_FX0},
+    {"PHASE BRASS", {JW_SP, 50, 30, 0, 1, 46, 10, 1}, {56, 86, 100, 62}, 19, 0, PON_FX0,
      XP(P_LRATE + 1, 60, P_LD_SHP + 1, 34)},
-    {"FANFARE", {JW_SAW, 0, 60, 0, 1, 56, 16, 0}, {44, 80, 96, 56}, 24, 0, PON_FX0},
+    {"FANFARE", {JW_SAW, 0, 60, 0, 1, 42, 16, 0}, {44, 80, 96, 56}, 20, 0, PON_FX0},
     /* keys */
-    {"SYNTH PIANO", {JW_SP, 40, 20, 0, 2, 46, 10, 3}, {0, 96, 0, 74}, 22, 0, PON_FX0},
+    {"SYNTH PIANO", {JW_SP, 40, 20, 0, 2, 34, 10, 3}, {0, 96, 0, 74}, 22, 0, PON_FX0},
     {"TREMOLO EP", {JW_PLS, 20, 0, 0, 2, 52, 0, 3}, {0, 100, 20, 72}, 15, 0, PON_FX0,
      XP(P_LRATE + 1, 76, P_LD_AMP + 1, 40)},
     /* (Stallion: CLAV's place) the filter whistling alone, no oscillator: WAVE OFF, RES 125 (the filter sings,
@@ -377,10 +377,10 @@ static const preset_t PONY_PRESETS[] = {
      * wheel its vibrato (WAH: the LFO on the cutoff), the bend on the filter (VCF BEND) */
     {"WHISTLE", {JW_OFF, 0, 0, 0, 1, 45, 125, 1}, {8, 80, 127, 50}, 0, 1, PON_FX0,
      XP((int8_t)(P_JKYB + 1), 100, (int8_t)(P_MAC1 + 1), -1, P_GLIDE + 1, 20, P_MWDST + 1, MD_WAH)},
-    {"HARPSICHORD", {JW_PLS, 110, 40, 0, 3, 84, 6, 0}, {0, 90, 0, 66}, 10, 0, PON_FX0},
+    {"HARPSICHORD", {JW_PLS, 110, 40, 0, 3, 52, 6, 0}, {0, 90, 0, 66}, 10, 0, PON_FX0},
     /* organs */
-    {"ORGAN", {JW_PLS, 0, 90, 0, 2, 96, 0, 2}, {0, 40, 127, 24}, 0, 0, PON_FX0},
-    {"COMBO ORGAN", {JW_PLS, 80, 60, 0, 3, 110, 0, 0}, {0, 40, 127, 20}, 0, 0, PON_FX0,
+    {"ORGAN", {JW_PLS, 0, 90, 0, 2, 92, 0, 2}, {0, 40, 127, 24}, 0, 0, PON_FX0},
+    {"COMBO ORGAN", {JW_PLS, 80, 60, 0, 3, 88, 0, 0}, {0, 40, 127, 20}, 0, 0, PON_FX0,
      XP(P_LRATE + 1, 94, P_LD_PIT + 1, 2)},
     /* (showcase) the wheel as a PWM pad's one control: deeper, faster PWM and a brighter filter together */
     {"PWM WHEEL", {JW_PLS, 20, 30, 0, 1, 70, 10, 2}, {60, 100, 120, 90}, 3, 0, PON_FX0,
@@ -393,9 +393,9 @@ static const preset_t PONY_PRESETS[] = {
     /* (showcase) TIMBR morphs the bass: up, a narrow pulse, less sub, more resonance and envelope; down, round and deep */
     {"MORPH BASS", {JW_PLS, 30, 100, 0, 0, 40, 20, 0}, {0, 72, 60, 26}, 18, 1, PON_FX0},
     /* leads */
-    {"SAW LEAD", {JW_SAW, 0, 40, 0, 1, 72, 30, 0}, {2, 80, 110, 44}, 10, 1, PON_FX0,
+    {"SAW LEAD", {JW_SAW, 0, 40, 0, 1, 56, 30, 0}, {2, 80, 110, 44}, 10, 1, PON_FX0,
      XP(P_GLIDE + 1, 30, P_LRATE + 1, 88, P_LD_PIT + 1, 2, P_LFADE + 1, 84)},
-    {"PWM LEAD", {JW_PLS, 50, 40, 0, 1, 80, 10, 2}, {2, 80, 116, 44}, 5, 1, PON_FX0,
+    {"PWM LEAD", {JW_PLS, 50, 40, 0, 1, 70, 10, 2}, {2, 80, 116, 44}, 5, 1, PON_FX0,
      XP(P_GLIDE + 1, 20, P_LRATE + 1, 62, P_LD_SHP + 1, 40)},
     /* a square lead with the sub under it, LFO 2's slow PWM wandering at LFO 3's pace, pressure on the
      * filter */
@@ -403,11 +403,11 @@ static const preset_t PONY_PRESETS[] = {
      XP(P_GLIDE + 1, 24, P_LRATE + 1, 86, P_LD_PIT + 1, 2, P_LFADE + 1, 84)},
     /* a hollow narrow-pulse lead through the high-pass, the wheel widening the pulse to a square,
      * ENV 2 opening the filter behind the note, pressure brightening it and the aftertouch's vibrato */
-    {"HOLLOW LEAD", {JW_PLS, 80, 0, 0, 2, 70, 30, 1}, {6, 80, 116, 50}, 6, 1, PON_FX0,
+    {"HOLLOW LEAD", {JW_PLS, 80, 0, 0, 2, 55, 30, 1}, {6, 80, 116, 50}, 6, 1, PON_FX0,
      XP(P_GLIDE + 1, 16, P_MWDST + 1, MD_OFF, P_ATDST + 1, MD_VIB)},
     /* plucks */
-    {"PERC PLUCK", {JW_SP, 40, 30, 0, 1, 44, 30, 3}, {0, 72, 0, 56}, 23, 0, PON_FX0},
-    {"DARK PLUCK", {JW_SAW, 0, 20, 0, 1, 32, 50, 3}, {0, 76, 0, 64}, 21, 0, PON_FX0, PON_STEPS},
+    {"PERC PLUCK", {JW_SP, 40, 30, 0, 1, 42, 30, 3}, {0, 72, 0, 56}, 16, 0, PON_FX0},
+    {"DARK PLUCK", {JW_SAW, 0, 20, 0, 1, 26, 50, 3}, {0, 76, 0, 64}, 21, 0, PON_FX0, PON_STEPS},
     /* the DCO poly stab: saw and sub through chorus II, velocity on the filter envelope's depth and
      * speed, the high notes a little brighter */
     {"POLY STAB", {JW_SAW, 0, 40, 0, 1, 50, 24, 2}, {0, 84, 30, 50}, 20, 0, PON_FX0},

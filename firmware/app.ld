@@ -18,8 +18,8 @@
 MEMORY
 {
     XIP    (rx)  : ORIGIN = 0x02000120, LENGTH = 0x8DFBC
-    RAMTEXT (rwx): ORIGIN = 0x01C00000, LENGTH = 0x7F00 + 0x1980   /* (Stallion: + 6.4 KB of the RAM region for .ram_hot; 6 KB until the SMK-37 build of voice-pressure overflowed it, 6.5 KB until RODEO's EDIT 3 did by 8 B, 6.6 KB until PONY's CHAR moved part_pending and pch_mode to the flash and its voice state overflowed the SMK-37's RAM by 168 B) */
-    RAM    (rwx) : ORIGIN = 0x01C08000 + 0x1980, LENGTH = 96K - 0x1980
+    RAMTEXT (rwx): ORIGIN = 0x01C00000, LENGTH = 0x7F00 + 0x1B80   /* (Stallion: + 6.9 KB of the RAM region for .ram_hot, 6.4 KB on the SMK-37 Pro (tools/build.py HOT_AREA); 6 KB until the SMK-37 build of voice-pressure overflowed it, 6.5 KB until RODEO's EDIT 3 did by 8 B, 6.6 KB until PONY's CHAR moved part_pending and pch_mode to the flash and its voice state overflowed the SMK-37's RAM by 168 B) */
+    RAM    (rwx) : ORIGIN = 0x01C08000 + 0x1B80, LENGTH = 96K - 0x1B80
     POOL   (rw)  : ORIGIN = 0x01C20000, LENGTH = 0x54000
     NOINIT (rw)  : ORIGIN = 0x01C7C000, LENGTH = 0x3D50
 }

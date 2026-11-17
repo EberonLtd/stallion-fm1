@@ -93,7 +93,7 @@ run "2.8.3: drum voices on a busy beat, every kit: no kick cut by another sound"
 $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/chop_attack_test" tests/chop_attack_test.c -lm
 run "2.8.3: a sample played again starts from silence with its ATK (POLY same note, MONO, LEGATO, UNISON), no click" "$OUT/chop_attack_test"
 $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/fade_noise_test" tests/fade_noise_test.c -lm
-run "SLOOP Pro #4: a note fading out keeps 16-bit resolution (DAC, MASTER 2048, USB FULL, 808 SLIDE): no 16 LSB floor" "$OUT/fade_noise_test"
+run "SLOOP Pro #4: a note fading out keeps 16-bit resolution (DAC, MASTER 2048, USB FULL, 808 SLIDE): no 16 LSB floor; the DAC its 24 bits at MASTER 128" "$OUT/fade_noise_test"
 
 $CC -O2 -w -Ibuild/gen -Ifirmware/src -o "$OUT/drumkit_test" tests/drumkit_test.c -lm
 run "synthesised drum kits: every kit x sound bounded, audible, finite, levels, cost" "$OUT/drumkit_test" "$OUT/drum-kits.wav" "$OUT/drum-kits.txt"
@@ -183,7 +183,7 @@ run "Clipper Pro FADER BANK D (SLOOP Pro #7): LEVEL by GM's law, silent at the b
 $SYN -o "$OUT/clipper_chop_test" tests/chop_attack_test.c -lm
 run "Clipper synth (2.8.3): a sample played again starts from silence with its ATK, no click" "$OUT/clipper_chop_test"
 $SYN -o "$OUT/clipper_fade_test" tests/fade_noise_test.c -lm
-run "Clipper synth (SLOOP Pro #4): a note fading out keeps 16-bit resolution: the mix and MASTER rounded, no 16 LSB floor" "$OUT/clipper_fade_test"
+run "Clipper synth (SLOOP Pro #4): a note fading out keeps 16-bit resolution: the mix and MASTER rounded, no 16 LSB floor; the DAC its 24 bits at MASTER 128" "$OUT/clipper_fade_test"
 $SYN -o "$OUT/clipper_stress" tests/stress_test.c -lm
 run "Clipper synth: stress (hard random use, clean stop)" "$OUT/clipper_stress" "${STRESS_FRAMES:-40000}"
 $SYN -o "$OUT/clipper_soak" tests/soak_test.c -lm
@@ -345,6 +345,10 @@ run "Clipper 1.0: SPREAD (left = right at 0, the middle kept), the matrix's 12 s
 if $SYN_UB -o "$OUT/synth10_ub" tests/synth10_test.c -lm 2>/dev/null; then
     run "Clipper 1.0 under ASan + UBSan" sh -c "'$OUT/synth10_ub' >/dev/null && echo clean"
 fi
+$SYN -o "$OUT/macro_smooth_test" tests/macro_smooth_test.c -lm
+run "MACROS glide (~37 ms): BRITE in jumps of 18 every ~90 ms at most a step a block, a slow sweep close and settled, a sound loaded at its values at once, CC 16..19 the same" "$OUT/macro_smooth_test"
+$SYN -DBOARD_SMK37=1 -o "$OUT/macro_smooth_test_smk" tests/macro_smooth_test.c -lm
+run "MACROS glide (SMK-37 Pro build)" "$OUT/macro_smooth_test_smk"
 $SYN -o "$OUT/plate_test" tests/plate_test.c -lm
 run "PLATE / HALL: the moving diffusers gentle (no pulse on a held note, as steady as ROOM within 6 %), still a reverb" "$OUT/plate_test"
 $SYN -o "$OUT/shimmer_test" tests/shimmer_test.c -lm

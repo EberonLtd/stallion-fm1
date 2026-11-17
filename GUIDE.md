@@ -358,7 +358,7 @@ With a key held, **OCT− / OCT+ bend like a lever** and **SELECT bends like a r
 ### On the SMK-37 Pro: pad and key aftertouch
 
 - **GLO > PAD AT:** a light press on a pad plays the note, and a harder squeeze is aftertouch. DEAD (the dead zone), ROOM, TOP and SETTL set how it responds; the graph shows what a squeeze gives.
-- **GLO > KEY AT:** the keys have no pressure sensor, so Stallion makes pressure from how hard you hit (HIT, VEL%), where it settles (HOLD) and a slow swell while you hold (SWELL, and CEIL, where the swell stops: 127, full pressure, by default). The graph draws it over time for a soft, a medium and a full hit, and a dot follows the key you hold.
+- **GLO > KEY AT:** the keys have no pressure sensor, so Stallion makes pressure from how hard you hit (HIT, VEL%), where it settles (HOLD) and a slow swell while you hold (SWELL, and CEIL, where the swell stops: 64, half pressure, by default; 127 is full). The graph draws it over time for a soft, a medium and a full hit, and a dot follows the key you hold.
 - A thin bar under the four boxes shows the pressure while you press: your touch itself. CURVE and OFFS (GLO > AFTERTOUCH) shape what the sound does with it, not the bar.
 - The keys' and the pads' own pressure glides to each new value over at least 10 ms, so aftertouch on a resonant filter moves smoothly instead of in steps. A longer AT attack or release (GLO > AFTERTOUCH) works as set; pressure from MIDI and MPE is not changed.
 - The pads' aftertouch is always on; GLO + the lowest key switches the keys' only.
