@@ -4,6 +4,7 @@
   "kinds": [
     "synth"
   ],
+  "play": "https://joakimeriksson.github.io/fm1-emu/?fw=stallion",
   "editor": "https://eberonltd.github.io/stallion-fm1/webapp/editor/",
   "cheat": "https://eberonltd.github.io/stallion-fm1/cheat-sheet.html",
   "image": "assets/logo/stallion-splash.png",
